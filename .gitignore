@@ -22,3 +22,52 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+<<<<<<< Updated upstream
+=======
+
+# Maven build output
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+
+# Eclipse IDE
+.classpath
+.project
+.settings/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Spring Boot
+*.db
+*.h2.db
+*.mv.db
+application-local.properties
+application-local.yml
+.env
+.env.local
+*.env
+
+# Spring Boot generated
+HELP.md
+
+# Editor temp files
+*.tmp
+*.swp
+*.swo
+*~
+
+
+
+
+/bin/
+>>>>>>> Stashed changes
