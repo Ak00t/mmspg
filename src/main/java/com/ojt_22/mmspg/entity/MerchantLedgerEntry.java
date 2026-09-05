@@ -4,10 +4,16 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UuidGenerator;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,40 +24,40 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class MerchantLedgerEntry extends UuidV7Entity {
+public class MerchantLedgerEntry {
 
-    @Id
-    @Column(name = "ledger_id", columnDefinition = "BINARY(16)")
-    private UUID id;
+	@Id
+	@GeneratedValue
+	@UuidGenerator(style = UuidGenerator.Style.VERSION_7)
+	@Column(name = "ledger_id", columnDefinition = "BINARY(16)")
+	private UUID id;
 
-    @Column(name = "merchant_id", nullable = false, columnDefinition = "BINARY(16)")
-    private UUID merchantId;
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "merchant_id", nullable = false)
+	private Merchant merchant;
 
-    @Column(name = "transaction_id", columnDefinition = "BINARY(16)")
-    private UUID transactionId;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "transaction_id")
+	private PaymentTransaction transaction;
 
-    @Column(name = "settlement_id", columnDefinition = "BINARY(16)")
-    private UUID settlementId;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "settlement_id")
+	private Settlement settlement;
 
-    @Column(name = "entry_type", nullable = false, columnDefinition = "enum('DEBIT','CREDIT')")
-    private String entryType;
+	@Column(name = "entry_type", nullable = false, columnDefinition = "enum('DEBIT','CREDIT')")
+	private String entryType;
 
-    @Column(name = "balance_type", nullable = false, columnDefinition = "enum('CLEARED','PENDING','HELD')")
-    private String balanceType = "PENDING";
+	@Column(name = "balance_type", nullable = false, columnDefinition = "enum('CLEARED','PENDING','HELD')")
+	private String balanceType = "PENDING";
 
-    @Column(nullable = false, precision = 18, scale = 4)
-    private BigDecimal amount;
+	@Column(nullable = false, precision = 18, scale = 4)
+	private BigDecimal amount;
 
-    @Column(nullable = false, length = 255)
-    private String description;
+	@Column(nullable = false, length = 255)
+	private String description;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+	@CreationTimestamp
+	@Column(name = "created_at", nullable = false)
+	private LocalDateTime createdAt;
 
-    @PrePersist
-    private void initializeCreatedAt() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-    }
 }
