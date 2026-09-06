@@ -1,5 +1,6 @@
 package com.ojt_22.mmspg.entity;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -19,55 +20,44 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "webhook_configs")
+@Table(name = "merchant_ledger_entries")
 @Getter
 @Setter
 @NoArgsConstructor
-public class WebhookConfig {
+public class MerchantLedgerEntry {
 
 	@Id
 	@GeneratedValue
 	@UuidGenerator(style = UuidGenerator.Style.VERSION_7)
-	@Column(name = "webhook_id", columnDefinition = "BINARY(16)")
+	@Column(name = "ledger_id", columnDefinition = "BINARY(16)")
 	private UUID id;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "merchant_id", nullable = false)
 	private Merchant merchant;
 
-	@Column(name = "callback_url", nullable = false, length = 500)
-	private String callbackUrl;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "transaction_id")
+	private PaymentTransaction transaction;
 
-	@Column(name = "secret_key_hash", length = 255)
-	private String secretKeyHash;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "settlement_id")
+	private Settlement settlement;
 
-	@Column(name = "event_payment_completed", nullable = false)
-	private Boolean eventPaymentCompleted;
+	@Column(name = "entry_type", nullable = false, columnDefinition = "enum('DEBIT','CREDIT')")
+	private String entryType;
 
-	@Column(name = "event_payment_failed", nullable = false)
-	private Boolean eventPaymentFailed;
+	@Column(name = "balance_type", nullable = false, columnDefinition = "enum('CLEARED','PENDING','HELD')")
+	private String balanceType = "PENDING";
 
-	@Column(name = "max_retry", nullable = false)
-	private Integer maxRetry;
+	@Column(nullable = false, precision = 18, scale = 4)
+	private BigDecimal amount;
 
-	@Column(length = 255)
+	@Column(nullable = false, length = 255)
 	private String description;
-
-	@Column(nullable = false, columnDefinition = "enum('ACTIVE','INACTIVE')")
-	private String status;
 
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
 
-	@Column(name = "updated_at", nullable = false)
-	private LocalDateTime updatedAt;
-
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by")
-	private StaffUser createdBy;
-
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "updated_by")
-	private StaffUser updatedBy;
 }
