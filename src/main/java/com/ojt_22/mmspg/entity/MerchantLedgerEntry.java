@@ -20,7 +20,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "merchant_ledger_entries")
+@Table(name = "merchant_ledgers")
 @Getter
 @Setter
 @NoArgsConstructor
