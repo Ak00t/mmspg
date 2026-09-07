@@ -49,6 +49,9 @@ public class PaymentTransaction {
 
 	@Column(name = "transaction_reference", nullable = false, length = 100, unique = true)
 	private String transactionReference;
+	
+	@Column(name = "core_transaction_reference", length = 100)
+   private String coreTransactionReference;
 
 	@Column(name = "payment_token", nullable = false, length = 255)
 	private String paymentToken;
