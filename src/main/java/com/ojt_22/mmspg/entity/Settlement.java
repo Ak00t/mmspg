@@ -6,12 +6,12 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -28,7 +28,6 @@ import lombok.Setter;
 public class Settlement {
 
 	@Id
-	@GeneratedValue
 	@UuidGenerator(style = UuidGenerator.Style.VERSION_7)
 	@Column(name = "settlement_id", columnDefinition = "BINARY(16)")
 	private UUID id;
@@ -68,7 +67,8 @@ public class Settlement {
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
 
-	@Column(name = "updated_at", nullable = false)
+	@UpdateTimestamp
+	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
