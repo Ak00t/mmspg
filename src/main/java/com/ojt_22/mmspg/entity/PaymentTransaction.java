@@ -5,12 +5,12 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -27,7 +27,6 @@ import lombok.Setter;
 public class PaymentTransaction {
 
 	@Id
-	@GeneratedValue
 	@UuidGenerator(style = UuidGenerator.Style.VERSION_7)
 	@Column(name = "transaction_id", columnDefinition = "BINARY(16)")
 	private UUID id;
@@ -49,9 +48,9 @@ public class PaymentTransaction {
 
 	@Column(name = "transaction_reference", nullable = false, length = 100, unique = true)
 	private String transactionReference;
-	
+
 	@Column(name = "core_transaction_reference", length = 100)
-   private String coreTransactionReference;
+	private String coreTransactionReference;
 
 	@Column(name = "payment_token", nullable = false, length = 255)
 	private String paymentToken;
@@ -93,7 +92,8 @@ public class PaymentTransaction {
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
 
-	@Column(name = "updated_at", nullable = false)
+	@UpdateTimestamp
+	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)

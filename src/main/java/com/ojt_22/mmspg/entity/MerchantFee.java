@@ -4,12 +4,12 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -25,7 +25,6 @@ import lombok.Setter;
 @NoArgsConstructor
 public class MerchantFee {
 	@Id
-	@GeneratedValue
 	@UuidGenerator(style = UuidGenerator.Style.VERSION_7)
 	@Column(name = "fee_id", columnDefinition = "BINARY(16)")
 	private UUID id;
@@ -43,6 +42,12 @@ public class MerchantFee {
 	@Column(name = "flat_fee", precision = 18, scale = 3)
 	private BigDecimal flatFee;
 
+	@Column(name = "minimum_fee", precision = 18, scale = 3)
+	private BigDecimal miniumnFee;
+
+	@Column(name = "maximum_fees", precision = 18, scale = 3)
+	private BigDecimal maximumFee;
+
 	@Column(name = "effective_from", nullable = false)
 	private LocalDateTime effectiveFrom;
 
@@ -55,6 +60,7 @@ public class MerchantFee {
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
 
+	@UpdateTimestamp
 	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 
