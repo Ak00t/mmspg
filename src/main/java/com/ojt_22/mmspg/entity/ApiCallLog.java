@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 
@@ -56,13 +57,17 @@ public class ApiCallLog {
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(name = "request_body", columnDefinition = "json")
 	private String requestBody;
+
 	@Column(name = "response_status")
 	private Integer responseStatus;
+
 	@Column(name = "response_time_ms")
 	private Long responseTimeMs;
+
 	@Lob
 	@Column(name = "error_message", columnDefinition = "TEXT")
 	private String errorMessage;
+
 	@Lob
 	@Column(name = "query_params", columnDefinition = "TEXT")
 	private String queryParams;
@@ -74,6 +79,7 @@ public class ApiCallLog {
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
 
+	@UpdateTimestamp
 	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 

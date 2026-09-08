@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import jakarta.persistence.Column;
@@ -43,6 +44,12 @@ public class MerchantFee {
 	@Column(name = "flat_fee", precision = 18, scale = 3)
 	private BigDecimal flatFee;
 
+	@Column(name = "minimum_fee", precision = 18, scale = 3)
+	private BigDecimal miniumnFee;
+
+	@Column(name = "maximum_fees", precision = 18, scale = 3)
+	private BigDecimal maximumFee;
+
 	@Column(name = "effective_from", nullable = false)
 	private LocalDateTime effectiveFrom;
 
@@ -55,6 +62,7 @@ public class MerchantFee {
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
 
+	@UpdateTimestamp
 	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 

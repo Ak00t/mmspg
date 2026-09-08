@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import jakarta.persistence.Column;
@@ -49,9 +50,9 @@ public class PaymentTransaction {
 
 	@Column(name = "transaction_reference", nullable = false, length = 100, unique = true)
 	private String transactionReference;
-	
+
 	@Column(name = "core_transaction_reference", length = 100)
-   private String coreTransactionReference;
+	private String coreTransactionReference;
 
 	@Column(name = "payment_token", nullable = false, length = 255)
 	private String paymentToken;
@@ -93,7 +94,8 @@ public class PaymentTransaction {
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
 
-	@Column(name = "updated_at", nullable = false)
+	@UpdateTimestamp
+	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
