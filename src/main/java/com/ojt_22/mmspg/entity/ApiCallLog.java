@@ -5,13 +5,13 @@ import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
@@ -28,7 +28,6 @@ import lombok.Setter;
 @NoArgsConstructor
 public class ApiCallLog {
 	@Id
-	@GeneratedValue
 	@UuidGenerator(style = UuidGenerator.Style.VERSION_7)
 	@Column(name = "log_id", columnDefinition = "BINARY(16)")
 	private UUID id;
@@ -56,13 +55,17 @@ public class ApiCallLog {
 	@JdbcTypeCode(SqlTypes.JSON)
 	@Column(name = "request_body", columnDefinition = "json")
 	private String requestBody;
+
 	@Column(name = "response_status")
 	private Integer responseStatus;
+
 	@Column(name = "response_time_ms")
 	private Long responseTimeMs;
+
 	@Lob
 	@Column(name = "error_message", columnDefinition = "TEXT")
 	private String errorMessage;
+
 	@Lob
 	@Column(name = "query_params", columnDefinition = "TEXT")
 	private String queryParams;
@@ -74,6 +77,7 @@ public class ApiCallLog {
 	@Column(name = "created_at", nullable = false)
 	private LocalDateTime createdAt;
 
+	@UpdateTimestamp
 	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 

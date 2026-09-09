@@ -65,9 +65,46 @@ HELP.md
 *.swo
 *~
 
+# Dependencies
+/node_modules
+/.pnp
+.pnp.js
 
+# Testing
+/coverage
 
+# Production & Build outputs
+/dist
+/build
+/out
+*.tsbuildinfo
 
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor & OS settings
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+.DS_Store
+Thumbs.db
+
+# Cache
+/.eslintcache
+/.stylelintcache
+/.vite
+/.next
+/.turbo
 <<<<<<< Updated upstream
 =======
 
