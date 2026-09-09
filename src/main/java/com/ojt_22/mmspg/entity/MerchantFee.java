@@ -45,7 +45,7 @@ public class MerchantFee {
 	@Column(name = "minimum_fee", precision = 18, scale = 3)
 	private BigDecimal miniumnFee;
 
-	@Column(name = "maximum_fees", precision = 18, scale = 3)
+	@Column(name = "maximum_fee", precision = 18, scale = 3)
 	private BigDecimal maximumFee;
 
 	@Column(name = "effective_from", nullable = false)
