@@ -45,7 +45,7 @@ public class MerchantLedgerEntry {
 	@Column(name = "entry_type", nullable = false, columnDefinition = "enum('DEBIT','CREDIT')")
 	private String entryType;
 
-	@Column(name = "balance_type", nullable = false, columnDefinition = "enum('CLEARED','PENDING','HELD')")
+	@Column(name = "balance_type", nullable = false, columnDefinition = "enum('CLEARED','PENDING','SETTLED')")
 	private String balanceType = "PENDING";
 
 	@Column(nullable = false, precision = 18, scale = 4)

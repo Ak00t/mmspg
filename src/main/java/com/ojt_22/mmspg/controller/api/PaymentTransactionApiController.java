@@ -19,6 +19,7 @@ import com.ojt_22.mmspg.dto.PaymentStatusResponseDto;
 import com.ojt_22.mmspg.dto.PaymentTransactionSummaryDto;
 import com.ojt_22.mmspg.service.PaymentTransactionService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -32,9 +33,9 @@ public class PaymentTransactionApiController {
     public ResponseEntity<PaymentInitiateResponseDto> initiateTransaction(@RequestBody PaymentInitiateRequestDto requestDto) {
         return ResponseEntity.ok(transactionService.initiateTransaction(requestDto));
     }
-
+    
     @PostMapping("/authorize")
-    public ResponseEntity<PaymentAuthorizeResponseDto> authorizeTransaction(@RequestBody PaymentAuthorizeRequestDto requestDto) {
+    public ResponseEntity<PaymentAuthorizeResponseDto> authorizeTransaction(@Valid @RequestBody PaymentAuthorizeRequestDto requestDto) {
         return ResponseEntity.ok(transactionService.authorizeTransaction(requestDto));
     }
 
