@@ -59,7 +59,7 @@ public class PaymentTransaction {
 	private BigDecimal amount;
 
 	@Column(nullable = false, length = 3, columnDefinition = "char(3)")
-	private String currency;
+	private String currency = "MMK";
 
 	@Column(name = "fee_amount", nullable = false, precision = 18, scale = 4)
 	private BigDecimal feeAmount;
