@@ -7,8 +7,12 @@ import java.util.UUID;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
+import com.ojt_22.mmspg.enums.FeeType;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -33,8 +37,13 @@ public class MerchantFee {
 	@JoinColumn(name = "merchant_id", nullable = false)
 	private Merchant merchant;
 
-	@Column(name = "fee_type", nullable = false, columnDefinition = "enum('PERCENTAGE','FLAT','MIXED')")
-	private String feeType;
+	@Enumerated(EnumType.STRING)
+	@Column(
+	    name = "fee_type",
+	    nullable = false,
+	    columnDefinition = "enum('PERCENTAGE','FLAT','MIXED')"
+	)
+	private FeeType feeType;
 
 	@Column(name = "percentage_rate", precision = 5, scale = 2)
 	private BigDecimal percentageRate;
