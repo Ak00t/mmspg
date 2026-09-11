@@ -37,7 +37,6 @@ public class DashboardService {
 		response.setTodayGrossSales(todayGrossSales != null ? todayGrossSales : BigDecimal.ZERO);
 		response.setTotalApiTransactionsToday(totalTransactions != null ? totalTransactions : 0L);
 		response.setAvailableSettlementBalance(availableBalance != null ? availableBalance : BigDecimal.ZERO);
-
 		return response;
 
 	}
