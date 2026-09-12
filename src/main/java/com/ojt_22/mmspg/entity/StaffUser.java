@@ -43,7 +43,7 @@ public class StaffUser {
 	@Column(length = 150, unique = true)
 	private String email;
 
-	@Column(nullable = false, columnDefinition = "enum('ADMIN','STAFF')")
+	@Column(nullable = false, columnDefinition = "enum('ADMIN','AUDITOR','SUPPORT')")
 	private String role;
 
 	@Column(nullable = false, columnDefinition = "enum('ACTIVE','DISABLED')")

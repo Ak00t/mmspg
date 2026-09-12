@@ -47,6 +47,9 @@ public class MerchantBranch {
 	@Column(columnDefinition = "TEXT")
 	private String address;
 
+	@Column(length = 100)
+	private String city;
+
 	@Column(length = 30)
 	private String phone;
 
