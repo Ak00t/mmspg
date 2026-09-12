@@ -29,6 +29,7 @@ public class DashboardService {
 				.atStartOfDay();
 		LocalDateTime endOfDay = LocalDate.now()
 				.atTime(LocalTime.MAX);
+
 		BigDecimal todayGrossSales = transactionRepository.sumGrossSalesByDateRange(merchantId, startOfDay, endOfDay);
 		Long totalTransactions = transactionRepository.countTransactionsByDateRange(merchantId, startOfDay, endOfDay);
 		BigDecimal availableBalance = settlementRepository.findAvailableSettlementBalance(merchantId);
@@ -38,6 +39,28 @@ public class DashboardService {
 		response.setTotalApiTransactionsToday(totalTransactions != null ? totalTransactions : 0L);
 		response.setAvailableSettlementBalance(availableBalance != null ? availableBalance : BigDecimal.ZERO);
 		return response;
+	}
 
+	public BigDecimal getTodayGrossSales(UUID merchantId) {
+		LocalDateTime startOfDay = LocalDate.now()
+				.atStartOfDay();
+		LocalDateTime endOfDay = LocalDate.now()
+				.atTime(LocalTime.MAX);
+		BigDecimal todayGrossSales = transactionRepository.sumGrossSalesByDateRange(merchantId, startOfDay, endOfDay);
+		return todayGrossSales != null ? todayGrossSales : BigDecimal.ZERO;
+	}
+
+	public Long getTotalApiTransactions(UUID merchantId) {
+		LocalDateTime startOfDay = LocalDate.now()
+				.atStartOfDay();
+		LocalDateTime endOfDay = LocalDate.now()
+				.atTime(LocalTime.MAX);
+		Long totalTransactions = transactionRepository.countTransactionsByDateRange(merchantId, startOfDay, endOfDay);
+		return totalTransactions != null ? totalTransactions : 0L;
+	}
+
+	public BigDecimal getAvailableSettlementBalance(UUID merchantId) {
+		BigDecimal availableBalance = settlementRepository.findAvailableSettlementBalance(merchantId);
+		return availableBalance != null ? availableBalance : BigDecimal.ZERO;
 	}
 }
