@@ -9,6 +9,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 
+import com.ojt_22.mmspg.enums.WebhookDeliveryStatus;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -59,7 +61,7 @@ public class WebhookDelivery {
 	private Integer attemptCount;
 
 	@Column(nullable = false, columnDefinition = "enum('PENDING','SENT','DELIVERED','FAILED')")
-	private String status;
+	private WebhookDeliveryStatus status;
 
 	@Column(name = "sent_at")
 	private LocalDateTime sentAt;
@@ -72,7 +74,7 @@ public class WebhookDelivery {
 	private String errorMessage;
 
 	@CreationTimestamp
-	@Column(name = "created_at", nullable = false)
+	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
 	@UpdateTimestamp
@@ -80,7 +82,7 @@ public class WebhookDelivery {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by")
+	@JoinColumn(name = "created_by", nullable = false, updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)

@@ -38,11 +38,7 @@ public class MerchantFee {
 	private Merchant merchant;
 
 	@Enumerated(EnumType.STRING)
-	@Column(
-	    name = "fee_type",
-	    nullable = false,
-	    columnDefinition = "enum('PERCENTAGE','FLAT','MIXED')"
-	)
+	@Column(name = "fee_type", nullable = false, columnDefinition = "enum('PERCENTAGE','FLAT','MIXED')")
 	private FeeType feeType;
 
 	@Column(name = "percentage_rate", precision = 5, scale = 2)
@@ -66,7 +62,7 @@ public class MerchantFee {
 	@Column(nullable = false, columnDefinition = "enum('ACTIVE','INACTIVE')")
 	private String status;
 
-	@Column(name = "created_at", nullable = false)
+	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
 	@UpdateTimestamp
@@ -74,7 +70,7 @@ public class MerchantFee {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by")
+	@JoinColumn(name = "created_by", updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)
