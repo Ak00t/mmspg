@@ -42,7 +42,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/merchant-portal/auth/**").permitAll()
                         .requestMatchers("/api/v1/admin/login", "/api/v1/staff/login", "/api/v1/merchant-portal/auth/login").permitAll()
                         .requestMatchers("/error").permitAll()
-                        
+                         .requestMatchers("/api/v1/credentials/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()
                 )

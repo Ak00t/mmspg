@@ -10,7 +10,6 @@ import org.hibernate.annotations.UuidGenerator;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -27,7 +26,6 @@ import lombok.Setter;
 public class MerchantLedgerEntry {
 
 	@Id
-	@GeneratedValue
 	@UuidGenerator(style = UuidGenerator.Style.VERSION_7)
 	@Column(name = "ledger_id", columnDefinition = "BINARY(16)")
 	private UUID id;
@@ -47,7 +45,7 @@ public class MerchantLedgerEntry {
 	@Column(name = "entry_type", nullable = false, columnDefinition = "enum('DEBIT','CREDIT')")
 	private String entryType;
 
-	@Column(name = "balance_type", nullable = false, columnDefinition = "enum('CLEARED','PENDING','HELD')")
+	@Column(name = "balance_type", nullable = false, columnDefinition = "enum('CLEARED','PENDING','SETTLED')")
 	private String balanceType = "PENDING";
 
 	@Column(nullable = false, precision = 18, scale = 4)
