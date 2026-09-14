@@ -18,21 +18,19 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class CustomMerchantDetailsService implements UserDetailsService {
 
-    private final MerchantRepository merchantRepository;
+	private final MerchantRepository merchantRepository;
 
-    @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Merchant merchant = merchantRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Merchant not found with email: " + email));
+	@Override
+	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+		Merchant merchant = merchantRepository.findByEmail(email)
+				.orElseThrow(() -> new UsernameNotFoundException("Merchant not found with email: " + email));
 
-        if (!"ACTIVE".equalsIgnoreCase(merchant.getStatus())) {
-            throw new DisabledException("Merchant account is not active. Current status: " + merchant.getStatus());
-        }
+		if (!"ACTIVE".equalsIgnoreCase(merchant.getStatus()
+				.name())) {
+			throw new DisabledException("Merchant account is not active. Current status: " + merchant.getStatus());
+		}
 
-        return new org.springframework.security.core.userdetails.User(
-                merchant.getEmail(),
-                merchant.getPasswordHash(),
-                Collections.singletonList(new SimpleGrantedAuthority("ROLE_MERCHANT"))
-        );
-    }
+		return new org.springframework.security.core.userdetails.User(merchant.getEmail(), merchant.getPasswordHash(),
+				Collections.singletonList(new SimpleGrantedAuthority("ROLE_MERCHANT")));
+	}
 }
