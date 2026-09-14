@@ -8,8 +8,12 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
+import com.ojt_22.mmspg.enums.PaymentTransactionStatus;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -70,8 +74,9 @@ public class PaymentTransaction {
 	@Column(name = "return_url", length = 500)
 	private String returnUrl;
 
+	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, columnDefinition = "enum('INITIATED','PENDING_AUTHORIZATION','COMPLETED','FAILED')")
-	private String status;
+	private PaymentTransactionStatus status;
 
 	@Column(name = "failure_reason", length = 500)
 	private String failureReason;
@@ -89,7 +94,7 @@ public class PaymentTransaction {
 	private LocalDateTime failedAt;
 
 	@CreationTimestamp
-	@Column(name = "created_at", nullable = false)
+	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
 	@UpdateTimestamp
@@ -97,7 +102,7 @@ public class PaymentTransaction {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by")
+	@JoinColumn(name = "created_by", updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)
