@@ -43,14 +43,14 @@
 			<artifactId>jjwt-api</artifactId>
 			<version>0.12.6</version>
 		</dependency>
-<!-- JJWT Implementation -->
+
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-impl</artifactId>
 			<version>0.12.6</version>
 			<scope>runtime</scope>
 		</dependency>
-<!-- JJWT Jackson Integration for JSON processing -->
+
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-jackson</artifactId>
