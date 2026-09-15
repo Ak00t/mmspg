@@ -30,6 +30,8 @@ public class SecurityConfig {
                 .requestMatchers(SWAGGER_WHITELIST).permitAll()
                 
                 .requestMatchers("/api/v1/credentials/**").permitAll()
+                .requestMatchers("/api/v1/credentials/**").permitAll()
+                .requestMatchers("/api/v1/logs/**").permitAll()
                 
                 .anyRequest().authenticated()
             )
