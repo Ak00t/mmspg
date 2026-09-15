@@ -11,6 +11,7 @@ import com.ojt_22.mmspg.dto.MerchantFeeRequestDto;
 import com.ojt_22.mmspg.dto.MerchantFeeResponseDto;
 import com.ojt_22.mmspg.entity.Merchant;
 import com.ojt_22.mmspg.entity.MerchantFee;
+import com.ojt_22.mmspg.enums.FeeType;
 import com.ojt_22.mmspg.repository.MerchantFeeRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.service.MerchantFeeService;
@@ -37,7 +38,7 @@ public class MerchantFeeServiceImpl implements MerchantFeeService {
         if (!feeType.equals("PERCENTAGE") && !feeType.equals("FLAT") && !feeType.equals("MIXED")) {
             throw new IllegalArgumentException("Invalid feeType. Must be PERCENTAGE, FLAT, or MIXED.");
         }
-        fee.setFeeType(feeType);
+        fee.setFeeType(FeeType.valueOf(feeType));
         
         fee.setPercentageRate(request.getFeePercentage());
         fee.setFlatFee(request.getFlatAmount());
@@ -63,7 +64,7 @@ public class MerchantFeeServiceImpl implements MerchantFeeService {
         dto.setFeeId(fee.getId());
         dto.setMerchantId(fee.getMerchant().getId());
         dto.setMerchantName(fee.getMerchant().getBusinessName());
-        dto.setFeeType(fee.getFeeType());
+        dto.setFeeType(fee.getFeeType().name());
         dto.setFeePercentage(fee.getPercentageRate());
         dto.setFlatAmount(fee.getFlatFee());
         dto.setStatus(fee.getStatus());
