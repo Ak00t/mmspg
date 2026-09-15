@@ -53,7 +53,7 @@ public class Merchant {
 	@Column(name = "contact_name", length = 150)
 	private String contactName;
 
-	@Column(length = 150)
+	@Column(length = 150, unique = true)
 	private String email;
 
 	@Column(length = 30)
@@ -82,7 +82,7 @@ public class Merchant {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by", updatable = false)
+	@JoinColumn(name = "created_by", nullable = false, updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)

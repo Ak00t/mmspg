@@ -102,7 +102,7 @@ public class PaymentTransaction {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by", updatable = false)
+	@JoinColumn(name = "created_by", nullable = false, updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)

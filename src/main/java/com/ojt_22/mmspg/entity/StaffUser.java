@@ -7,6 +7,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
+import com.ojt_22.mmspg.enums.StaffUserRole;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -43,7 +45,7 @@ public class StaffUser {
 	private String email;
 
 	@Column(nullable = false, columnDefinition = "enum('ADMIN','AUDITOR','SUPPORT')")
-	private String role;
+	private StaffUserRole role;
 
 	@Column(nullable = false, columnDefinition = "enum('ACTIVE','DISABLED')")
 	private String status;
@@ -60,7 +62,7 @@ public class StaffUser {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by", updatable = false)
+	@JoinColumn(name = "created_by", nullable = false, updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)
