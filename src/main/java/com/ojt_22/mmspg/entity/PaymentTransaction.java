@@ -70,7 +70,7 @@ public class PaymentTransaction {
 	@Column(name = "return_url", length = 500)
 	private String returnUrl;
 
-	@Column(nullable = false, columnDefinition = "enum('INITIATED','PENDING_AUTHORIZATION','COMPLETED','FAILED','REFUNDED','PARTIALLY_REFUNDED')")
+	@Column(nullable = false, columnDefinition = "enum('INITIATED','PENDING_AUTHORIZATION','COMPLETED','FAILED')")
 	private String status;
 
 	@Column(name = "failure_reason", length = 500)
