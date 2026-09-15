@@ -18,10 +18,10 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
     // 2. Payment Token ဖြင့် ရှာရန် (Authorize API အတွက်)
     Optional<PaymentTransaction> findByPaymentToken(String paymentToken);
 
-    // 3. Merchant တစ်ခုတည်းအောက်တွင် Order ID ထပ်မထပ် စစ်ရန်
+   
     List<PaymentTransaction> findByMerchantId(UUID merchantId);
     
-    // 4. Merchant တစ်ခုတည်းအောက်တွင် Order ID ထပ်မထပ် စစ်ရန် (✅ ဖြည့်စွက်ထားသည်)
+    // 4. Merchant တစ်ခုတည်းအောက်တွင် Order ID ထပ်မထပ် စစ်ရန်
     boolean existsByMerchantIdAndOrderId(UUID merchantId, String orderId);
     
     Optional<PaymentTransaction> findByIdempotencyKey(String idempotencyKey);
