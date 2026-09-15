@@ -1,9 +1,11 @@
 package com.ojt_22.mmspg.service;
 
 import java.math.BigDecimal;
-
+import java.util.UUID;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
 import com.ojt_22.mmspg.dto.MerchantLedgerResponse;
 import com.ojt_22.mmspg.entity.Merchant;
 import com.ojt_22.mmspg.entity.MerchantLedgerEntry;
@@ -11,6 +13,7 @@ import com.ojt_22.mmspg.entity.PaymentTransaction;
 import com.ojt_22.mmspg.repository.MerchantLedgerRepository;
 
 @Service
+@RequiredArgsConstructor
 public class MerchantLedgerService {
 
     private final MerchantLedgerRepository merchantLedgerRepository;
@@ -52,5 +55,18 @@ public class MerchantLedgerService {
         response.setCreatedAt(savedLedger.getCreatedAt());
 
         return response;
+
+            }
+    /**
+     * Ledger ID ဖြင့် balance_type ကို SETTLED သို့ ပြောင်းလဲခြင်း
+     */
+    @Transactional
+    public void markLedgerAsSettled(UUID ledgerId) {
+        int updatedRows = ledgerRepository.updateBalanceType(ledgerId, "SETTLED");
+        
+        if (updatedRows == 0) {
+            throw new RuntimeException("Ledger entry not found with ID: " + ledgerId);
+        }
     }
+
 }
