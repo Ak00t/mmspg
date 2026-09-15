@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ojt_22.mmspg.dto.StaffUserRegisterRequest;
 import com.ojt_22.mmspg.entity.StaffUser;
 import com.ojt_22.mmspg.enums.StaffUserRole;
+import com.ojt_22.mmspg.enums.StaffUserStatus;
 import com.ojt_22.mmspg.repository.StaffUserRepository;
 import com.ojt_22.mmspg.service.StaffUserService;
 
@@ -39,14 +40,10 @@ public class StaffUserServiceImpl implements StaffUserService {
 		staffUser.setEmail(request.getEmail());
 		staffUser.setFullName(request.getFullName());
 		staffUser.setRole(StaffUserRole.valueOf(request.getRole()));
-		staffUser.setStatus("ACTIVE");
+		staffUser.setStatus(StaffUserStatus.ACTIVE);
 
 		// Hash the password
 		staffUser.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-
-		// Setting updated_at is required due to schema constraint
-		staffUser.setUpdatedAt(LocalDateTime.now());
-
 		return staffUserRepository.save(staffUser);
 	}
 
@@ -82,8 +79,7 @@ public class StaffUserServiceImpl implements StaffUserService {
 			throw new IllegalArgumentException("Invalid role. Must be ADMIN, AUDITOR, or SUPPORT.");
 		}
 		staffUser.setRole(StaffUserRole.valueOf(role));
-		staffUser.setStatus("ACTIVE");
-
+		staffUser.setStatus(StaffUserStatus.ACTIVE);
 		staffUser.setPasswordHash(passwordEncoder.encode(request.getPassword()));
 		staffUser.setUpdatedAt(LocalDateTime.now());
 
@@ -97,12 +93,12 @@ public class StaffUserServiceImpl implements StaffUserService {
 		StaffUser staffUser = staffUserRepository.findById(staffId)
 				.orElseThrow(() -> new IllegalArgumentException("Staff user not found with ID: " + staffId));
 
-		if ("ACTIVE".equals(staffUser.getStatus())) {
-			staffUser.setStatus("DISABLED");
+		if ("ACTIVE".equals(staffUser.getStatus()
+				.name())) {
+			staffUser.setStatus(StaffUserStatus.DISABLED);
 		} else {
-			staffUser.setStatus("ACTIVE");
+			staffUser.setStatus(StaffUserStatus.ACTIVE);
 		}
-
 		staffUser.setUpdatedAt(LocalDateTime.now());
 		staffUserRepository.save(staffUser);
 	}
@@ -114,7 +110,8 @@ public class StaffUserServiceImpl implements StaffUserService {
 		dto.setEmail(user.getEmail());
 		dto.setRole(user.getRole()
 				.name());
-		dto.setStatus(user.getStatus());
+		dto.setStatus(user.getStatus()
+				.name());
 		return dto;
 	}
 }

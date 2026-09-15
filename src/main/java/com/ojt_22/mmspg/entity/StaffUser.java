@@ -8,6 +8,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import com.ojt_22.mmspg.enums.StaffUserRole;
+import com.ojt_22.mmspg.enums.StaffUserStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -48,7 +49,7 @@ public class StaffUser {
 	private StaffUserRole role;
 
 	@Column(nullable = false, columnDefinition = "enum('ACTIVE','DISABLED')")
-	private String status;
+	private StaffUserStatus status;
 
 	@Column(name = "last_login_at")
 	private LocalDateTime lastLoginAt;

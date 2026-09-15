@@ -26,7 +26,8 @@ public class CustomStaffDetailsService implements UserDetailsService {
 		StaffUser staff = staffUserRepository.findByEmail(email)
 				.orElseThrow(() -> new UsernameNotFoundException("Staff not found with email: " + email));
 
-		if (!"ACTIVE".equalsIgnoreCase(staff.getStatus())) {
+		if (!"ACTIVE".equalsIgnoreCase(staff.getStatus()
+				.name())) {
 			throw new DisabledException("Staff account is not active. Current status: " + staff.getStatus());
 		}
 
