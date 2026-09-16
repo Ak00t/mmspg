@@ -6,6 +6,9 @@ import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
+import com.ojt_22.mmspg.enums.TerminalStatus;
+import com.ojt_22.mmspg.enums.TerminalType;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -30,6 +33,10 @@ public class Terminal {
 	@Column(name = "terminal_id", columnDefinition = "BINARY(16)")
 	private UUID id;
 
+//	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+//	@JoinColumn(name = "merchant_id", nullable = false)
+//	private Merchant merchant;
+
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "branch_id", nullable = false)
 	private MerchantBranch branch;
@@ -40,20 +47,20 @@ public class Terminal {
 	@Column(name = "terminal_name", length = 100)
 	private String terminalName;
 
-	@Column(name = "terminal_type", length = 45)
-	private String terminalType;
+	@Column(name = "terminal_type", nullable = false, columnDefinition = "enum('PHYSICAL_POS','VIRTUAL_API')")
+	private TerminalType terminalType;
 
-	@Column(nullable = false, columnDefinition = "enum('ACTIVE','SUSPENDED','DISABLED')")
-	private String status;
+	@Column(nullable = false, columnDefinition = "enum('ONLINE','OFFLINE','SUSPENDED')")
+	private TerminalStatus status = TerminalStatus.ONLINE;
 
 	@CreationTimestamp
-	@Column(name = "created_at", nullable = false)
+	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
-	@Column(name = "updated_at", nullable = false)
+	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by")
+	@JoinColumn(name = "created_by", nullable = false, updatable = false)
 	private StaffUser createdBy;
 }

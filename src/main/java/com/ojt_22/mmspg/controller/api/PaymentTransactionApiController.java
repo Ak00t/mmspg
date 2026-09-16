@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -19,6 +20,8 @@ import com.ojt_22.mmspg.dto.PaymentStatusResponseDto;
 import com.ojt_22.mmspg.dto.PaymentTransactionSummaryDto;
 import com.ojt_22.mmspg.service.PaymentTransactionService;
 
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -30,8 +33,17 @@ public class PaymentTransactionApiController {
     private final PaymentTransactionService transactionService;
 
     @PostMapping("/initiate")
-    public ResponseEntity<PaymentInitiateResponseDto> initiateTransaction(@RequestBody PaymentInitiateRequestDto requestDto) {
-        return ResponseEntity.ok(transactionService.initiateTransaction(requestDto));
+    public ResponseEntity<PaymentInitiateResponseDto> initiateTransaction(
+            @Parameter(
+                name = "Idempotency-Key", 
+                description = "Unique UUID or Key for request idempotency", 
+                required = true, 
+                in = ParameterIn.HEADER
+            )
+            @RequestHeader(value = "Idempotency-Key", required = true) String idempotencyKey,
+            @Valid @RequestBody PaymentInitiateRequestDto requestDto) {
+        
+        return ResponseEntity.ok(transactionService.initiateTransaction(requestDto, idempotencyKey));
     }
     
     @PostMapping("/authorize")
