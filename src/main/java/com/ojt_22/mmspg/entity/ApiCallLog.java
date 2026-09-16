@@ -14,7 +14,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -62,11 +61,9 @@ public class ApiCallLog {
 	@Column(name = "response_time_ms")
 	private Long responseTimeMs;
 
-	@Lob
 	@Column(name = "error_message", columnDefinition = "TEXT")
 	private String errorMessage;
 
-	@Lob
 	@Column(name = "query_params", columnDefinition = "TEXT")
 	private String queryParams;
 
@@ -74,7 +71,7 @@ public class ApiCallLog {
 	private String userAgent;
 
 	@CreationTimestamp
-	@Column(name = "created_at", nullable = false)
+	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
 	@UpdateTimestamp
@@ -82,7 +79,7 @@ public class ApiCallLog {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by")
+	@JoinColumn(name = "created_by", nullable = false, updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)
