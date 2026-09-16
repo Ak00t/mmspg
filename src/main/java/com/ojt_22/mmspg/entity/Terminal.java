@@ -6,6 +6,9 @@ import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
+import com.ojt_22.mmspg.enums.TerminalStatus;
+import com.ojt_22.mmspg.enums.TerminalType;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -45,16 +48,16 @@ public class Terminal {
 	private String terminalName;
 
 	@Column(name = "terminal_type", nullable = false, columnDefinition = "enum('PHYSICAL_POS','VIRTUAL_API')")
-	private String terminalType;
+	private TerminalType terminalType;
 
 	@Column(nullable = false, columnDefinition = "enum('ONLINE','OFFLINE','SUSPENDED')")
-	private String status;
+	private TerminalStatus status = TerminalStatus.ONLINE;
 
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
-	@Column(name = "updated_at", nullable = false)
+	@Column(name = "updated_at")
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
