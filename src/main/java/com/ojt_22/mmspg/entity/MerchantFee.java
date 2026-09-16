@@ -7,8 +7,12 @@ import java.util.UUID;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
+import com.ojt_22.mmspg.enums.FeeType;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -33,8 +37,9 @@ public class MerchantFee {
 	@JoinColumn(name = "merchant_id", nullable = false)
 	private Merchant merchant;
 
+	@Enumerated(EnumType.STRING)
 	@Column(name = "fee_type", nullable = false, columnDefinition = "enum('PERCENTAGE','FLAT','MIXED')")
-	private String feeType;
+	private FeeType feeType;
 
 	@Column(name = "percentage_rate", precision = 5, scale = 2)
 	private BigDecimal percentageRate;
@@ -45,7 +50,7 @@ public class MerchantFee {
 	@Column(name = "minimum_fee", precision = 18, scale = 3)
 	private BigDecimal miniumnFee;
 
-	@Column(name = "maximum_fees", precision = 18, scale = 3)
+	@Column(name = "maximum_fee", precision = 18, scale = 3)
 	private BigDecimal maximumFee;
 
 	@Column(name = "effective_from", nullable = false)
@@ -57,7 +62,7 @@ public class MerchantFee {
 	@Column(nullable = false, columnDefinition = "enum('ACTIVE','INACTIVE')")
 	private String status;
 
-	@Column(name = "created_at", nullable = false)
+	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
 	@UpdateTimestamp
@@ -65,7 +70,7 @@ public class MerchantFee {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by")
+	@JoinColumn(name = "created_by", updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)

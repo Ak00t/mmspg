@@ -10,22 +10,22 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.ojt_22.mmspg.client.CoreBankingClient;
+import com.ojt_22.mmspg.dto.CoreBankingResponseDto;
 import com.ojt_22.mmspg.dto.PaymentAuthorizeRequestDto;
 import com.ojt_22.mmspg.dto.PaymentAuthorizeResponseDto;
 import com.ojt_22.mmspg.dto.PaymentInitiateRequestDto;
 import com.ojt_22.mmspg.dto.PaymentInitiateResponseDto;
 import com.ojt_22.mmspg.dto.PaymentStatusResponseDto;
 import com.ojt_22.mmspg.dto.PaymentTransactionSummaryDto;
-
-import com.ojt_22.mmspg.dto.CoreBankingResponseDto;
-import com.ojt_22.mmspg.client.CoreBankingClient;
 import com.ojt_22.mmspg.entity.Merchant;
-import com.ojt_22.mmspg.entity.MerchantBranch; 
+import com.ojt_22.mmspg.entity.MerchantBranch;
 import com.ojt_22.mmspg.entity.MerchantFee;
 import com.ojt_22.mmspg.entity.MerchantLedgerEntry;
-import com.ojt_22.mmspg.entity.Terminal; 
 import com.ojt_22.mmspg.entity.PaymentTransaction;
-import com.ojt_22.mmspg.repository.MerchantBranchRepository; 
+import com.ojt_22.mmspg.entity.Terminal;
+import com.ojt_22.mmspg.enums.PaymentTransactionStatus;
+import com.ojt_22.mmspg.repository.MerchantBranchRepository;
 import com.ojt_22.mmspg.repository.MerchantFeeRepository;
 import com.ojt_22.mmspg.repository.MerchantLedgerRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
@@ -114,7 +114,7 @@ public PaymentInitiateResponseDto initiateTransaction(PaymentInitiateRequestDto 
         
         transaction.setStatus("INITIATED");
         transaction.setInitiatedAt(LocalDateTime.now());
-        transaction.setUpdatedAt(LocalDateTime.now());
+     //   transaction.setUpdatedAt(LocalDateTime.now());
 
         PaymentTransaction savedTxn = transactionRepository.save(transaction);
 

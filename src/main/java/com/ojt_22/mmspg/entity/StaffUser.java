@@ -42,7 +42,7 @@ public class StaffUser {
 	@Column(length = 150, unique = true)
 	private String email;
 
-	@Column(nullable = false, columnDefinition = "enum('ADMIN','STAFF')")
+	@Column(nullable = false, columnDefinition = "enum('ADMIN','AUDITOR','SUPPORT')")
 	private String role;
 
 	@Column(nullable = false, columnDefinition = "enum('ACTIVE','DISABLED')")
@@ -52,7 +52,7 @@ public class StaffUser {
 	private LocalDateTime lastLoginAt;
 
 	@CreationTimestamp
-	@Column(name = "created_at", nullable = false)
+	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
 	@UpdateTimestamp
@@ -60,7 +60,7 @@ public class StaffUser {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by")
+	@JoinColumn(name = "created_by", updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)

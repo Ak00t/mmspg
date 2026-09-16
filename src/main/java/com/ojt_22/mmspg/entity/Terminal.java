@@ -31,6 +31,10 @@ public class Terminal {
 	private UUID id;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "merchant_id", nullable = false)
+	private Merchant merchant;
+
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "branch_id", nullable = false)
 	private MerchantBranch branch;
 
@@ -40,20 +44,20 @@ public class Terminal {
 	@Column(name = "terminal_name", length = 100)
 	private String terminalName;
 
-	@Column(name = "terminal_type", length = 45)
+	@Column(name = "terminal_type", nullable = false, columnDefinition = "enum('PHYSICAL_POS','VIRTUAL_API')")
 	private String terminalType;
 
-	@Column(nullable = false, columnDefinition = "enum('ACTIVE','SUSPENDED','DISABLED')")
+	@Column(nullable = false, columnDefinition = "enum('ONLINE','OFFLINE','SUSPENDED')")
 	private String status;
 
 	@CreationTimestamp
-	@Column(name = "created_at", nullable = false)
+	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
 	@Column(name = "updated_at", nullable = false)
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by")
+	@JoinColumn(name = "created_by", nullable = false, updatable = false)
 	private StaffUser createdBy;
 }
