@@ -57,7 +57,7 @@ public class TerminalServiceImpl implements TerminalService {
 		}
 
 		Terminal terminal = new Terminal();
-		terminal.setMerchant(merchant);
+//		terminal.setMerchant(merchant);
 		terminal.setBranch(branch);
 		terminal.setTerminalCode(request.getTerminalCode());
 		terminal.setTerminalName(request.getTerminalName());
@@ -101,10 +101,10 @@ public class TerminalServiceImpl implements TerminalService {
 		dto.setTerminalName(terminal.getTerminalName());
 		dto.setTerminalType(terminal.getTerminalType()
 				.name());
-		dto.setMerchantId(terminal.getMerchant()
-				.getId());
-		dto.setMerchantName(terminal.getMerchant()
-				.getBusinessName());
+//		dto.setMerchantId(terminal.getMerchant()
+//				.getId());
+//		dto.setMerchantName(terminal.getMerchant()
+//				.getBusinessName());
 		dto.setBranchId(terminal.getBranch()
 				.getId());
 		dto.setBranchName(terminal.getBranch()
