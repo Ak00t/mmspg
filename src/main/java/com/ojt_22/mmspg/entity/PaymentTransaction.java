@@ -108,4 +108,7 @@ public class PaymentTransaction {
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "updated_by")
 	private StaffUser updatedBy;
+	
+	@Column(name = "idempotency_key", unique = true)
+	private String idempotencyKey;
 }
