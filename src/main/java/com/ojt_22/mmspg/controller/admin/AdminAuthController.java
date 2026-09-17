@@ -33,7 +33,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Tag(name = "Admin & Staff Authentication", description = "Endpoints for Admin and Staff Portal Login")
 public class AdminAuthController {
-
+ 
 	private final CustomStaffDetailsService customStaffDetailsService;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
@@ -60,9 +60,8 @@ public class AdminAuthController {
 		StaffUser staff = staffUserRepository.findByEmail(loginRequest.getEmail())
 				.orElseThrow(() -> new UsernameNotFoundException("Staff not found"));
 
-		if (!staff.getRole()
-				.equals("ADMIN")) {
-			throw new BadCredentialsException("Access Denied: This login portal is ONLY for Admins!");
+		if (!staff.getRole().name().equals("ADMIN")) {
+		    throw new BadCredentialsException("Access Denied: This login portal is ONLY for Admins!");
 		}
 
 		Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null,

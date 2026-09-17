@@ -12,6 +12,8 @@ import com.ojt_22.mmspg.enums.StaffUserStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -45,9 +47,11 @@ public class StaffUser {
 	@Column(length = 150, unique = true)
 	private String email;
 
+	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, columnDefinition = "enum('ADMIN','AUDITOR','SUPPORT')")
 	private StaffUserRole role;
 
+	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, columnDefinition = "enum('ACTIVE','DISABLED')")
 	private StaffUserStatus status;
 

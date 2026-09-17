@@ -7,13 +7,20 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.ojt_22.mmspg.entity.Merchant;
+// 🔴 MerchantStatus ကို Import လုပ်ရန်
+import com.ojt_22.mmspg.enums.MerchantStatus;
 
 @Repository
 public interface MerchantRepository extends JpaRepository<Merchant, UUID> {
     Optional<Merchant> findByEmail(String email);
     boolean existsByEmail(String email);
     boolean existsByMerchantCode(String merchantCode);
-    long countByStatus(String status);
+    
+    // 🔴 String အစား MerchantStatus ဟု ပြောင်းလဲပါ
+    long countByStatus(MerchantStatus status);
+    
     java.util.List<Merchant> findTop10ByOrderByCreatedAtDesc();
-    org.springframework.data.domain.Page<Merchant> findByStatus(String status, org.springframework.data.domain.Pageable pageable);
+    
+    // 🔴 ဤနေရာတွင်လည်း String အစား MerchantStatus ဟု ပြောင်းလဲပါ
+    org.springframework.data.domain.Page<Merchant> findByStatus(MerchantStatus status, org.springframework.data.domain.Pageable pageable);
 }

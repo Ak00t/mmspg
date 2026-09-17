@@ -33,9 +33,6 @@ public class Terminal {
 	@Column(name = "terminal_id", columnDefinition = "BINARY(16)")
 	private UUID id;
 
-//	@ManyToOne(fetch = FetchType.LAZY, optional = false)
-//	@JoinColumn(name = "merchant_id", nullable = false)
-//	private Merchant merchant;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "branch_id", nullable = false)
