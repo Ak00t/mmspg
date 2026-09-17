@@ -38,7 +38,8 @@ public class SecurityConfig {
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
 		http.csrf(AbstractHttpConfigurer::disable)
-				.authorizeHttpRequests(authorize -> authorize.requestMatchers("/")
+				.authorizeHttpRequests(authorize -> authorize
+						.requestMatchers("/")
 						.permitAll() // remove it after test
 						.requestMatchers("/api/v1/merchant-portal/auth/**")
 						.permitAll()
@@ -47,7 +48,8 @@ public class SecurityConfig {
 						.permitAll()
 						.requestMatchers("/error")
 						.permitAll()
-						.requestMatchers("/api/v1/credentials/**")
+						// Webhooks လမ်းကြောင်းကို ဤနေရာတွင် ထည့်သွင်းပေးရပါမည်
+						.requestMatchers("/api/v1/credentials/**", "/api/v1/logs/**", "/api/v1/webhooks/**")
 						.permitAll()
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
 						.permitAll()
