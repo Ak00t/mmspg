@@ -24,6 +24,7 @@ import com.ojt_22.mmspg.entity.MerchantFee;
 import com.ojt_22.mmspg.entity.MerchantLedgerEntry;
 import com.ojt_22.mmspg.entity.PaymentTransaction;
 import com.ojt_22.mmspg.entity.Terminal;
+import com.ojt_22.mmspg.enums.MerchantLedgerEntryBalanceType;
 import com.ojt_22.mmspg.enums.MerchantLedgerEntryType;
 import com.ojt_22.mmspg.enums.PaymentTransactionStatus;
 import com.ojt_22.mmspg.repository.MerchantBranchRepository;
@@ -177,7 +178,7 @@ public class PaymentTransactionService {
 		ledgerEntry.setMerchant(completedTxn.getMerchant());
 		ledgerEntry.setTransaction(completedTxn);
 		ledgerEntry.setMerchantLedgerEntryType(MerchantLedgerEntryType.CREDIT);
-		ledgerEntry.setBalanceType("PENDING");
+		ledgerEntry.setBalanceType(MerchantLedgerEntryBalanceType.PENDING);
 		ledgerEntry.setAmount(completedTxn.getNetAmount());
 		ledgerEntry.setDescription("Payment settlement for Order ID: " + completedTxn.getOrderId());
 
