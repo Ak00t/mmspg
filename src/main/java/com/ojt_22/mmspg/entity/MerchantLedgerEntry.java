@@ -7,6 +7,7 @@ import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
+import com.ojt_22.mmspg.enums.MerchantLedgerEntryBalanceType;
 import com.ojt_22.mmspg.enums.MerchantLedgerEntryType;
 
 import jakarta.persistence.Column;
@@ -52,7 +53,7 @@ public class MerchantLedgerEntry {
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "balance_type", nullable = false, columnDefinition = "enum('CLEARED','PENDING','SETTLED') DEFAULT 'PENDING' ")
-	private String balanceType = "PENDING";
+	private MerchantLedgerEntryBalanceType balanceType = MerchantLedgerEntryBalanceType.PENDING;
 
 	@Column(nullable = false, precision = 18, scale = 4)
 	private BigDecimal amount;
