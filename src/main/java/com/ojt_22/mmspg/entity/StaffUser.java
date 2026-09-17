@@ -7,8 +7,13 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
+import com.ojt_22.mmspg.enums.StaffUserRole;
+import com.ojt_22.mmspg.enums.StaffUserStatus;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -42,17 +47,19 @@ public class StaffUser {
 	@Column(length = 150, unique = true)
 	private String email;
 
+	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, columnDefinition = "enum('ADMIN','AUDITOR','SUPPORT')")
-	private String role;
+	private StaffUserRole role;
 
+	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, columnDefinition = "enum('ACTIVE','DISABLED')")
-	private String status;
+	private StaffUserStatus status;
 
 	@Column(name = "last_login_at")
 	private LocalDateTime lastLoginAt;
 
 	@CreationTimestamp
-	@Column(name = "created_at", nullable = false, updatable = false)
+	@Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP(6)")
 	private LocalDateTime createdAt;
 
 	@UpdateTimestamp

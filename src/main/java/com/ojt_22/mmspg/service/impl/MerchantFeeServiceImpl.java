@@ -12,6 +12,7 @@ import com.ojt_22.mmspg.dto.MerchantFeeResponseDto;
 import com.ojt_22.mmspg.entity.Merchant;
 import com.ojt_22.mmspg.entity.MerchantFee;
 import com.ojt_22.mmspg.enums.FeeType;
+import com.ojt_22.mmspg.enums.MerchantFeeStatus;
 import com.ojt_22.mmspg.repository.MerchantFeeRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.service.MerchantFeeService;
@@ -46,7 +47,7 @@ public class MerchantFeeServiceImpl implements MerchantFeeService {
 		fee.setFlatFee(request.getFlatAmount());
 
 		fee.setEffectiveFrom(LocalDateTime.now());
-		fee.setStatus("ACTIVE");
+		fee.setStatus(MerchantFeeStatus.ACTIVE);
 		fee.setCreatedAt(LocalDateTime.now());
 
 		MerchantFee savedFee = merchantFeeRepository.save(fee);
@@ -73,7 +74,7 @@ public class MerchantFeeServiceImpl implements MerchantFeeService {
 				.name());
 		dto.setFeePercentage(fee.getPercentageRate());
 		dto.setFlatAmount(fee.getFlatFee());
-		dto.setStatus(fee.getStatus());
+		dto.setStatus(fee.getStatus().name());
 		dto.setEffectiveFrom(fee.getEffectiveFrom());
 		dto.setEffectiveTo(fee.getEffectiveTo());
 		dto.setCreatedAt(fee.getCreatedAt());

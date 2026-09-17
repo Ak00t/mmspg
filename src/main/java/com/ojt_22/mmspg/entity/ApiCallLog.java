@@ -71,7 +71,7 @@ public class ApiCallLog {
 	private String userAgent;
 
 	@CreationTimestamp
-	@Column(name = "created_at", nullable = false, updatable = false)
+	@Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP(6)")
 	private LocalDateTime createdAt;
 
 	@UpdateTimestamp

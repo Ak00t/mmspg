@@ -7,8 +7,12 @@ import java.util.UUID;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
+import com.ojt_22.mmspg.enums.MerchantLedgerEntryType;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -19,7 +23,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "merchant_ledgers")
+@Table(name = "merchant_ledger_Entries")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -42,10 +46,12 @@ public class MerchantLedgerEntry {
 	@JoinColumn(name = "settlement_id")
 	private Settlement settlement;
 
+	@Enumerated(EnumType.STRING)
 	@Column(name = "entry_type", nullable = false, columnDefinition = "enum('DEBIT','CREDIT')")
-	private String entryType;
+	private MerchantLedgerEntryType merchantLedgerEntryType;
 
-	@Column(name = "balance_type", nullable = false, columnDefinition = "enum('CLEARED','PENDING','SETTLED')")
+	@Enumerated(EnumType.STRING)
+	@Column(name = "balance_type", nullable = false, columnDefinition = "enum('CLEARED','PENDING','SETTLED') DEFAULT 'PENDING' ")
 	private String balanceType = "PENDING";
 
 	@Column(nullable = false, precision = 18, scale = 4)
@@ -55,7 +61,7 @@ public class MerchantLedgerEntry {
 	private String description;
 
 	@CreationTimestamp
-	@Column(name = "created_at", nullable = false)
+	@Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP(6)")
 	private LocalDateTime createdAt;
 
 }

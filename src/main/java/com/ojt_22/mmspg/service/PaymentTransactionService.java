@@ -3,6 +3,7 @@ package com.ojt_22.mmspg.service;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -23,6 +24,7 @@ import com.ojt_22.mmspg.entity.MerchantFee;
 import com.ojt_22.mmspg.entity.MerchantLedgerEntry;
 import com.ojt_22.mmspg.entity.PaymentTransaction;
 import com.ojt_22.mmspg.entity.Terminal;
+import com.ojt_22.mmspg.enums.MerchantLedgerEntryType;
 import com.ojt_22.mmspg.enums.PaymentTransactionStatus;
 import com.ojt_22.mmspg.repository.MerchantBranchRepository;
 import com.ojt_22.mmspg.repository.MerchantFeeRepository;
@@ -49,12 +51,36 @@ public class PaymentTransactionService {
 	private final CoreBankingClient coreBankingClient;
 
 	@Transactional
-	public PaymentInitiateResponseDto initiateTransaction(PaymentInitiateRequestDto requestDto) {
+	public PaymentInitiateResponseDto initiateTransaction(PaymentInitiateRequestDto requestDto, String idempotencyKey) {
 
+		// 1. Key မပါပါက Error ပြရန်
+		validateIdempotencyKey(idempotencyKey);
+
+		// 🔴 [ဖြည့်စွက်ရမည့်နေရာ ၁] Idempotency Key ဖြင့် DB တွင် ရှိပြီးသားလား
+		// စစ်ခြင်း
+		Optional<PaymentTransaction> existingTxn = transactionRepository.findByIdempotencyKey(idempotencyKey);
+		if (existingTxn.isPresent()) {
+			PaymentTransaction txn = existingTxn.get();
+			// ထပ်တူ Request ရောက်လာပါက DB အဟောင်းထဲမှ Response ကိုသာ ပြန်ပေးမည်
+			return PaymentInitiateResponseDto.builder()
+					.transactionReference(txn.getTransactionReference())
+					.paymentToken(txn.getPaymentToken())
+					.amount(txn.getAmount())
+					.currency(txn.getCurrency())
+					.status(txn.getStatus()
+							.name())
+					.paymentUrl("https://customer-portal.group1bank.com/checkout?token=" + txn.getPaymentToken())
+					.build();
+		}
 		// 1. Merchant ရှိမရှိ စစ်ဆေးရန်
 		Merchant merchant = merchantRepository.findById(requestDto.getMerchantId())
 				.orElseThrow(() -> new RuntimeException("Merchant not found"));
 
+		// 🔴 [ဖြည့်ရန် ၁.၂] Merchant Active ဖြစ်မဖြစ် validate လုပ်ရန် ထည့်ပါ
+		validateMerchant(merchant);
+
+		// 🔴 [ဖြည့်ရန် ၁.၃] Order ID ထပ်နေခြင်း ရှိမရှိ စစ်ဆေးရန် ထည့်ပါ
+		checkDuplicatePayment(requestDto.getMerchantId(), requestDto.getOrderId());
 		// 2. Branch ရှိမရှိ စစ်ဆေးရန်
 		MerchantBranch branch = branchRepository.findById(requestDto.getBranchId())
 				.orElseThrow(() -> new RuntimeException("Branch not found"));
@@ -76,6 +102,7 @@ public class PaymentTransactionService {
 				.toString();
 
 		PaymentTransaction transaction = new PaymentTransaction();
+		transaction.setIdempotencyKey(idempotencyKey);
 		transaction.setMerchant(merchant);
 		transaction.setBranch(branch);
 		transaction.setTerminal(terminal);
@@ -90,7 +117,7 @@ public class PaymentTransactionService {
 
 		transaction.setStatus(PaymentTransactionStatus.INITIATED);
 		transaction.setInitiatedAt(LocalDateTime.now());
-		transaction.setUpdatedAt(LocalDateTime.now());
+		// transaction.setUpdatedAt(LocalDateTime.now());
 
 		PaymentTransaction savedTxn = transactionRepository.save(transaction);
 
@@ -149,7 +176,7 @@ public class PaymentTransactionService {
 		MerchantLedgerEntry ledgerEntry = new MerchantLedgerEntry();
 		ledgerEntry.setMerchant(completedTxn.getMerchant());
 		ledgerEntry.setTransaction(completedTxn);
-		ledgerEntry.setEntryType("CREDIT");
+		ledgerEntry.setMerchantLedgerEntryType(MerchantLedgerEntryType.CREDIT);
 		ledgerEntry.setBalanceType("PENDING");
 		ledgerEntry.setAmount(completedTxn.getNetAmount());
 		ledgerEntry.setDescription("Payment settlement for Order ID: " + completedTxn.getOrderId());
@@ -162,7 +189,8 @@ public class PaymentTransactionService {
 				.orderId(completedTxn.getOrderId())
 				.amount(completedTxn.getAmount())
 				.currency(completedTxn.getCurrency())
-				.status(completedTxn.getStatus().name())
+				.status(completedTxn.getStatus()
+						.name())
 				.completedAt(completedTxn.getCompletedAt())
 				.build();
 	}
@@ -176,7 +204,8 @@ public class PaymentTransactionService {
 				.orderId(transaction.getOrderId())
 				.amount(transaction.getAmount())
 				.currency(transaction.getCurrency())
-				.status(transaction.getStatus().name())
+				.status(transaction.getStatus()
+						.name())
 				.failureReason(transaction.getFailureReason())
 				.completedAt(transaction.getCompletedAt())
 				.build();
@@ -191,10 +220,31 @@ public class PaymentTransactionService {
 						.orderId(txn.getOrderId())
 						.amount(txn.getAmount())
 						.currency(txn.getCurrency())
-						.status(txn.getStatus().name())
+						.status(txn.getStatus()
+								.name())
 						.initiatedAt(txn.getInitiatedAt())
 						.build())
 				.collect(Collectors.toList());
+	}
+
+	private void validateMerchant(Merchant merchant) {
+		if (merchant == null) {
+			throw new RuntimeException("Invalid merchant account");
+		}
+	}
+
+	private void checkDuplicatePayment(UUID merchantId, String orderId) {
+		boolean isDuplicate = transactionRepository.existsByMerchantIdAndOrderId(merchantId, orderId);
+		if (isDuplicate) {
+			throw new RuntimeException("Duplicate transaction: Order ID '" + orderId + "' has already been initiated.");
+		}
+	}
+
+	private void validateIdempotencyKey(String idempotencyKey) {
+		if (idempotencyKey == null || idempotencyKey.trim()
+				.isEmpty()) {
+			throw new RuntimeException("Idempotency-Key header is required");
+		}
 	}
 
 }

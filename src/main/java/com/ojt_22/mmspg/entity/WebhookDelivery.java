@@ -13,10 +13,11 @@ import com.ojt_22.mmspg.enums.WebhookDeliveryStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -53,13 +54,13 @@ public class WebhookDelivery {
 	@Column(name = "response_status")
 	private Integer responseStatus;
 
-	@Lob
 	@Column(name = "response_body", columnDefinition = "TEXT")
 	private String responseBody;
 
 	@Column(name = "attempt_count", nullable = false)
 	private Integer attemptCount;
 
+	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, columnDefinition = "enum('PENDING','SENT','DELIVERED','FAILED')")
 	private WebhookDeliveryStatus status;
 
@@ -69,12 +70,11 @@ public class WebhookDelivery {
 	@Column(name = "delivered_at")
 	private LocalDateTime deliveredAt;
 
-	@Lob
 	@Column(name = "error_message", columnDefinition = "TEXT")
 	private String errorMessage;
 
 	@CreationTimestamp
-	@Column(name = "created_at", nullable = false, updatable = false)
+	@Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP(6)")
 	private LocalDateTime createdAt;
 
 	@UpdateTimestamp
@@ -82,7 +82,7 @@ public class WebhookDelivery {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by", nullable = false, updatable = false)
+	@JoinColumn(name = "created_by", updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)

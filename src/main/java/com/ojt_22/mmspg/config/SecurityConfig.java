@@ -22,36 +22,41 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+	private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
-        return configuration.getAuthenticationManager();
-    }
+	@Bean
+	public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+		return configuration.getAuthenticationManager();
+	}
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+	@Bean
+	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-        http.csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/v1/merchant-portal/auth/**").permitAll()
-                        .requestMatchers("/api/v1/admin/login", "/api/v1/staff/login", "/api/v1/merchant-portal/auth/login").permitAll()
-                        .requestMatchers("/error").permitAll()
-                         .requestMatchers("/api/v1/credentials/**").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                );
+		http.csrf(AbstractHttpConfigurer::disable)
+				.authorizeHttpRequests(authorize -> authorize.requestMatchers("/**")
+						.permitAll() // remove it after test
+						.requestMatchers("/api/v1/merchant-portal/auth/**")
+						.permitAll()
+						.requestMatchers("/api/v1/admin/login", "/api/v1/staff/login",
+								"/api/v1/merchant-portal/auth/login")
+						.permitAll()
+						.requestMatchers("/error")
+						.permitAll()
+						.requestMatchers("/api/v1/credentials/**")
+						.permitAll()
+						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
+						.permitAll()
+						.anyRequest()
+						.authenticated())
+				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+		http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+		return http.build();
+	}
 }

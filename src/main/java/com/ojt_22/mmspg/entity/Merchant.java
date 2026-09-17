@@ -53,7 +53,7 @@ public class Merchant {
 	@Column(name = "contact_name", length = 150)
 	private String contactName;
 
-	@Column(length = 150)
+	@Column(length = 150, unique = true)
 	private String email;
 
 	@Column(length = 30)
@@ -63,8 +63,8 @@ public class Merchant {
 	private String address;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, columnDefinition = "enum('PENDING','ACTIVE','REJECTED','SUSPENDED','CLOSED')")
-	private MerchantStatus status;
+	@Column(nullable = false, columnDefinition = "enum('PENDING','ACTIVE','REJECTED','SUSPENDED','CLOSED') DEFAULT 'PENDING' ")
+	private MerchantStatus status = MerchantStatus.PENDING;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "approved_by")
@@ -74,7 +74,7 @@ public class Merchant {
 	private LocalDateTime approvedAt;
 
 	@CreationTimestamp
-	@Column(name = "created_at", nullable = false, updatable = false)
+	@Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP(6)")
 	private LocalDateTime createdAt;
 
 	@UpdateTimestamp

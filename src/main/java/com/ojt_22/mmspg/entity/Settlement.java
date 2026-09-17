@@ -62,14 +62,14 @@ public class Settlement {
 	private String bankAccountNo;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, columnDefinition = "enum('PENDING','PROCESSING','COMPLETED','FAILED')")
+	@Column(nullable = false, columnDefinition = "enum('PENDING','PROCESSING','COMPLETED','FAILED') DEFAULT 'PENDING'")
 	private SettlementStatus status = SettlementStatus.PENDING;
 
 	@Column(name = "processed_at")
 	private LocalDateTime processedAt;
 
 	@CreationTimestamp
-	@Column(name = "created_at", nullable = false, updatable = false)
+	@Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP(6)")
 	private LocalDateTime createdAt;
 
 	@UpdateTimestamp
@@ -77,7 +77,7 @@ public class Settlement {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by", updatable = false)
+	@JoinColumn(name = "created_by", nullable = false, updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)
