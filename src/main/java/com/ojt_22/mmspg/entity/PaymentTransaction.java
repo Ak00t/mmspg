@@ -75,8 +75,8 @@ public class PaymentTransaction {
 	private String returnUrl;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, columnDefinition = "enum('INITIATED','PENDING_AUTHORIZATION','COMPLETED','FAILED')")
-	private PaymentTransactionStatus status;
+	@Column(nullable = false, columnDefinition = "enum('INITIATED','PENDING_AUTHORIZATION','COMPLETED','FAILED') DEFAULT 'INITIATED'")
+	private PaymentTransactionStatus status = PaymentTransactionStatus.INITIATED;
 
 	@Column(name = "failure_reason", length = 500)
 	private String failureReason;
@@ -94,7 +94,7 @@ public class PaymentTransaction {
 	private LocalDateTime failedAt;
 
 	@CreationTimestamp
-	@Column(name = "created_at", nullable = false, updatable = false)
+	@Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP(6)")
 	private LocalDateTime createdAt;
 
 	@UpdateTimestamp
@@ -102,13 +102,13 @@ public class PaymentTransaction {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by", nullable = false, updatable = false)
+	@JoinColumn(name = "created_by", updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "updated_by")
 	private StaffUser updatedBy;
-	
+
 	@Column(name = "idempotency_key", unique = true)
 	private String idempotencyKey;
 }

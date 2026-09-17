@@ -8,6 +8,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import com.ojt_22.mmspg.enums.FeeType;
+import com.ojt_22.mmspg.enums.MerchantFeeStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -59,10 +60,11 @@ public class MerchantFee {
 	@Column(name = "effective_to")
 	private LocalDateTime effectiveTo;
 
-	@Column(nullable = false, columnDefinition = "enum('ACTIVE','INACTIVE')")
-	private String status;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, columnDefinition = "enum('ACTIVE','INACTIVE') DEFAULT 'ACTIVE' ")
+	private MerchantFeeStatus status = MerchantFeeStatus.ACTIVE;
 
-	@Column(name = "created_at", nullable = false, updatable = false)
+	@Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP(6)")
 	private LocalDateTime createdAt;
 
 	@UpdateTimestamp
@@ -70,7 +72,7 @@ public class MerchantFee {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by", updatable = false)
+	@JoinColumn(name = "created_by", nullable = false, updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)

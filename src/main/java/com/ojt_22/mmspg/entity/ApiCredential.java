@@ -52,8 +52,8 @@ public class ApiCredential {
 	private ApiCredentialEnvironment environment;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, columnDefinition = "enum('ACTIVE','REVOKED','EXPIRED')")
-	private ApiCredentialStatus status;
+	@Column(nullable = false, columnDefinition = "enum('ACTIVE','REVOKED','EXPIRED') default 'ACTIVE'")
+	private ApiCredentialStatus status = ApiCredentialStatus.ACTIVE;
 
 	@Column(name = "key_name", nullable = false, length = 100)
 	private String keyName;
@@ -71,7 +71,7 @@ public class ApiCredential {
 	private LocalDateTime revokedAt;
 
 	@CreationTimestamp
-	@Column(name = "created_at", nullable = false, updatable = false)
+	@Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP(6)")
 	private LocalDateTime createdAt;
 
 	@UpdateTimestamp
