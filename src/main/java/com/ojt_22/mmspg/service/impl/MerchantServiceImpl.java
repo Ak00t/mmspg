@@ -69,7 +69,7 @@ public class MerchantServiceImpl implements MerchantService {
 		org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size,
 				org.springframework.data.domain.Sort.by("createdAt")
 						.descending());
-		return merchantRepository.findByStatus("PENDING", pageable)
+		return merchantRepository.findByStatus(MerchantStatus.PENDING, pageable)
 				.map(merchant -> {
 					MerchantPendingDto dto = new MerchantPendingDto();
 					dto.setMerchantId(merchant.getId());
@@ -91,9 +91,8 @@ public class MerchantServiceImpl implements MerchantService {
 		Merchant merchant = merchantRepository.findById(merchantId)
 				.orElseThrow(() -> new IllegalArgumentException("Merchant not found with ID: " + merchantId));
 
-		if (!"PENDING".equals(merchant.getStatus())) {
-			throw new IllegalStateException(
-					"Merchant is not in PENDING status. Current status: " + merchant.getStatus());
+		if (merchant.getStatus() != MerchantStatus.PENDING) {
+		    throw new IllegalStateException("Merchant is not in PENDING status. Current status: " + merchant.getStatus());
 		}
 
 		merchant.setStatus(MerchantStatus.ACTIVE);
@@ -108,10 +107,8 @@ public class MerchantServiceImpl implements MerchantService {
 		Merchant merchant = merchantRepository.findById(merchantId)
 				.orElseThrow(() -> new IllegalArgumentException("Merchant not found with ID: " + merchantId));
 
-		if (!"PENDING".equals(merchant.getStatus()
-				.name())) {
-			throw new IllegalStateException(
-					"Merchant is not in PENDING status. Current status: " + merchant.getStatus());
+		if (merchant.getStatus() != MerchantStatus.PENDING) {
+		    throw new IllegalStateException("Merchant is not in PENDING status. Current status: " + merchant.getStatus());
 		}
 
 		merchant.setStatus(MerchantStatus.REJECTED);
