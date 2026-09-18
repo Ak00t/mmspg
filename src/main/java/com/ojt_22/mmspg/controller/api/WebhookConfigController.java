@@ -24,7 +24,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class WebhookConfigController {
 
-    // Implementation class ကို မသုံးဘဲ Interface ကိုသာ Inject လုပ်ထားပါသည်
+
     private final WebhookConfigService webhookConfigService;
 
     @PostMapping

@@ -6,6 +6,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -18,6 +19,7 @@ import com.ojt_22.mmspg.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
+@EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
@@ -39,22 +41,21 @@ public class SecurityConfig {
 
 		http.csrf(AbstractHttpConfigurer::disable)
 				.authorizeHttpRequests(authorize -> authorize
-						.requestMatchers("/")
-						.permitAll() // remove it after test
-						.requestMatchers("/api/v1/merchant-portal/auth/**")
-						.permitAll()
+						.requestMatchers("/").permitAll()
+						.requestMatchers("/api/v1/merchant-portal/auth/**").permitAll()
 						.requestMatchers("/api/v1/admin/login", "/api/v1/staff/login",
-								"/api/v1/merchant-portal/auth/login")
-						.permitAll()
-						.requestMatchers("/error")
-						.permitAll()
-						// Webhooks လမ်းကြောင်းကို ဤနေရာတွင် ထည့်သွင်းပေးရပါမည်
-						.requestMatchers("/api/v1/credentials/**", "/api/v1/logs/**", "/api/v1/webhooks/**")
-						.permitAll()
-						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
-						.permitAll()
-						.anyRequest()
-						.authenticated())
+								"/api/v1/merchant-portal/auth/login").permitAll()
+						.requestMatchers("/error").permitAll()
+						// MMSPG Core APIs Whitelist (Credentials, Logs, Webhooks, Deliveries)
+						.requestMatchers(
+								"/api/v1/credentials/**", 
+								"/api/v1/logs/**", 
+								"/api/v1/webhooks/**",
+								"/api/v1/webhook-deliveries/**",
+								"/api/v1/webhook-deliveries"
+						).permitAll()
+						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+						.anyRequest().authenticated())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
 		http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

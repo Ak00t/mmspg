@@ -13,6 +13,8 @@ import com.ojt_22.mmspg.enums.WebhookDeliveryStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -60,6 +62,8 @@ public class WebhookDelivery {
 	@Column(name = "attempt_count", nullable = false)
 	private Integer attemptCount;
 
+	// ဤနေရာတွင် @Enumerated(EnumType.STRING) ထည့်ပေးရပါမည်
+	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, columnDefinition = "enum('PENDING','SENT','DELIVERED','FAILED')")
 	private WebhookDeliveryStatus status;
 
@@ -82,7 +86,7 @@ public class WebhookDelivery {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by", nullable = false, updatable = false)
+	@JoinColumn(name = "created_by", updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)
