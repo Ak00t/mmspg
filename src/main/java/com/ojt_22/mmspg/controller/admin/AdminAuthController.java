@@ -61,6 +61,7 @@ public class AdminAuthController {
 				.orElseThrow(() -> new UsernameNotFoundException("Staff not found"));
 
 		if (!staff.getRole()
+				.name()
 				.equals("ADMIN")) {
 			throw new BadCredentialsException("Access Denied: This login portal is ONLY for Admins!");
 		}

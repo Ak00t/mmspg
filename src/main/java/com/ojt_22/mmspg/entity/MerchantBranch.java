@@ -11,6 +11,8 @@ import com.ojt_22.mmspg.enums.MerchantBranchStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -52,11 +54,12 @@ public class MerchantBranch {
 	@Column(length = 30)
 	private String phone;
 
-	@Column(nullable = false, columnDefinition = "enum('ACTIVE','INACTIVE')")
-	private MerchantBranchStatus status;
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, columnDefinition = "enum('ACTIVE','INACTIVE') DEFAULT 'ACTIVE' ")
+	private MerchantBranchStatus status = MerchantBranchStatus.ACTIVE;
 
 	@CreationTimestamp
-	@Column(name = "created_at", nullable = false, updatable = false)
+	@Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP(6)")
 	private LocalDateTime createdAt;
 
 	@UpdateTimestamp

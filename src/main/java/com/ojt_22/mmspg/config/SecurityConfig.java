@@ -40,9 +40,10 @@ public class SecurityConfig {
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
 		http.csrf(AbstractHttpConfigurer::disable)
-				.authorizeHttpRequests(authorize -> authorize
-						.requestMatchers("/").permitAll()
-						.requestMatchers("/api/v1/merchant-portal/auth/**").permitAll()
+				.authorizeHttpRequests(authorize -> authorize.requestMatchers("/**")
+						.permitAll() // remove it after test
+						.requestMatchers("/api/v1/merchant-portal/auth/**")
+						.permitAll()
 						.requestMatchers("/api/v1/admin/login", "/api/v1/staff/login",
 								"/api/v1/merchant-portal/auth/login").permitAll()
 						.requestMatchers("/error").permitAll()
