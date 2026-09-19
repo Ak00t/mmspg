@@ -75,7 +75,7 @@ public class ApiCallLog {
 	private LocalDateTime createdAt;
 
 	@UpdateTimestamp
-	@Column(name = "updated_at")
+	@Column(name = "updated_at", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP(6)")
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
