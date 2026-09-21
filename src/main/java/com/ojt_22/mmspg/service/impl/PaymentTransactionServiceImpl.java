@@ -39,7 +39,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class PaymentTransactionServiceImpl implements PaymentTransactionService {
+public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.PaymentTransactionService {
 
 	private final PaymentTransactionRepository transactionRepository;
 	private final MerchantRepository merchantRepository;

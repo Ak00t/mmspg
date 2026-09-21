@@ -47,7 +47,7 @@ public class MccCode {
 	private MccCodeStatus status = MccCodeStatus.ACTIVE;
 
 	@CreationTimestamp
-	@Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP(6)")
+	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
 	@UpdateTimestamp
