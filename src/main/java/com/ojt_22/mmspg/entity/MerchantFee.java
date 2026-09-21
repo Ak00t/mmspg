@@ -64,7 +64,7 @@ public class MerchantFee {
 	@Column(nullable = false, columnDefinition = "enum('ACTIVE','INACTIVE') DEFAULT 'ACTIVE' ")
 	private MerchantFeeStatus status = MerchantFeeStatus.ACTIVE;
 
-	@Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP(6)")
+	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
 	@UpdateTimestamp
