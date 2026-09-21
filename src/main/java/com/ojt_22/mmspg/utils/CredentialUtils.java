@@ -36,6 +36,14 @@ public final class CredentialUtils {
         SECURE_RANDOM.nextBytes(randomBytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes);
     }
+    
+    
+    /**
+     * Webhook Verification အတွက် လုံခြုံသော Secret Key (whsec_...) ထုတ်ပေးခြင်း
+     */
+    public static String generateWebhookSecret() {
+        return "whsec_" + generateClientSecret();
+    }
 
    
     public static String generateHmacSha256(String data, String secret) {
