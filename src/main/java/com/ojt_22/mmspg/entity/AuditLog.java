@@ -5,6 +5,9 @@ import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 
+import com.ojt_22.mmspg.enums.AuditStatus;
+import com.ojt_22.mmspg.enums.SourceType;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -61,30 +64,23 @@ public class AuditLog {
 	private String targetType;
 
 	@Column(name = "target_id", length = 100, updatable = false)
-	private String targetId; // Primary key of target object
+	private String targetId;
 
 	@Column(name = "ip_address", length = 45, updatable = false)
-	private String ipAddress; // Client IPv4 / IPv6
+	private String ipAddress;
 
 	@Builder.Default
 	@Enumerated(EnumType.STRING)
 	@Column(name = "status", length = 20, nullable = false, updatable = false)
-	private AuditStatus status = AuditStatus.SUCCESS;// SUCCESS or FAILURE
+	private AuditStatus status = AuditStatus.SUCCESS;
 
 	@Builder.Default
 	@Enumerated(EnumType.STRING)
 	@Column(name = "source_type", length = 20, nullable = false, updatable = false)
-	private SourceType sourceType = SourceType.BACKEND_API; // FRONTEND_UI or BACKEND_API
+	private SourceType sourceType = SourceType.BACKEND_API;
 
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
-	public enum AuditStatus {
-		SUCCESS, FAILURE
-	}
-
-	public enum SourceType {
-		FRONTEND_UI, BACKEND_API
-	}
 }
