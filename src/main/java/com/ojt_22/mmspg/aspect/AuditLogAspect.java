@@ -12,6 +12,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.ojt_22.mmspg.annotation.Auditable;
+import com.ojt_22.mmspg.dto.AuditLogCreateRequest;
 import com.ojt_22.mmspg.enums.AuditStatus;
 import com.ojt_22.mmspg.enums.SourceType;
 import com.ojt_22.mmspg.service.AuditLogService;
@@ -38,7 +39,7 @@ public class AuditLogAspect {
 			status = AuditStatus.FAILURE;
 			throw ex;
 		} finally {
-			// Retrieve current HTTP request
+
 			HttpServletRequest request = null;
 			ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder
 					.getRequestAttributes();
@@ -46,7 +47,6 @@ public class AuditLogAspect {
 				request = attributes.getRequest();
 			}
 
-			// Retrieve authenticated user info from SecurityContext
 			UUID actorId = null;
 			String actorType = "STAFF";
 			String roleName = "UNKNOWN";
@@ -54,8 +54,12 @@ public class AuditLogAspect {
 			Authentication auth = SecurityContextHolder.getContext()
 					.getAuthentication();
 			if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
-				// Adjust extraction based on your UserDetails implementation
-				actorId = UUID.fromString(auth.getName()); // Assuming principal username is User UUID String
+				try {
+					actorId = UUID.fromString(auth.getName());
+				} catch (IllegalArgumentException e) {
+					actorId = null; // Safeguard if username is non-UUID format
+				}
+
 				roleName = auth.getAuthorities()
 						.stream()
 						.map(a -> a.getAuthority()
@@ -64,18 +68,28 @@ public class AuditLogAspect {
 						.orElse("UNKNOWN");
 			}
 
-			// Fallback for null actorId during testing or system tasks
 			if (actorId == null) {
 				actorId = UUID.fromString("00000000-0000-0000-0000-000000000000");
 			}
 
-			// Save the audit log entry asynchronously or via service
-			auditLogService.logActivity(actorId, actorType, roleName, auditable.permissionUsed()
-					.isEmpty() ? null : auditable.permissionUsed(), auditable.menuName(), auditable.action(),
-					auditable.description(), auditable.targetType()
-							.isEmpty() ? null : auditable.targetType(),
-					null, // Target ID can be dynamically extracted if passed in request parameters
-					status, SourceType.BACKEND_API, request);
+			AuditLogCreateRequest auditRequest = AuditLogCreateRequest.builder()
+					.actorId(actorId)
+					.actorType(actorType)
+					.roleName(roleName)
+					.permissionUsed(auditable.permissionUsed()
+							.isEmpty() ? null : auditable.permissionUsed())
+					.menuName(auditable.menuName())
+					.action(auditable.action())
+					.description(auditable.description()
+							.isEmpty() ? null : auditable.description())
+					.targetType(auditable.targetType()
+							.isEmpty() ? null : auditable.targetType())
+					.targetId(null)
+					.status(status)
+					.sourceType(SourceType.BACKEND_API)
+					.build();
+
+			auditLogService.logActivity(auditRequest, request);
 		}
 	}
 }

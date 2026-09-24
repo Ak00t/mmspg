@@ -143,7 +143,8 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 				.orElseThrow(() -> new RuntimeException("Invalid or expired payment token"));
 
 		// 2. Transaction Status စစ်ဆေးခြင်း (INITIATED ဖြစ်မှသာ ဆက်လုပ်မည်)
-		if (!"INITIATED".equals(transaction.getStatus().name())) {
+		if (!"INITIATED".equals(transaction.getStatus()
+				.name())) {
 			throw new RuntimeException("Transaction has already been processed or is invalid");
 		}
 
