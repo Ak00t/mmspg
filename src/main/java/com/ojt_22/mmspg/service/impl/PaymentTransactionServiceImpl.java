@@ -33,7 +33,6 @@ import com.ojt_22.mmspg.repository.MerchantLedgerRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.repository.PaymentTransactionRepository;
 import com.ojt_22.mmspg.repository.TerminalRepository;
-import com.ojt_22.mmspg.service.PaymentTransactionService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -54,9 +53,6 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 
 	@Transactional
 	public PaymentInitiateResponseDto initiateTransaction(PaymentInitiateRequestDto requestDto, String idempotencyKey) {
-
-		// 1. Key မပါပါက Error ပြရန်
-		validateIdempotencyKey(idempotencyKey);
 
 		// 🔴 [ဖြည့်စွက်ရမည့်နေရာ ၁] Idempotency Key ဖြင့် DB တွင် ရှိပြီးသားလား
 		// စစ်ခြင်း
@@ -147,7 +143,7 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 			throw new RuntimeException("Transaction has already been processed or is invalid");
 		}
 
-		BigDecimal feeAmount = transaction.getFeeAmount(); // Fee Amount ရယူခြင်း
+		BigDecimal feeAmount = transaction.getFeeAmount(); // Fee Amount ရယူခြင်း2
 
 		CoreBankingResponseDto coreBankingResponse = coreBankingClient.executeDebit(requestDto.getCustomerId(),
 				transaction.getAmount(), feeAmount, // <-- Fee Amount ပါ ထည့်သွင်းပေးလိုက်ပါသည်
@@ -233,6 +229,10 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 		if (merchant == null) {
 			throw new RuntimeException("Invalid merchant account");
 		}
+		
+		if (merchant.getStatus() == null || !"ACTIVE".equalsIgnoreCase(merchant.getStatus().name())) {
+	        throw new RuntimeException("Merchant account is not active");
+	    }
 	}
 
 	private void checkDuplicatePayment(UUID merchantId, String orderId) {
@@ -242,11 +242,5 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 		}
 	}
 
-	private void validateIdempotencyKey(String idempotencyKey) {
-		if (idempotencyKey == null || idempotencyKey.trim()
-				.isEmpty()) {
-			throw new RuntimeException("Idempotency-Key header is required");
-		}
-	}
 
 }
