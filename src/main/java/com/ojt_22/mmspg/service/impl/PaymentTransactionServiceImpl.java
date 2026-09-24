@@ -39,7 +39,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.PaymentTransactionService {
+public class PaymentTransactionServiceImpl implements PaymentTransactionService {
 
 	private final PaymentTransactionRepository transactionRepository;
 	private final MerchantRepository merchantRepository;
@@ -143,7 +143,7 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 				.orElseThrow(() -> new RuntimeException("Invalid or expired payment token"));
 
 		// 2. Transaction Status စစ်ဆေးခြင်း (INITIATED ဖြစ်မှသာ ဆက်လုပ်မည်)
-		if (!"INITIATED".equals(transaction.getStatus())) {
+		if (!"INITIATED".equals(transaction.getStatus().name())) {
 			throw new RuntimeException("Transaction has already been processed or is invalid");
 		}
 
@@ -243,8 +243,7 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 	}
 
 	private void validateIdempotencyKey(String idempotencyKey) {
-		if (idempotencyKey == null || idempotencyKey.trim()
-				.isEmpty()) {
+		if (idempotencyKey == null || idempotencyKey.isBlank()) {
 			throw new RuntimeException("Idempotency-Key header is required");
 		}
 	}
