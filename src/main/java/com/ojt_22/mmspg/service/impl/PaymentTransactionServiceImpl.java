@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +51,9 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 
 	// Group 2 (Core Banking System) သို့ API လှမ်းခေါ်မည့် Client Class
 	private final CoreBankingClient coreBankingClient;
+	
+	@Value("${payment.gateway.redirect-url}")
+    private String paymentRedirectUrl;
 
 	@Transactional
 	public PaymentInitiateResponseDto initiateTransaction(PaymentInitiateRequestDto requestDto, String idempotencyKey) {
@@ -128,7 +132,7 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 				.currency(savedTxn.getCurrency())
 				.status(savedTxn.getStatus()
 						.name())
-				.paymentUrl("https://customer-portal.group1bank.com/checkout?token=" + token)
+				.paymentUrl(paymentRedirectUrl + token)
 				.build();
 	}
 
