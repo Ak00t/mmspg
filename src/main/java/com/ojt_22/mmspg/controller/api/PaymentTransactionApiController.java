@@ -23,6 +23,7 @@ import com.ojt_22.mmspg.service.PaymentTransactionService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -40,6 +41,7 @@ public class PaymentTransactionApiController {
                 required = true, 
                 in = ParameterIn.HEADER
             )
+            @NotBlank(message = "Idempotency-Key header must not be blank")
             @RequestHeader(value = "Idempotency-Key", required = true) String idempotencyKey,
             @Valid @RequestBody PaymentInitiateRequestDto requestDto) {
         
