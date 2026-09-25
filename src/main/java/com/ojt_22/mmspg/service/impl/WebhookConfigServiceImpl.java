@@ -11,6 +11,7 @@ import java.util.UUID;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 
 import com.ojt_22.mmspg.dto.CreateWebhookRequest;
 import com.ojt_22.mmspg.dto.UpdateWebhookRequest;
@@ -25,28 +26,28 @@ import com.ojt_22.mmspg.repository.WebhookConfigRepository;
 import com.ojt_22.mmspg.service.WebhookConfigService;
 import com.ojt_22.mmspg.utils.CredentialUtils;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @Service
+@Validated // Spring Validation AOP အသက်သွင်းခြင်း
 @RequiredArgsConstructor
 public class WebhookConfigServiceImpl implements WebhookConfigService {
 
     private final WebhookConfigRepository webhookConfigRepository;
     private final MerchantRepository merchantRepository;
-    private final StaffUserRepository staffUserRepository; // created_by အတွက် ထည့်သွင်းခြင်း
+    private final StaffUserRepository staffUserRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
-    public WebhookConfigResponse createWebhook(CreateWebhookRequest request) {
-        if (request == null || request.getMerchantId() == null) {
-            throw new IllegalArgumentException("Merchant ID must not be null.");
-        }
+    public WebhookConfigResponse createWebhook(@Valid CreateWebhookRequest request) {
+        // @Valid ကြောင့် request ထဲရှိ Not-Null fields များ မပြည့်စုံပါက ဤနေရာသို့ မရောက်မီ အလိုအလျောက် Exception တက်ပါမည်
 
         Merchant merchant = merchantRepository.findById(request.getMerchantId())
                 .orElseThrow(() -> new IllegalArgumentException("Merchant not found: " + request.getMerchantId()));
 
-        // created_by အတွက် Staff User ကို ရှာဖွေရယူခြင်း (Column 'created_by' cannot be null ကို ဖြေရှင်းခြင်း)
+        // created_by အတွက် Staff User ကို ရှာဖွေရယူခြင်း[cite: 12]
         UUID defaultStaffId = UUID.fromString("11111111-2222-3333-4444-555555555555");
         StaffUser createdByStaff = staffUserRepository.findById(defaultStaffId)
                 .orElseGet(() -> staffUserRepository.findAll().stream().findFirst()
@@ -56,12 +57,12 @@ public class WebhookConfigServiceImpl implements WebhookConfigService {
 
         WebhookConfig config = new WebhookConfig();
         config.setMerchant(merchant);
-        config.setCreatedBy(createdByStaff); // Not-null constraint ကို ပြေလည်စေရန် ထည့်သွင်းခြင်း
+        config.setCreatedBy(createdByStaff);
         config.setCallbackUrl(request.getCallbackUrl());
         config.setSecretKeyHash(passwordEncoder.encode(rawSecretKey));
-        config.setEventPaymentCompleted(request.getEventPaymentCompleted() != null ? request.getEventPaymentCompleted() : true);
-        config.setEventPaymentFailed(request.getEventPaymentFailed() != null ? request.getEventPaymentFailed() : true);
-        config.setMaxRetry(request.getMaxRetry() != null ? request.getMaxRetry() : 3);
+        config.setEventPaymentCompleted(request.getEventPaymentCompleted());
+        config.setEventPaymentFailed(request.getEventPaymentFailed());
+        config.setMaxRetry(request.getMaxRetry());
         config.setDescription(request.getDescription());
         config.setStatus(WebhookConfigStatus.ACTIVE);
 
@@ -145,7 +146,7 @@ public class WebhookConfigServiceImpl implements WebhookConfigService {
                     .timeout(Duration.ofSeconds(5))
                     .build();
 
-            HttpResponse<String> response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+            HttpResponse response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
             return "Test Webhook sent. Remote status code: " + response.statusCode();
         } catch (Exception e) {
