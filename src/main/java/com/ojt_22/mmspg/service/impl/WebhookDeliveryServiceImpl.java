@@ -15,7 +15,10 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ojt_22.mmspg.dto.WebhookDeliveryDto;
+import com.ojt_22.mmspg.dto.WebhookPayloadDto;
 import com.ojt_22.mmspg.entity.PaymentTransaction;
 import com.ojt_22.mmspg.entity.WebhookConfig;
 import com.ojt_22.mmspg.entity.WebhookDelivery;
@@ -27,28 +30,30 @@ import com.ojt_22.mmspg.service.WebhookDeliveryService;
 import com.ojt_22.mmspg.utils.ApiLogUtils;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
 
     private final WebhookDeliveryRepository webhookDeliveryRepository;
     private final WebhookConfigRepository webhookConfigRepository;
+    private final ObjectMapper objectMapper;
 
     @Override
     @Transactional
     public void sendWebhook(PaymentTransaction transaction, String eventType) {
-        // Merchant ၏ Active ဖြစ်နေသော Webhook Config ကို ရှာဖွေခြင်း[cite: 14]
         Optional<WebhookConfig> configOpt = webhookConfigRepository
                 .findByMerchantIdAndStatus(transaction.getMerchant().getId(), WebhookConfigStatus.ACTIVE.name());
 
         if (configOpt.isEmpty()) {
-            return; // Config မရှိပါက ပို့ရန် မလိုပါ
+            return;
         }
 
-        WebhookConfig config = configOpt.get();
+        // Explicit Type Cast ပြုလုပ်ထားသဖြင့် configOpt.get() တွင် အနီရောင်မျဉ်း လုံးဝ မပြတော့ပါ[cite: 30]
+        WebhookConfig config = (WebhookConfig) configOpt.get();
 
-        // Event Subscription စစ်ဆေးခြင်း[cite: 14]
         if ("PAYMENT_COMPLETED".equalsIgnoreCase(eventType) && !Boolean.TRUE.equals(config.getEventPaymentCompleted())) {
             return;
         }
@@ -56,16 +61,23 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
             return;
         }
 
-        // Webhook Payload တည်ဆောက်ခြင်း[cite: 14]
-        String payload = String.format(
-                "{\"event\":\"%s\",\"transactionId\":\"%s\",\"amount\":%s,\"currency\":\"%s\",\"status\":\"%s\",\"timestamp\":\"%s\"}",
-                eventType,
-                transaction.getId(),
-                transaction.getAmount(),
-                transaction.getCurrency(),
-                transaction.getStatus(),
-                LocalDateTime.now()
-        );
+        // WebhookPayloadDto နှင့် ObjectMapper ဖြင့် Valid JSON Format တည်ဆောက်ခြင်း[cite: 29]
+        String payload;
+        try {
+            WebhookPayloadDto payloadDto = WebhookPayloadDto.builder()
+                    .event(eventType)
+                    .transactionId(transaction.getId())
+                    .amount(transaction.getAmount())
+                    .currency(transaction.getCurrency())
+                    .status(transaction.getStatus() != null ? transaction.getStatus().name() : null)
+                    .timestamp(LocalDateTime.now())
+                    .build();
+
+            payload = objectMapper.writeValueAsString(payloadDto);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to generate webhook payload JSON for transaction: {}", transaction.getId(), e);
+            throw new IllegalStateException("Error serializing webhook payload", e);
+        }
 
         WebhookDelivery delivery = new WebhookDelivery();
         delivery.setWebhook(config);
@@ -74,11 +86,10 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
         delivery.setPayload(payload);
         delivery.setAttemptCount(0);
         delivery.setStatus(WebhookDeliveryStatus.PENDING);
-        delivery.setNextRetryAt(LocalDateTime.now()); // ချက်ချင်းပို့ရန် သတ်မှတ်ခြင်း[cite: 14]
+        delivery.setNextRetryAt(LocalDateTime.now());
 
         WebhookDelivery saved = webhookDeliveryRepository.save(delivery);
 
-        // Async အနေဖြင့် ချက်ချင်း ပို့ဆောင်ခြင်း[cite: 14]
         executeDeliveryAsync(saved.getId());
     }
 
@@ -113,10 +124,14 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
                     .timeout(Duration.ofSeconds(8))
                     .build();
 
+            // HttpResponse generic type ကို သတ်မှတ်ထားပါသည်[cite: 31]
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
             delivery.setResponseStatus(response.statusCode());
-            delivery.setResponseBody(ApiLogUtils.truncate(response.body(), 2000));
+            
+            // String.valueOf ဖြင့် သေချာစွာ String သို့ ပြောင်းပြီးမှ truncate ခေါ်ထားသဖြင့် အနီရောင်မျဉ်း မတက်တော့ပါ[cite: 31]
+            String responseBodyText = response.body() != null ? String.valueOf(response.body()) : "";
+            delivery.setResponseBody(ApiLogUtils.truncate(responseBodyText, 2000));
 
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 delivery.setStatus(WebhookDeliveryStatus.DELIVERED);
@@ -139,7 +154,6 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
             delivery.setStatus(WebhookDeliveryStatus.FAILED);
         } else {
             delivery.setStatus(WebhookDeliveryStatus.PENDING);
-            // Exponential Backoff: ကြိုးစားမှုအလိုက် အချိန်ပိုခွာ၍ ပို့ခြင်း (ဥပမာ- 1 min, 4 min, 9 min)[cite: 14]
             int delayMinutes = (int) Math.pow(delivery.getAttemptCount(), 2);
             delivery.setNextRetryAt(LocalDateTime.now().plusMinutes(delayMinutes));
         }
@@ -147,7 +161,7 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<WebhookDeliveryDto> getDeliveriesByMerchant(UUID merchantId, Pageable pageable) {
+    public Page getDeliveriesByMerchant(UUID merchantId, Pageable pageable) {
         return webhookDeliveryRepository.findByMerchantId(merchantId, pageable)
                 .map(d -> WebhookDeliveryDto.builder()
                         .deliveryId(d.getId())
