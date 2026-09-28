@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.PaymentAuthorizeRequestDto;
 import com.ojt_22.mmspg.dto.PaymentAuthorizeResponseDto;
+import com.ojt_22.mmspg.dto.PaymentCheckoutInfoDto;
 import com.ojt_22.mmspg.dto.PaymentInitiateRequestDto;
 import com.ojt_22.mmspg.dto.PaymentInitiateResponseDto;
 import com.ojt_22.mmspg.dto.PaymentStatusResponseDto;
@@ -61,5 +62,10 @@ public class PaymentTransactionApiController {
     @GetMapping("/merchant/{merchantId}")
     public ResponseEntity<List<PaymentTransactionSummaryDto>> getMerchantTransactions(@PathVariable UUID merchantId) {
         return ResponseEntity.ok(transactionService.getMerchantTransactions(merchantId));
+    }
+
+    @GetMapping("/checkout-info/{token}")
+    public ResponseEntity<PaymentCheckoutInfoDto> getCheckoutInfo(@PathVariable String token) {
+        return ResponseEntity.ok(transactionService.getCheckoutInfoByToken(token));
     }
 }

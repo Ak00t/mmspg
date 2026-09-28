@@ -15,6 +15,7 @@ import com.ojt_22.mmspg.client.CoreBankingClient;
 import com.ojt_22.mmspg.dto.CoreBankingResponseDto;
 import com.ojt_22.mmspg.dto.PaymentAuthorizeRequestDto;
 import com.ojt_22.mmspg.dto.PaymentAuthorizeResponseDto;
+import com.ojt_22.mmspg.dto.PaymentCheckoutInfoDto;
 import com.ojt_22.mmspg.dto.PaymentInitiateRequestDto;
 import com.ojt_22.mmspg.dto.PaymentInitiateResponseDto;
 import com.ojt_22.mmspg.dto.PaymentStatusResponseDto;
@@ -71,7 +72,7 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 					.currency(txn.getCurrency())
 					.status(txn.getStatus()
 							.name())
-					.paymentUrl("https://customer-portal.group1bank.com/checkout?token=" + txn.getPaymentToken())
+					.paymentUrl(paymentRedirectUrl + txn.getPaymentToken())
 					.build();
 		}
 		// 1. Merchant ရှိမရှိ စစ်ဆေးရန်
@@ -244,6 +245,27 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 		if (isDuplicate) {
 			throw new RuntimeException("Duplicate transaction: Order ID '" + orderId + "' has already been initiated.");
 		}
+	}
+	
+
+	public PaymentCheckoutInfoDto getCheckoutInfoByToken(String token) {
+	    // Token ဖြင့် Database တွင် ရှာဖွေခြင်း
+	    PaymentTransaction transaction = transactionRepository.findByPaymentToken(token)
+	            .orElseThrow(() -> new RuntimeException("Invalid or expired payment token"));
+
+	    // INITIATED မဟုတ်ပါက (ဥပမာ COMPLETED သို့ FAILED ဖြစ်ပြီးသားဆိုလျှင်) အချက်အလက် မပြတော့ပါ
+	    if (transaction.getStatus() != PaymentTransactionStatus.INITIATED) {
+	        throw new RuntimeException("This transaction has already been processed or is invalid");
+	    }
+
+	    // Customer Portal သို့ ပြသရန် အချက်အလက်များ ပြန်ထုတ်ပေးခြင်း
+	    return PaymentCheckoutInfoDto.builder()
+	            .businessName(transaction.getMerchant().getBusinessName())
+	            .orderId(transaction.getOrderId())
+	            .amount(transaction.getAmount())
+	            .currency(transaction.getCurrency())
+	            .status(transaction.getStatus().name())
+	            .build();
 	}
 
 
