@@ -13,8 +13,12 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.dto.AuditLogCreateRequest;
+import com.ojt_22.mmspg.entity.Merchant;
+import com.ojt_22.mmspg.entity.StaffUser;
 import com.ojt_22.mmspg.enums.AuditStatus;
 import com.ojt_22.mmspg.enums.SourceType;
+import com.ojt_22.mmspg.repository.MerchantRepository;
+import com.ojt_22.mmspg.repository.StaffUserRepository;
 import com.ojt_22.mmspg.service.AuditLogService;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,6 +30,9 @@ import lombok.RequiredArgsConstructor;
 public class AuditLogAspect {
 
 	private final AuditLogService auditLogService;
+	private final MerchantRepository merchantRepository;
+
+	private final StaffUserRepository staffUserRepository;
 
 	@Around("@annotation(auditable)")
 	public Object logAuditActivity(ProceedingJoinPoint joinPoint, Auditable auditable) throws Throwable {
@@ -54,11 +61,7 @@ public class AuditLogAspect {
 			Authentication auth = SecurityContextHolder.getContext()
 					.getAuthentication();
 			if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
-				try {
-					actorId = UUID.fromString(auth.getName());
-				} catch (IllegalArgumentException e) {
-					actorId = null; // Safeguard if username is non-UUID format
-				}
+				String email = auth.getName();
 
 				roleName = auth.getAuthorities()
 						.stream()
@@ -66,6 +69,20 @@ public class AuditLogAspect {
 								.replace("ROLE_", ""))
 						.findFirst()
 						.orElse("UNKNOWN");
+
+				if ("MERCHANT".equals(roleName)) {
+					actorType = "MERCHANT";
+
+					actorId = merchantRepository.findByEmail(email)
+							.map(Merchant::getId)
+							.orElse(null);
+				} else {
+					actorType = "STAFF";
+
+					actorId = staffUserRepository.findByEmail(email)
+							.map(StaffUser::getId)
+							.orElse(null);
+				}
 			}
 
 			if (actorId == null) {
@@ -88,7 +105,6 @@ public class AuditLogAspect {
 					.status(status)
 					.sourceType(SourceType.BACKEND_API)
 					.build();
-
 			auditLogService.logActivity(auditRequest, request);
 		}
 	}
