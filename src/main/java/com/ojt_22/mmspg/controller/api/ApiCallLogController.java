@@ -30,6 +30,7 @@ public class ApiCallLogController {
             @PathVariable UUID merchantId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
+            
     ) {
         Pageable pageable = PageRequest.of(page, size);
         Page<ApiCallLogDto> logs = apiCallLogService.getLogsByMerchant(merchantId, pageable);

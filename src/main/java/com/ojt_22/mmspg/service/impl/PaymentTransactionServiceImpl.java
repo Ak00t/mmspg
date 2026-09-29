@@ -7,6 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,7 @@ import com.ojt_22.mmspg.client.CoreBankingClient;
 import com.ojt_22.mmspg.dto.CoreBankingResponseDto;
 import com.ojt_22.mmspg.dto.PaymentAuthorizeRequestDto;
 import com.ojt_22.mmspg.dto.PaymentAuthorizeResponseDto;
+import com.ojt_22.mmspg.dto.PaymentCheckoutInfoDto;
 import com.ojt_22.mmspg.dto.PaymentInitiateRequestDto;
 import com.ojt_22.mmspg.dto.PaymentInitiateResponseDto;
 import com.ojt_22.mmspg.dto.PaymentStatusResponseDto;
@@ -33,7 +35,6 @@ import com.ojt_22.mmspg.repository.MerchantLedgerRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.repository.PaymentTransactionRepository;
 import com.ojt_22.mmspg.repository.TerminalRepository;
-import com.ojt_22.mmspg.service.PaymentTransactionService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -51,12 +52,12 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 
 	// Group 2 (Core Banking System) သို့ API လှမ်းခေါ်မည့် Client Class
 	private final CoreBankingClient coreBankingClient;
+	
+	@Value("${payment.gateway.redirect-url}")
+    private String paymentRedirectUrl;
 
 	@Transactional
 	public PaymentInitiateResponseDto initiateTransaction(PaymentInitiateRequestDto requestDto, String idempotencyKey) {
-
-		// 1. Key မပါပါက Error ပြရန်
-		validateIdempotencyKey(idempotencyKey);
 
 		// 🔴 [ဖြည့်စွက်ရမည့်နေရာ ၁] Idempotency Key ဖြင့် DB တွင် ရှိပြီးသားလား
 		// စစ်ခြင်း
@@ -71,7 +72,7 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 					.currency(txn.getCurrency())
 					.status(txn.getStatus()
 							.name())
-					.paymentUrl("https://customer-portal.group1bank.com/checkout?token=" + txn.getPaymentToken())
+					.paymentUrl(paymentRedirectUrl + txn.getPaymentToken())
 					.build();
 		}
 		// 1. Merchant ရှိမရှိ စစ်ဆေးရန်
@@ -132,7 +133,7 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 				.currency(savedTxn.getCurrency())
 				.status(savedTxn.getStatus()
 						.name())
-				.paymentUrl("https://customer-portal.group1bank.com/checkout?token=" + token)
+				.paymentUrl(paymentRedirectUrl + token)
 				.build();
 	}
 
@@ -148,7 +149,7 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 			throw new RuntimeException("Transaction has already been processed or is invalid");
 		}
 
-		BigDecimal feeAmount = transaction.getFeeAmount(); // Fee Amount ရယူခြင်း
+		BigDecimal feeAmount = transaction.getFeeAmount(); // Fee Amount ရယူခြင်း2
 
 		CoreBankingResponseDto coreBankingResponse = coreBankingClient.executeDebit(requestDto.getCustomerId(),
 				transaction.getAmount(), feeAmount, // <-- Fee Amount ပါ ထည့်သွင်းပေးလိုက်ပါသည်
@@ -234,6 +235,10 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 		if (merchant == null) {
 			throw new RuntimeException("Invalid merchant account");
 		}
+		
+		if (merchant.getStatus() == null || !"ACTIVE".equalsIgnoreCase(merchant.getStatus().name())) {
+	        throw new RuntimeException("Merchant account is not active");
+	    }
 	}
 
 	private void checkDuplicatePayment(UUID merchantId, String orderId) {
@@ -242,11 +247,27 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 			throw new RuntimeException("Duplicate transaction: Order ID '" + orderId + "' has already been initiated.");
 		}
 	}
+	
 
-	private void validateIdempotencyKey(String idempotencyKey) {
-		if (idempotencyKey == null || idempotencyKey.isBlank()) {
-			throw new RuntimeException("Idempotency-Key header is required");
-		}
+	public PaymentCheckoutInfoDto getCheckoutInfoByToken(String token) {
+	    // Token ဖြင့် Database တွင် ရှာဖွေခြင်း
+	    PaymentTransaction transaction = transactionRepository.findByPaymentToken(token)
+	            .orElseThrow(() -> new RuntimeException("Invalid or expired payment token"));
+
+	    // INITIATED မဟုတ်ပါက (ဥပမာ COMPLETED သို့ FAILED ဖြစ်ပြီးသားဆိုလျှင်) အချက်အလက် မပြတော့ပါ
+	    if (transaction.getStatus() != PaymentTransactionStatus.INITIATED) {
+	        throw new RuntimeException("This transaction has already been processed or is invalid");
+	    }
+
+	    // Customer Portal သို့ ပြသရန် အချက်အလက်များ ပြန်ထုတ်ပေးခြင်း
+	    return PaymentCheckoutInfoDto.builder()
+	            .businessName(transaction.getMerchant().getBusinessName())
+	            .orderId(transaction.getOrderId())
+	            .amount(transaction.getAmount())
+	            .currency(transaction.getCurrency())
+	            .status(transaction.getStatus().name())
+	            .build();
 	}
+
 
 }
