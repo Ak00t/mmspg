@@ -1,7 +1,6 @@
 package com.ojt_22.mmspg.service;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -11,7 +10,6 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ojt_22.mmspg.dto.FeeCalculationResponse;
 import com.ojt_22.mmspg.dto.FeeConfigRequest;
 import com.ojt_22.mmspg.dto.FeeConfigResponse;
-import com.ojt_22.mmspg.entity.Merchant;
 import com.ojt_22.mmspg.entity.MerchantFee;
 import com.ojt_22.mmspg.entity.StaffUser;
 import com.ojt_22.mmspg.enums.FeeType;
@@ -305,16 +303,11 @@ public class FeeService {
 	    BigDecimal feeAmount =
 	            calculateTransactionFee(amount, fee);
 
-	    BigDecimal netAmount =
-	            calculateNetAmount(amount, feeAmount);
+	public FeeConfigResponse updateFeeConfig(UUID feeId, FeeConfigRequest request);
 
-	    FeeCalculationResponse response =
-	            new FeeCalculationResponse();
+	public BigDecimal calculateTransactionFee(BigDecimal amount, MerchantFee fee);
 
-	    response.setAmount(amount);
-	    response.setFeeAmount(feeAmount);
-	    response.setNetAmount(netAmount);
+	public BigDecimal calculateNetAmount(BigDecimal amount, BigDecimal feeAmount);
 
-	    return response;
-	}
+	public FeeCalculationResponse calculateFee(UUID feeId, BigDecimal amount);
 }

@@ -65,7 +65,7 @@ public class Settlement {
 	private String bankAccountNo;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, columnDefinition = "enum('PENDING','PROCESSING','COMPLETED','FAILED')")
+	@Column(nullable = false, columnDefinition = "enum('PENDING','PROCESSING','COMPLETED','FAILED') DEFAULT 'PENDING'")
 	private SettlementStatus status = SettlementStatus.PENDING;
 
 	@Column(name = "processed_at")
@@ -80,7 +80,7 @@ public class Settlement {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by", updatable = false)
+	@JoinColumn(name = "created_by", nullable = false, updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)
