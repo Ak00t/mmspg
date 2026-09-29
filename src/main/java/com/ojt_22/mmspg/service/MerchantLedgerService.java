@@ -2,46 +2,57 @@ package com.ojt_22.mmspg.service;
 
 import java.math.BigDecimal;
 import java.util.UUID;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.stereotype.Service;
+
 import lombok.RequiredArgsConstructor;
+
 import com.ojt_22.mmspg.dto.MerchantLedgerResponse;
 import com.ojt_22.mmspg.entity.Merchant;
 import com.ojt_22.mmspg.entity.MerchantLedgerEntry;
 import com.ojt_22.mmspg.entity.PaymentTransaction;
+import com.ojt_22.mmspg.exception.ResourceNotFoundException;
 import com.ojt_22.mmspg.repository.MerchantLedgerRepository;
+import com.ojt_22.mmspg.repository.PaymentTransactionRepository;
 
 @Service
 @RequiredArgsConstructor
 public class MerchantLedgerService {
 
     private final MerchantLedgerRepository merchantLedgerRepository;
+    private final PaymentTransactionRepository paymentTransactionRepository;
 
-    public MerchantLedgerService(
-            MerchantLedgerRepository merchantLedgerRepository) {
+    public MerchantLedgerResponse createLedgerEntry(UUID transactionId) {
 
-        this.merchantLedgerRepository = merchantLedgerRepository;
-    }
-    
-    public MerchantLedgerResponse createLedgerEntry(
-            Merchant merchant,
-            PaymentTransaction transaction,
-            BigDecimal netAmount) {
+        // 1. Transaction ရှာမယ်
+        PaymentTransaction transaction =
+                paymentTransactionRepository.findById(transactionId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Transaction not found: " + transactionId));
 
+        // 2. Transaction ကနေ Merchant ယူမယ်
+        Merchant merchant = transaction.getMerchant();
+
+        // 3. Transaction ကနေ Net Amount ယူမယ်
+        BigDecimal netAmount = transaction.getNetAmount();
+
+        // 4. Ledger Entity ဆောက်မယ်
         MerchantLedgerEntry ledger = new MerchantLedgerEntry();
 
         ledger.setMerchant(merchant);
         ledger.setTransaction(transaction);
         ledger.setAmount(netAmount);
-
         ledger.setEntryType("CREDIT");
         ledger.setBalanceType("PENDING");
         ledger.setDescription("Payment completed");
 
+        // 5. Database ထဲ save မယ်
         MerchantLedgerEntry savedLedger =
                 merchantLedgerRepository.save(ledger);
 
+        // 6. Response DTO ပြောင်းမယ်
         MerchantLedgerResponse response =
                 new MerchantLedgerResponse();
 
@@ -55,18 +66,19 @@ public class MerchantLedgerService {
         response.setCreatedAt(savedLedger.getCreatedAt());
 
         return response;
-
-            }
-    /**
-     * Ledger ID ဖြင့် balance_type ကို SETTLED သို့ ပြောင်းလဲခြင်း
-     */
-    @Transactional
-    public void markLedgerAsSettled(UUID ledgerId) {
-        int updatedRows = ledgerRepository.updateBalanceType(ledgerId, "SETTLED");
-        
-        if (updatedRows == 0) {
-            throw new RuntimeException("Ledger entry not found with ID: " + ledgerId);
-        }
     }
 
+    @Transactional
+    public void markLedgerAsSettled(UUID ledgerId) {
+
+        int updatedRows =
+        		merchantLedgerRepository.updateBalanceType(
+        		        ledgerId,
+        		        "CLEARED");
+
+        if (updatedRows == 0) {
+            throw new ResourceNotFoundException(
+                    "Ledger entry not found with ID: " + ledgerId);
+        }
+    }
 }

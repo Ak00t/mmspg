@@ -1,18 +1,15 @@
 package com.ojt_22.mmspg.controller.admin;
 
-import java.math.BigDecimal;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.MerchantLedgerResponse;
-import com.ojt_22.mmspg.entity.Merchant;
-import com.ojt_22.mmspg.entity.PaymentTransaction;
-import com.ojt_22.mmspg.repository.PaymentTransactionRepository;
 import com.ojt_22.mmspg.service.MerchantLedgerService;
 
 @RestController
@@ -20,36 +17,20 @@ import com.ojt_22.mmspg.service.MerchantLedgerService;
 public class MerchantLedgerController {
 
     private final MerchantLedgerService merchantLedgerService;
-    
-    private final PaymentTransactionRepository paymentTransactionRepository;
 
     public MerchantLedgerController(
-            MerchantLedgerService merchantLedgerService,
-            PaymentTransactionRepository paymentTransactionRepository) {
+            MerchantLedgerService merchantLedgerService) {
 
         this.merchantLedgerService = merchantLedgerService;
-        this.paymentTransactionRepository = paymentTransactionRepository;
     }
     
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{transactionId}")
     public ResponseEntity<MerchantLedgerResponse> createLedger(
             @PathVariable UUID transactionId) {
 
-        PaymentTransaction transaction =
-                paymentTransactionRepository.findById(transactionId)
-                        .orElseThrow(() ->
-                                new RuntimeException("Transaction not found"));
-
-        Merchant merchant = transaction.getMerchant();
-
-        BigDecimal netAmount = transaction.getNetAmount();
-        
-        
         MerchantLedgerResponse response =
-                merchantLedgerService.createLedgerEntry(
-                        merchant,
-                        transaction,
-                        netAmount);
+                merchantLedgerService.createLedgerEntry(transactionId);
 
         return ResponseEntity.ok(response);
     }

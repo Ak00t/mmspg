@@ -8,4 +8,6 @@ import com.ojt_22.mmspg.entity.Settlement;
 
 public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
 
+	boolean existsByTransactionId(UUID transactionId);
+	
 }
