@@ -19,6 +19,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -35,6 +36,10 @@ public class Settlement {
 	@UuidGenerator(style = UuidGenerator.Style.VERSION_7)
 	@Column(name = "settlement_id", columnDefinition = "BINARY(16)")
 	private UUID id;
+	
+	@OneToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "transaction_id", nullable = false, unique = true)
+	private PaymentTransaction transaction;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "merchant_id", nullable = false)
@@ -52,9 +57,7 @@ public class Settlement {
 	@Column(name = "fee_amount", nullable = false, precision = 18, scale = 4)
 	private BigDecimal feeAmount;
 
-	@Column(name = "refund_amount", nullable = false, precision = 18, scale = 4)
-	private BigDecimal refundAmount;
-
+	
 	@Column(name = "net_amount", nullable = false, precision = 18, scale = 4)
 	private BigDecimal netAmount;
 
