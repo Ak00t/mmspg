@@ -45,7 +45,7 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
 	@Transactional
 	public void sendWebhook(PaymentTransaction transaction, String eventType) {
 		Optional<WebhookConfig> configOpt = webhookConfigRepository.findByMerchantIdAndStatus(transaction.getMerchant()
-				.getId(), WebhookConfigStatus.ACTIVE.name());
+				.getId(), WebhookConfigStatus.ACTIVE);
 
 		if (configOpt.isEmpty()) {
 			return;

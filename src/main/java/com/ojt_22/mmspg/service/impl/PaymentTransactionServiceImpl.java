@@ -2,14 +2,18 @@ package com.ojt_22.mmspg.service.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import com.ojt_22.mmspg.client.CoreBankingClient;
 import com.ojt_22.mmspg.dto.CoreBankingResponseDto;
@@ -26,20 +30,25 @@ import com.ojt_22.mmspg.entity.MerchantFee;
 import com.ojt_22.mmspg.entity.MerchantLedgerEntry;
 import com.ojt_22.mmspg.entity.PaymentTransaction;
 import com.ojt_22.mmspg.entity.Terminal;
+import com.ojt_22.mmspg.entity.WebhookConfig;
 import com.ojt_22.mmspg.enums.MerchantLedgerEntryBalanceType;
 import com.ojt_22.mmspg.enums.MerchantLedgerEntryType;
 import com.ojt_22.mmspg.enums.PaymentTransactionStatus;
+import com.ojt_22.mmspg.enums.WebhookConfigStatus;
 import com.ojt_22.mmspg.repository.MerchantBranchRepository;
 import com.ojt_22.mmspg.repository.MerchantFeeRepository;
 import com.ojt_22.mmspg.repository.MerchantLedgerRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.repository.PaymentTransactionRepository;
 import com.ojt_22.mmspg.repository.TerminalRepository;
+import com.ojt_22.mmspg.repository.WebhookConfigRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.PaymentTransactionService {
 
 	private final PaymentTransactionRepository transactionRepository;
@@ -49,6 +58,10 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 	private final MerchantBranchRepository branchRepository;
 	private final TerminalRepository terminalRepository;
 	private final MerchantLedgerRepository ledgerRepository;
+	
+	
+	private final WebhookConfigRepository webhookConfigRepository;
+	private final RestTemplate restTemplate;
 
 	// Group 2 (Core Banking System) သို့ API လှမ်းခေါ်မည့် Client Class
 	private final CoreBankingClient coreBankingClient;
@@ -144,13 +157,14 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 				.orElseThrow(() -> new RuntimeException("Invalid or expired payment token"));
 
 		// 2. Transaction Status စစ်ဆေးခြင်း (INITIATED ဖြစ်မှသာ ဆက်လုပ်မည်)
-		if (!"INITIATED".equals(transaction.getStatus())) {
+		if (transaction.getStatus() != PaymentTransactionStatus.INITIATED) {
 			throw new RuntimeException("Transaction has already been processed or is invalid");
 		}
 
 		BigDecimal feeAmount = transaction.getFeeAmount(); // Fee Amount ရယူခြင်း2
 
-		CoreBankingResponseDto coreBankingResponse = coreBankingClient.executeDebit(requestDto.getCustomerId(),
+		CoreBankingResponseDto coreBankingResponse = coreBankingClient.executeDebit(
+				requestDto.getCustomerId(),
 				transaction.getAmount(), feeAmount, // <-- Fee Amount ပါ ထည့်သွင်းပေးလိုက်ပါသည်
 				transaction.getTransactionReference());
 
@@ -159,8 +173,11 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 			transaction.setStatus(PaymentTransactionStatus.FAILED);
 			transaction.setFailureReason(coreBankingResponse.getFailureReason());
 			transaction.setUpdatedAt(LocalDateTime.now());
-			transactionRepository.save(transaction);
-
+			PaymentTransaction failedTxn = transactionRepository.save(transaction);
+			
+			sendWebhookNotification(failedTxn);
+			
+			
 			return PaymentAuthorizeResponseDto.builder()
 					.transactionReference(transaction.getTransactionReference())
 					.status("FAILED")
@@ -185,6 +202,9 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 		ledgerEntry.setDescription("Payment settlement for Order ID: " + completedTxn.getOrderId());
 
 		ledgerRepository.save(ledgerEntry);
+		
+		//Group 5 (E-Commerce) ဆီ Webhook အသိပေးချက် ပို့ပေးခြင်း
+		sendWebhookNotification(completedTxn);
 
 		// 7. Response ပြန်လည်ထုတ်ပေးခြင်း
 		return PaymentAuthorizeResponseDto.builder()
@@ -198,6 +218,7 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 				.build();
 	}
 
+	@Transactional(readOnly = true)
 	public PaymentStatusResponseDto getTransactionStatus(String transactionReference) {
 		PaymentTransaction transaction = transactionRepository.findByTransactionReference(transactionReference)
 				.orElseThrow(() -> new RuntimeException("Transaction not found"));
@@ -214,6 +235,7 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 				.build();
 	}
 
+	@Transactional(readOnly = true)
 	public List<PaymentTransactionSummaryDto> getMerchantTransactions(UUID merchantId) {
 		List<PaymentTransaction> transactions = transactionRepository.findByMerchantId(merchantId);
 
@@ -228,6 +250,24 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 						.initiatedAt(txn.getInitiatedAt())
 						.build())
 				.collect(Collectors.toList());
+	}
+	
+	@Transactional(readOnly = true)
+	public PaymentCheckoutInfoDto getCheckoutInfoByToken(String token) {
+		PaymentTransaction transaction = transactionRepository.findByPaymentToken(token)
+				.orElseThrow(() -> new RuntimeException("Invalid or expired payment token"));
+
+		if (transaction.getStatus() != PaymentTransactionStatus.INITIATED) {
+			throw new RuntimeException("This transaction has already been processed or is invalid");
+		}
+
+		return PaymentCheckoutInfoDto.builder()
+				.businessName(transaction.getMerchant().getBusinessName())
+				.orderId(transaction.getOrderId())
+				.amount(transaction.getAmount())
+				.currency(transaction.getCurrency())
+				.status(transaction.getStatus().name())
+				.build();
 	}
 
 	private void validateMerchant(Merchant merchant) {
@@ -247,26 +287,54 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 		}
 	}
 	
+	@Async
+	private void sendWebhookNotification(PaymentTransaction transaction) {
+		try {
+			Optional<WebhookConfig> configOpt = webhookConfigRepository.findByMerchantIdAndStatus(
+					transaction.getMerchant().getId(), 
+					WebhookConfigStatus.ACTIVE
+			);
 
-	public PaymentCheckoutInfoDto getCheckoutInfoByToken(String token) {
-	    // Token ဖြင့် Database တွင် ရှာဖွေခြင်း
-	    PaymentTransaction transaction = transactionRepository.findByPaymentToken(token)
-	            .orElseThrow(() -> new RuntimeException("Invalid or expired payment token"));
+			if (configOpt.isEmpty()) {
+				log.info("No active webhook config found for merchant: {}", transaction.getMerchant().getId());
+				return;
+			}
 
-	    // INITIATED မဟုတ်ပါက (ဥပမာ COMPLETED သို့ FAILED ဖြစ်ပြီးသားဆိုလျှင်) အချက်အလက် မပြတော့ပါ
-	    if (transaction.getStatus() != PaymentTransactionStatus.INITIATED) {
-	        throw new RuntimeException("This transaction has already been processed or is invalid");
-	    }
+			WebhookConfig config = configOpt.get();
 
-	    // Customer Portal သို့ ပြသရန် အချက်အလက်များ ပြန်ထုတ်ပေးခြင်း
-	    return PaymentCheckoutInfoDto.builder()
-	            .businessName(transaction.getMerchant().getBusinessName())
-	            .orderId(transaction.getOrderId())
-	            .amount(transaction.getAmount())
-	            .currency(transaction.getCurrency())
-	            .status(transaction.getStatus().name())
-	            .build();
+			boolean isCompleted = transaction.getStatus() == PaymentTransactionStatus.COMPLETED;
+			boolean isFailed = transaction.getStatus() == PaymentTransactionStatus.FAILED;
+
+			if (isCompleted && !Boolean.TRUE.equals(config.getEventPaymentCompleted())) {
+				log.info("Payment completed webhook event is disabled for merchant: {}", transaction.getMerchant().getId());
+				return;
+			}
+
+			if (isFailed && !Boolean.TRUE.equals(config.getEventPaymentFailed())) {
+				log.info("Payment failed webhook event is disabled for merchant: {}", transaction.getMerchant().getId());
+				return;
+			}
+
+			String callbackUrl = config.getCallbackUrl();
+			if (callbackUrl != null && !callbackUrl.isBlank()) {
+				Map<String, Object> payload = new HashMap<>();
+				payload.put("orderId", transaction.getOrderId());
+				payload.put("transactionReference", transaction.getTransactionReference());
+				payload.put("status", transaction.getStatus().name());
+				payload.put("amount", transaction.getAmount());
+				payload.put("currency", transaction.getCurrency());
+
+				if (isFailed && transaction.getFailureReason() != null) {
+					payload.put("failureReason", transaction.getFailureReason());
+				}
+
+				restTemplate.postForEntity(callbackUrl, payload, String.class);
+				log.info("Successfully sent webhook notification to URL: {}", callbackUrl);
+			}
+
+		} catch (Exception e) {
+			log.error("Failed to send webhook notification for transaction: {}", transaction.getTransactionReference(), e);
+		}
 	}
-
-
+	
 }
