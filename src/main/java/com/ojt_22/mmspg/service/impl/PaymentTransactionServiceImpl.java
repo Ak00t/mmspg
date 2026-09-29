@@ -35,6 +35,7 @@ import com.ojt_22.mmspg.repository.MerchantLedgerRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.repository.PaymentTransactionRepository;
 import com.ojt_22.mmspg.repository.TerminalRepository;
+import com.ojt_22.mmspg.service.PaymentTransactionService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -52,9 +53,9 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 
 	// Group 2 (Core Banking System) သို့ API လှမ်းခေါ်မည့် Client Class
 	private final CoreBankingClient coreBankingClient;
-	
+
 	@Value("${payment.gateway.redirect-url}")
-    private String paymentRedirectUrl;
+	private String paymentRedirectUrl;
 
 	@Transactional
 	public PaymentInitiateResponseDto initiateTransaction(PaymentInitiateRequestDto requestDto, String idempotencyKey) {
@@ -235,10 +236,11 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 		if (merchant == null) {
 			throw new RuntimeException("Invalid merchant account");
 		}
-		
-		if (merchant.getStatus() == null || !"ACTIVE".equalsIgnoreCase(merchant.getStatus().name())) {
-	        throw new RuntimeException("Merchant account is not active");
-	    }
+
+		if (merchant.getStatus() == null || !"ACTIVE".equalsIgnoreCase(merchant.getStatus()
+				.name())) {
+			throw new RuntimeException("Merchant account is not active");
+		}
 	}
 
 	private void checkDuplicatePayment(UUID merchantId, String orderId) {
@@ -247,27 +249,28 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 			throw new RuntimeException("Duplicate transaction: Order ID '" + orderId + "' has already been initiated.");
 		}
 	}
-	
 
 	public PaymentCheckoutInfoDto getCheckoutInfoByToken(String token) {
-	    // Token ဖြင့် Database တွင် ရှာဖွေခြင်း
-	    PaymentTransaction transaction = transactionRepository.findByPaymentToken(token)
-	            .orElseThrow(() -> new RuntimeException("Invalid or expired payment token"));
+		// Token ဖြင့် Database တွင် ရှာဖွေခြင်း
+		PaymentTransaction transaction = transactionRepository.findByPaymentToken(token)
+				.orElseThrow(() -> new RuntimeException("Invalid or expired payment token"));
 
-	    // INITIATED မဟုတ်ပါက (ဥပမာ COMPLETED သို့ FAILED ဖြစ်ပြီးသားဆိုလျှင်) အချက်အလက် မပြတော့ပါ
-	    if (transaction.getStatus() != PaymentTransactionStatus.INITIATED) {
-	        throw new RuntimeException("This transaction has already been processed or is invalid");
-	    }
+		// INITIATED မဟုတ်ပါက (ဥပမာ COMPLETED သို့ FAILED ဖြစ်ပြီးသားဆိုလျှင်) အချက်အလက်
+		// မပြတော့ပါ
+		if (transaction.getStatus() != PaymentTransactionStatus.INITIATED) {
+			throw new RuntimeException("This transaction has already been processed or is invalid");
+		}
 
-	    // Customer Portal သို့ ပြသရန် အချက်အလက်များ ပြန်ထုတ်ပေးခြင်း
-	    return PaymentCheckoutInfoDto.builder()
-	            .businessName(transaction.getMerchant().getBusinessName())
-	            .orderId(transaction.getOrderId())
-	            .amount(transaction.getAmount())
-	            .currency(transaction.getCurrency())
-	            .status(transaction.getStatus().name())
-	            .build();
+		// Customer Portal သို့ ပြသရန် အချက်အလက်များ ပြန်ထုတ်ပေးခြင်း
+		return PaymentCheckoutInfoDto.builder()
+				.businessName(transaction.getMerchant()
+						.getBusinessName())
+				.orderId(transaction.getOrderId())
+				.amount(transaction.getAmount())
+				.currency(transaction.getCurrency())
+				.status(transaction.getStatus()
+						.name())
+				.build();
 	}
-
 
 }

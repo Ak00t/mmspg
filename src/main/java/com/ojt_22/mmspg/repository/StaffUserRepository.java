@@ -10,9 +10,10 @@ import com.ojt_22.mmspg.entity.StaffUser;
 
 @Repository
 public interface StaffUserRepository extends JpaRepository<StaffUser, UUID> {
-    Optional<StaffUser> findByUsername(String username);
-    Optional<StaffUser> findByEmail(String email);
-    
-    boolean existsByUsername(String username);
-    boolean existsByEmail(String email);
+//    Optional<StaffUser> findByUsername(String username);
+	Optional<StaffUser> findByEmail(String email);
+
+//	boolean existsByUsername(String username);
+
+	boolean existsByEmail(String email);
 }

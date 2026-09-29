@@ -35,8 +35,8 @@ public class StaffUser {
 	@Column(name = "staff_id", columnDefinition = "BINARY(16)")
 	private UUID id;
 
-	@Column(nullable = false, length = 100, unique = true)
-	private String username;
+//	@Column(nullable = false, length = 100, unique = true)
+//	private String username;
 
 	@Column(name = "password_hash", nullable = false, length = 255)
 	private String passwordHash;
