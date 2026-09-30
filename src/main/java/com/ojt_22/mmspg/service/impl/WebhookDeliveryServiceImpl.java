@@ -39,13 +39,13 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
 
     private final WebhookDeliveryRepository webhookDeliveryRepository;
     private final WebhookConfigRepository webhookConfigRepository;
-    private final ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
     @Override
     @Transactional
     public void sendWebhook(PaymentTransaction transaction, String eventType) {
         Optional<WebhookConfig> configOpt = webhookConfigRepository
-                .findByMerchantIdAndStatus(transaction.getMerchant().getId(), WebhookConfigStatus.ACTIVE.name());
+                .findByMerchantIdAndStatus(transaction.getMerchant().getId(), WebhookConfigStatus.ACTIVE);
 
         if (configOpt.isEmpty()) {
             return;
