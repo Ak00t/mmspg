@@ -287,30 +287,6 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 			throw new RuntimeException("Duplicate transaction: Order ID '" + orderId + "' has already been initiated.");
 		}
 	}
-
-	public PaymentCheckoutInfoDto getCheckoutInfoByToken(String token) {
-		// Token ဖြင့် Database တွင် ရှာဖွေခြင်း
-		PaymentTransaction transaction = transactionRepository.findByPaymentToken(token)
-				.orElseThrow(() -> new RuntimeException("Invalid or expired payment token"));
-
-		// INITIATED မဟုတ်ပါက (ဥပမာ COMPLETED သို့ FAILED ဖြစ်ပြီးသားဆိုလျှင်) အချက်အလက်
-		// မပြတော့ပါ
-		if (transaction.getStatus() != PaymentTransactionStatus.INITIATED) {
-			throw new RuntimeException("This transaction has already been processed or is invalid");
-		}
-
-		// Customer Portal သို့ ပြသရန် အချက်အလက်များ ပြန်ထုတ်ပေးခြင်း
-		return PaymentCheckoutInfoDto.builder()
-				.businessName(transaction.getMerchant()
-						.getBusinessName())
-				.orderId(transaction.getOrderId())
-				.amount(transaction.getAmount())
-				.currency(transaction.getCurrency())
-				.status(transaction.getStatus()
-						.name())
-				.build();
-	}
-
 	
 	@Async
 	private void sendWebhookNotification(PaymentTransaction transaction) {
