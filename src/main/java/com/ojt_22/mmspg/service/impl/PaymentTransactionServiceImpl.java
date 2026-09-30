@@ -2,7 +2,6 @@ package com.ojt_22.mmspg.service.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -36,6 +35,7 @@ import com.ojt_22.mmspg.repository.MerchantLedgerRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.repository.PaymentTransactionRepository;
 import com.ojt_22.mmspg.repository.TerminalRepository;
+import com.ojt_22.mmspg.service.PaymentTransactionService;
 import com.ojt_22.mmspg.service.WebhookDeliveryService;
 
 import lombok.RequiredArgsConstructor;
@@ -53,8 +53,7 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 	private final MerchantBranchRepository branchRepository;
 	private final TerminalRepository terminalRepository;
 	private final MerchantLedgerRepository ledgerRepository;
-	
-	
+
 	private final WebhookDeliveryService webhookDeliveryService;
 
 	// Group 2 (Core Banking System) သို့ API လှမ်းခေါ်မည့် Client Class
@@ -104,12 +103,14 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 				.orElseThrow(() -> new RuntimeException("Merchant fee configuration not found"));
 
 		BigDecimal flatFee = merchantFee.getFlatFee() != null ? merchantFee.getFlatFee() : BigDecimal.ZERO;
-		
-		if (requestDto.getAmount().compareTo(flatFee) < 0) {
+
+		if (requestDto.getAmount()
+				.compareTo(flatFee) < 0) {
 			throw new IllegalArgumentException("Transaction amount must be greater than or equal to flat fee.");
 		}
-		
-		BigDecimal netAmount = requestDto.getAmount().subtract(flatFee);
+
+		BigDecimal netAmount = requestDto.getAmount()
+				.subtract(flatFee);
 
 		String refNo = "TXN-" + System.currentTimeMillis();
 		String token = UUID.randomUUID()
@@ -158,17 +159,17 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 		if (transaction.getStatus() != PaymentTransactionStatus.INITIATED) {
 			throw new RuntimeException("Transaction has already been processed or is invalid");
 		}
-		
+
 		if ("FAILED".equalsIgnoreCase(requestDto.getStatus())) {
 			transaction.setStatus(PaymentTransactionStatus.FAILED);
 			transaction.setFailureReason(requestDto.getFailureReason());
 			transaction.setUpdatedAt(LocalDateTime.now());
-			
+
 			PaymentTransaction failedTxn = transactionRepository.save(transaction);
-			
-			//WebhookDeliveryService သို့ လွှဲပြောင်းပေးပို့ခြင်း
+
+			// WebhookDeliveryService သို့ လွှဲပြောင်းပေးပို့ခြင်း
 			webhookDeliveryService.sendWebhook(failedTxn, "PAYMENT_FAILED");
-			
+
 			return PaymentAuthorizeResponseDto.builder()
 					.transactionReference(failedTxn.getTransactionReference())
 					.status("FAILED")
@@ -188,11 +189,11 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 			transaction.setFailureReason(coreBankingResponse.getFailureReason());
 			transaction.setUpdatedAt(LocalDateTime.now());
 			PaymentTransaction failedTxn = transactionRepository.save(transaction);
-			
-			//WebhookDeliveryService ခေါ်ယူခြင်းနှင့် Reference အဟောင်းအစား failedTxn.getTransactionReference() သို့ ပြင်ဆင်ခြင်း
+
+			// WebhookDeliveryService ခေါ်ယူခြင်းနှင့် Reference အဟောင်းအစား
+			// failedTxn.getTransactionReference() သို့ ပြင်ဆင်ခြင်း
 			webhookDeliveryService.sendWebhook(failedTxn, "PAYMENT_FAILED");
-			
-			
+
 			return PaymentAuthorizeResponseDto.builder()
 					.transactionReference(failedTxn.getTransactionReference())
 					.status("FAILED")
@@ -217,8 +218,8 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 		ledgerEntry.setDescription("Payment settlement for Order ID: " + completedTxn.getOrderId());
 
 		ledgerRepository.save(ledgerEntry);
-		
-		//WebhookDeliveryService ဖြင့် PAYMENT_COMPLETED Event ပို့ပေးခြင်း
+
+		// WebhookDeliveryService ဖြင့် PAYMENT_COMPLETED Event ပို့ပေးခြင်း
 		webhookDeliveryService.sendWebhook(completedTxn, "PAYMENT_COMPLETED");
 
 		// 7. Response ပြန်လည်ထုတ်ပေးခြင်း
@@ -304,5 +305,5 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 			throw new RuntimeException("Duplicate transaction: Order ID '" + orderId + "' has already been initiated.");
 		}
 	}
-	
+
 }
