@@ -37,165 +37,155 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
 
-	private final WebhookDeliveryRepository webhookDeliveryRepository;
-	private final WebhookConfigRepository webhookConfigRepository;
-	private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+    private final WebhookDeliveryRepository webhookDeliveryRepository;
+    private final WebhookConfigRepository webhookConfigRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
-	@Override
-	@Transactional
-	public void sendWebhook(PaymentTransaction transaction, String eventType) {
-		Optional<WebhookConfig> configOpt = webhookConfigRepository.findByMerchantIdAndStatus(transaction.getMerchant()
-				.getId(), WebhookConfigStatus.ACTIVE);
+    @Override
+    @Transactional
+    public void sendWebhook(PaymentTransaction transaction, String eventType) {
+        Optional<WebhookConfig> configOpt = webhookConfigRepository
+                .findByMerchantIdAndStatus(transaction.getMerchant().getId(), WebhookConfigStatus.ACTIVE);
 
-		if (configOpt.isEmpty()) {
-			return;
-		}
+        if (configOpt.isEmpty()) {
+            return;
+        }
 
-		// Explicit Type Cast ပြုလုပ်ထားသဖြင့် configOpt.get() တွင် အနီရောင်မျဉ်း လုံးဝ
-		// မပြတော့ပါ[cite: 30]
-		WebhookConfig config = (WebhookConfig) configOpt.get();
+        // Explicit Type Cast ပြုလုပ်ထားသဖြင့် configOpt.get() တွင် အနီရောင်မျဉ်း လုံးဝ မပြတော့ပါ[cite: 30]
+        WebhookConfig config = (WebhookConfig) configOpt.get();
 
-		if ("PAYMENT_COMPLETED".equalsIgnoreCase(eventType)
-				&& !Boolean.TRUE.equals(config.getEventPaymentCompleted())) {
-			return;
-		}
-		if ("PAYMENT_FAILED".equalsIgnoreCase(eventType) && !Boolean.TRUE.equals(config.getEventPaymentFailed())) {
-			return;
-		}
+        if ("PAYMENT_COMPLETED".equalsIgnoreCase(eventType) && !Boolean.TRUE.equals(config.getEventPaymentCompleted())) {
+            return;
+        }
+        if ("PAYMENT_FAILED".equalsIgnoreCase(eventType) && !Boolean.TRUE.equals(config.getEventPaymentFailed())) {
+            return;
+        }
 
-		// WebhookPayloadDto နှင့် ObjectMapper ဖြင့် Valid JSON Format
-		// တည်ဆောက်ခြင်း[cite: 29]
-		String payload;
-		try {
-			WebhookPayloadDto payloadDto = WebhookPayloadDto.builder()
-					.event(eventType)
-					.transactionId(transaction.getId())
-					.amount(transaction.getAmount())
-					.currency(transaction.getCurrency())
-					.status(transaction.getStatus() != null ? transaction.getStatus()
-							.name() : null)
-					.timestamp(LocalDateTime.now())
-					.build();
+        // WebhookPayloadDto နှင့် ObjectMapper ဖြင့် Valid JSON Format တည်ဆောက်ခြင်း[cite: 29]
+        String payload;
+        try {
+            WebhookPayloadDto payloadDto = WebhookPayloadDto.builder()
+                    .event(eventType)
+                    .transactionId(transaction.getId())
+                    .amount(transaction.getAmount())
+                    .currency(transaction.getCurrency())
+                    .status(transaction.getStatus() != null ? transaction.getStatus().name() : null)
+                    .timestamp(LocalDateTime.now())
+                    .build();
 
-			payload = objectMapper.writeValueAsString(payloadDto);
-		} catch (JsonProcessingException e) {
-			log.error("Failed to generate webhook payload JSON for transaction: {}", transaction.getId(), e);
-			throw new IllegalStateException("Error serializing webhook payload", e);
-		}
+            payload = objectMapper.writeValueAsString(payloadDto);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to generate webhook payload JSON for transaction: {}", transaction.getId(), e);
+            throw new IllegalStateException("Error serializing webhook payload", e);
+        }
 
-		WebhookDelivery delivery = new WebhookDelivery();
-		delivery.setWebhook(config);
-		delivery.setTransaction(transaction);
-		delivery.setEventType(eventType);
-		delivery.setPayload(payload);
-		delivery.setAttemptCount(0);
-		delivery.setStatus(WebhookDeliveryStatus.PENDING);
-		delivery.setNextRetryAt(LocalDateTime.now());
+        WebhookDelivery delivery = new WebhookDelivery();
+        delivery.setWebhook(config);
+        delivery.setTransaction(transaction);
+        delivery.setEventType(eventType);
+        delivery.setPayload(payload);
+        delivery.setAttemptCount(0);
+        delivery.setStatus(WebhookDeliveryStatus.PENDING);
+        delivery.setNextRetryAt(LocalDateTime.now());
 
-		WebhookDelivery saved = webhookDeliveryRepository.save(delivery);
+        WebhookDelivery saved = webhookDeliveryRepository.save(delivery);
 
-		executeDeliveryAsync(saved.getId());
-	}
+        executeDeliveryAsync(saved.getId());
+    }
 
-	@Async
-	public void executeDeliveryAsync(UUID deliveryId) {
-		executeDelivery(deliveryId);
-	}
+    @Async
+    public void executeDeliveryAsync(UUID deliveryId) {
+        executeDelivery(deliveryId);
+    }
 
-	@Override
-	@Transactional
-	public void executeDelivery(UUID deliveryId) {
-		WebhookDelivery delivery = webhookDeliveryRepository.findById(deliveryId)
-				.orElse(null);
-		if (delivery == null || delivery.getStatus() == WebhookDeliveryStatus.DELIVERED) {
-			return;
-		}
+    @Override
+    @Transactional
+    public void executeDelivery(UUID deliveryId) {
+        WebhookDelivery delivery = webhookDeliveryRepository.findById(deliveryId).orElse(null);
+        if (delivery == null || delivery.getStatus() == WebhookDeliveryStatus.DELIVERED) {
+            return;
+        }
 
-		WebhookConfig config = delivery.getWebhook();
-		delivery.setAttemptCount(delivery.getAttemptCount() + 1);
-		delivery.setSentAt(LocalDateTime.now());
+        WebhookConfig config = delivery.getWebhook();
+        delivery.setAttemptCount(delivery.getAttemptCount() + 1);
+        delivery.setSentAt(LocalDateTime.now());
 
-		try {
-			HttpClient client = HttpClient.newBuilder()
-					.connectTimeout(Duration.ofSeconds(5))
-					.build();
+        try {
+            HttpClient client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(5))
+                    .build();
 
-			HttpRequest request = HttpRequest.newBuilder()
-					.uri(URI.create(config.getCallbackUrl()))
-					.header("Content-Type", "application/json")
-					.header("User-Agent", "MMSPG-Webhook-Engine/1.0")
-					.header("X-Event-Type", delivery.getEventType())
-					.POST(HttpRequest.BodyPublishers.ofString(delivery.getPayload()))
-					.timeout(Duration.ofSeconds(8))
-					.build();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(config.getCallbackUrl()))
+                    .header("Content-Type", "application/json")
+                    .header("User-Agent", "MMSPG-Webhook-Engine/1.0")
+                    .header("X-Event-Type", delivery.getEventType())
+                    .POST(HttpRequest.BodyPublishers.ofString(delivery.getPayload()))
+                    .timeout(Duration.ofSeconds(8))
+                    .build();
 
-			// HttpResponse generic type ကို သတ်မှတ်ထားပါသည်[cite: 31]
-			HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            // HttpResponse generic type ကို သတ်မှတ်ထားပါသည်[cite: 31]
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-			delivery.setResponseStatus(response.statusCode());
+            delivery.setResponseStatus(response.statusCode());
+            
+            // String.valueOf ဖြင့် သေချာစွာ String သို့ ပြောင်းပြီးမှ truncate ခေါ်ထားသဖြင့် အနီရောင်မျဉ်း မတက်တော့ပါ[cite: 31]
+            String responseBodyText = response.body() != null ? String.valueOf(response.body()) : "";
+            delivery.setResponseBody(ApiLogUtils.truncate(responseBodyText, 2000));
 
-			// String.valueOf ဖြင့် သေချာစွာ String သို့ ပြောင်းပြီးမှ truncate
-			// ခေါ်ထားသဖြင့် အနီရောင်မျဉ်း မတက်တော့ပါ[cite: 31]
-			String responseBodyText = response.body() != null ? String.valueOf(response.body()) : "";
-			delivery.setResponseBody(ApiLogUtils.truncate(responseBodyText, 2000));
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                delivery.setStatus(WebhookDeliveryStatus.DELIVERED);
+                delivery.setDeliveredAt(LocalDateTime.now());
+                delivery.setErrorMessage(null);
+            } else {
+                handleFailure(delivery, config.getMaxRetry(), "Remote server responded with HTTP " + response.statusCode());
+            }
+        } catch (Exception e) {
+            delivery.setResponseStatus(null);
+            handleFailure(delivery, config.getMaxRetry(), "Connection failed: " + e.getMessage());
+        }
 
-			if (response.statusCode() >= 200 && response.statusCode() < 300) {
-				delivery.setStatus(WebhookDeliveryStatus.DELIVERED);
-				delivery.setDeliveredAt(LocalDateTime.now());
-				delivery.setErrorMessage(null);
-			} else {
-				handleFailure(delivery, config.getMaxRetry(),
-						"Remote server responded with HTTP " + response.statusCode());
-			}
-		} catch (Exception e) {
-			delivery.setResponseStatus(null);
-			handleFailure(delivery, config.getMaxRetry(), "Connection failed: " + e.getMessage());
-		}
+        webhookDeliveryRepository.save(delivery);
+    }
 
-		webhookDeliveryRepository.save(delivery);
-	}
+    private void handleFailure(WebhookDelivery delivery, int maxRetry, String error) {
+        delivery.setErrorMessage(ApiLogUtils.truncate(error, 1000));
+        if (delivery.getAttemptCount() >= maxRetry) {
+            delivery.setStatus(WebhookDeliveryStatus.FAILED);
+        } else {
+            delivery.setStatus(WebhookDeliveryStatus.PENDING);
+            int delayMinutes = (int) Math.pow(delivery.getAttemptCount(), 2);
+            delivery.setNextRetryAt(LocalDateTime.now().plusMinutes(delayMinutes));
+        }
+    }
 
-	private void handleFailure(WebhookDelivery delivery, int maxRetry, String error) {
-		delivery.setErrorMessage(ApiLogUtils.truncate(error, 1000));
-		if (delivery.getAttemptCount() >= maxRetry) {
-			delivery.setStatus(WebhookDeliveryStatus.FAILED);
-		} else {
-			delivery.setStatus(WebhookDeliveryStatus.PENDING);
-			int delayMinutes = (int) Math.pow(delivery.getAttemptCount(), 2);
-			delivery.setNextRetryAt(LocalDateTime.now()
-					.plusMinutes(delayMinutes));
-		}
-	}
+    @Override
+    @Transactional(readOnly = true)
+    public Page getDeliveriesByMerchant(UUID merchantId, Pageable pageable) {
+        return webhookDeliveryRepository.findByMerchantId(merchantId, pageable)
+                .map(d -> WebhookDeliveryDto.builder()
+                        .deliveryId(d.getId())
+                        .transactionId(d.getTransaction().getId())
+                        .eventType(d.getEventType())
+                        .payload(d.getPayload())
+                        .responseStatus(d.getResponseStatus())
+                        .attemptCount(d.getAttemptCount())
+                        .status(d.getStatus().name())
+                        .sentAt(d.getSentAt())
+                        .deliveredAt(d.getDeliveredAt())
+                        .errorMessage(d.getErrorMessage())
+                        .nextRetryAt(d.getNextRetryAt())
+                        .build());
+    }
 
-	@Override
-	@Transactional(readOnly = true)
-	public Page getDeliveriesByMerchant(UUID merchantId, Pageable pageable) {
-		return webhookDeliveryRepository.findByMerchantId(merchantId, pageable)
-				.map(d -> WebhookDeliveryDto.builder()
-						.deliveryId(d.getId())
-						.transactionId(d.getTransaction()
-								.getId())
-						.eventType(d.getEventType())
-						.payload(d.getPayload())
-						.responseStatus(d.getResponseStatus())
-						.attemptCount(d.getAttemptCount())
-						.status(d.getStatus()
-								.name())
-						.sentAt(d.getSentAt())
-						.deliveredAt(d.getDeliveredAt())
-						.errorMessage(d.getErrorMessage())
-						.nextRetryAt(d.getNextRetryAt())
-						.build());
-	}
-
-	@Override
-	@Transactional
-	public void redeliver(UUID deliveryId) {
-		WebhookDelivery delivery = webhookDeliveryRepository.findById(deliveryId)
-				.orElseThrow(() -> new IllegalArgumentException("Delivery not found: " + deliveryId));
-		delivery.setStatus(WebhookDeliveryStatus.PENDING);
-		delivery.setNextRetryAt(LocalDateTime.now());
-		webhookDeliveryRepository.save(delivery);
-		executeDelivery(deliveryId);
-	}
+    @Override
+    @Transactional
+    public void redeliver(UUID deliveryId) {
+        WebhookDelivery delivery = webhookDeliveryRepository.findById(deliveryId)
+                .orElseThrow(() -> new IllegalArgumentException("Delivery not found: " + deliveryId));
+        delivery.setStatus(WebhookDeliveryStatus.PENDING);
+        delivery.setNextRetryAt(LocalDateTime.now());
+        webhookDeliveryRepository.save(delivery);
+        executeDelivery(deliveryId);
+    }
 }
