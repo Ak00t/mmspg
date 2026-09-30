@@ -41,14 +41,15 @@ import com.ojt_22.mmspg.repository.MerchantLedgerRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.repository.PaymentTransactionRepository;
 import com.ojt_22.mmspg.repository.TerminalRepository;
-import com.ojt_22.mmspg.service.PaymentTransactionService;
 import com.ojt_22.mmspg.repository.WebhookConfigRepository;
+import com.ojt_22.mmspg.service.PaymentTransactionService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PaymentTransactionServiceImpl implements PaymentTransactionService {
 
 	private final PaymentTransactionRepository transactionRepository;
@@ -58,8 +59,7 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 	private final MerchantBranchRepository branchRepository;
 	private final TerminalRepository terminalRepository;
 	private final MerchantLedgerRepository ledgerRepository;
-	
-	
+
 	private final WebhookConfigRepository webhookConfigRepository;
 	private final RestTemplate restTemplate;
 
@@ -163,8 +163,7 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 
 		BigDecimal feeAmount = transaction.getFeeAmount(); // Fee Amount ရယူခြင်း2
 
-		CoreBankingResponseDto coreBankingResponse = coreBankingClient.executeDebit(
-				requestDto.getCustomerId(),
+		CoreBankingResponseDto coreBankingResponse = coreBankingClient.executeDebit(requestDto.getCustomerId(),
 				transaction.getAmount(), feeAmount, // <-- Fee Amount ပါ ထည့်သွင်းပေးလိုက်ပါသည်
 				transaction.getTransactionReference());
 
@@ -174,10 +173,9 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 			transaction.setFailureReason(coreBankingResponse.getFailureReason());
 			transaction.setUpdatedAt(LocalDateTime.now());
 			PaymentTransaction failedTxn = transactionRepository.save(transaction);
-			
+
 			sendWebhookNotification(failedTxn);
-			
-			
+
 			return PaymentAuthorizeResponseDto.builder()
 					.transactionReference(transaction.getTransactionReference())
 					.status("FAILED")
@@ -202,8 +200,8 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 		ledgerEntry.setDescription("Payment settlement for Order ID: " + completedTxn.getOrderId());
 
 		ledgerRepository.save(ledgerEntry);
-		
-		//Group 5 (E-Commerce) ဆီ Webhook အသိပေးချက် ပို့ပေးခြင်း
+
+		// Group 5 (E-Commerce) ဆီ Webhook အသိပေးချက် ပို့ပေးခြင်း
 		sendWebhookNotification(completedTxn);
 
 		// 7. Response ပြန်လည်ထုတ်ပေးခြင်း
@@ -251,7 +249,7 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 						.build())
 				.collect(Collectors.toList());
 	}
-	
+
 	@Transactional(readOnly = true)
 	public PaymentCheckoutInfoDto getCheckoutInfoByToken(String token) {
 		PaymentTransaction transaction = transactionRepository.findByPaymentToken(token)
@@ -262,11 +260,13 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 		}
 
 		return PaymentCheckoutInfoDto.builder()
-				.businessName(transaction.getMerchant().getBusinessName())
+				.businessName(transaction.getMerchant()
+						.getBusinessName())
 				.orderId(transaction.getOrderId())
 				.amount(transaction.getAmount())
 				.currency(transaction.getCurrency())
-				.status(transaction.getStatus().name())
+				.status(transaction.getStatus()
+						.name())
 				.build();
 	}
 
@@ -287,17 +287,17 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 			throw new RuntimeException("Duplicate transaction: Order ID '" + orderId + "' has already been initiated.");
 		}
 	}
-	
+
 	@Async
 	private void sendWebhookNotification(PaymentTransaction transaction) {
 		try {
-			Optional<WebhookConfig> configOpt = webhookConfigRepository.findByMerchantIdAndStatus(
-					transaction.getMerchant().getId(), 
-					WebhookConfigStatus.ACTIVE
-			);
+			Optional<WebhookConfig> configOpt = webhookConfigRepository
+					.findByMerchantIdAndStatus(transaction.getMerchant()
+							.getId(), WebhookConfigStatus.ACTIVE);
 
 			if (configOpt.isEmpty()) {
-				log.info("No active webhook config found for merchant: {}", transaction.getMerchant().getId());
+				log.info("No active webhook config found for merchant: {}", transaction.getMerchant()
+						.getId());
 				return;
 			}
 
@@ -307,12 +307,14 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 			boolean isFailed = transaction.getStatus() == PaymentTransactionStatus.FAILED;
 
 			if (isCompleted && !Boolean.TRUE.equals(config.getEventPaymentCompleted())) {
-				log.info("Payment completed webhook event is disabled for merchant: {}", transaction.getMerchant().getId());
+				log.info("Payment completed webhook event is disabled for merchant: {}", transaction.getMerchant()
+						.getId());
 				return;
 			}
 
 			if (isFailed && !Boolean.TRUE.equals(config.getEventPaymentFailed())) {
-				log.info("Payment failed webhook event is disabled for merchant: {}", transaction.getMerchant().getId());
+				log.info("Payment failed webhook event is disabled for merchant: {}", transaction.getMerchant()
+						.getId());
 				return;
 			}
 
@@ -321,7 +323,8 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 				Map<String, Object> payload = new HashMap<>();
 				payload.put("orderId", transaction.getOrderId());
 				payload.put("transactionReference", transaction.getTransactionReference());
-				payload.put("status", transaction.getStatus().name());
+				payload.put("status", transaction.getStatus()
+						.name());
 				payload.put("amount", transaction.getAmount());
 				payload.put("currency", transaction.getCurrency());
 
@@ -334,8 +337,9 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 			}
 
 		} catch (Exception e) {
-			log.error("Failed to send webhook notification for transaction: {}", transaction.getTransactionReference(), e);
+			log.error("Failed to send webhook notification for transaction: {}", transaction.getTransactionReference(),
+					e);
 		}
 	}
-	
+
 }
