@@ -63,7 +63,7 @@ public class TerminalServiceImpl implements TerminalService {
 		terminal.setTerminalName(request.getTerminalName());
 		terminal.setTerminalType(TerminalType.valueOf(type));
 		terminal.setStatus(TerminalStatus.ONLINE);
-		terminal.setUpdatedAt(LocalDateTime.now());
+//		terminal.setUpdatedAt(LocalDateTime.now());
 
 		Terminal savedTerminal = terminalRepository.save(terminal);
 		return mapToResponseDto(savedTerminal);

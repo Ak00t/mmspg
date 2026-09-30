@@ -42,10 +42,8 @@ public class MerchantFeeServiceImpl implements MerchantFeeService {
 			throw new IllegalArgumentException("Invalid feeType. Must be PERCENTAGE, FLAT, or MIXED.");
 		}
 		fee.setFeeType(FeeType.valueOf(feeType));
-
 		fee.setPercentageRate(request.getFeePercentage());
 		fee.setFlatFee(request.getFlatAmount());
-
 		fee.setEffectiveFrom(LocalDateTime.now());
 		fee.setStatus(MerchantFeeStatus.ACTIVE);
 		fee.setCreatedAt(LocalDateTime.now());
@@ -74,7 +72,8 @@ public class MerchantFeeServiceImpl implements MerchantFeeService {
 				.name());
 		dto.setFeePercentage(fee.getPercentageRate());
 		dto.setFlatAmount(fee.getFlatFee());
-		dto.setStatus(fee.getStatus().name());
+		dto.setStatus(fee.getStatus()
+				.name());
 		dto.setEffectiveFrom(fee.getEffectiveFrom());
 		dto.setEffectiveTo(fee.getEffectiveTo());
 		dto.setCreatedAt(fee.getCreatedAt());

@@ -23,9 +23,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Component
 public class JwtTokenProvider {
-	@Value("${app.jwt.secret:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}")
+	@Value("${app.jwt.secret}")
 	private String jwtSecret;
-	@Value("${app.jwt.expiration-milliseconds:86400000}")
+	@Value("${app.jwt.expiration-milliseconds}")
 	private long jwtExpirationDate;
 
 	public String generateToken(Authentication authentication) {
