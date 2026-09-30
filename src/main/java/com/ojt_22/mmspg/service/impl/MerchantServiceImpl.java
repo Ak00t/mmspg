@@ -2,6 +2,8 @@ package com.ojt_22.mmspg.service.impl;
 
 import java.time.LocalDateTime;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,16 +59,15 @@ public class MerchantServiceImpl implements MerchantService {
 		merchant.setStatus(MerchantStatus.PENDING);
 
 		// updatedAt must be set manually if there's no @UpdateTimestamp
-		merchant.setUpdatedAt(LocalDateTime.now());
+//		merchant.setUpdatedAt(LocalDateTime.now());
 
 		return merchantRepository.save(merchant);
 	}
 
 	@Override
 	@Transactional(readOnly = true)
-	public org.springframework.data.domain.Page<com.ojt_22.mmspg.dto.MerchantPendingDto> getPendingMerchants(int page,
-			int size) {
-		org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size,
+	public Page<MerchantPendingDto> getPendingMerchants(int page, int size) {
+		org.springframework.data.domain.Pageable pageable = PageRequest.of(page, size,
 				org.springframework.data.domain.Sort.by("createdAt")
 						.descending());
 		return merchantRepository.findByStatus("PENDING", pageable)
@@ -91,9 +92,10 @@ public class MerchantServiceImpl implements MerchantService {
 		Merchant merchant = merchantRepository.findById(merchantId)
 				.orElseThrow(() -> new IllegalArgumentException("Merchant not found with ID: " + merchantId));
 
-		if (!"PENDING".equals(merchant.getStatus())) {
-			throw new IllegalStateException(
-					"Merchant is not in PENDING status. Current status: " + merchant.getStatus());
+		if (!"PENDING".equals(merchant.getStatus()
+				.name())) {
+			throw new IllegalStateException("Merchant is not in PENDING status. Current status: " + merchant.getStatus()
+					.name());
 		}
 
 		merchant.setStatus(MerchantStatus.ACTIVE);
@@ -110,8 +112,8 @@ public class MerchantServiceImpl implements MerchantService {
 
 		if (!"PENDING".equals(merchant.getStatus()
 				.name())) {
-			throw new IllegalStateException(
-					"Merchant is not in PENDING status. Current status: " + merchant.getStatus());
+			throw new IllegalStateException("Merchant is not in PENDING status. Current status: " + merchant.getStatus()
+					.name());
 		}
 
 		merchant.setStatus(MerchantStatus.REJECTED);

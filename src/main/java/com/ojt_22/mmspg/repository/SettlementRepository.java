@@ -10,4 +10,8 @@ public interface SettlementRepository extends JpaRepository<Settlement, UUID> {
 
 	boolean existsByTransactionId(UUID transactionId);
 	
+	@Query("SELECT COALESCE(SUM(s.netAmount), 0) FROM Settlement s " + "WHERE s.merchant.id = :merchantId "
+			+ "AND s.status = 'PENDING'")
+	BigDecimal findAvailableSettlementBalance(UUID merchantId);
+
 }

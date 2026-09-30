@@ -35,12 +35,16 @@ import com.ojt_22.mmspg.repository.MerchantLedgerRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.repository.PaymentTransactionRepository;
 import com.ojt_22.mmspg.repository.TerminalRepository;
+import com.ojt_22.mmspg.service.PaymentTransactionService;
+import com.ojt_22.mmspg.service.WebhookDeliveryService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
-public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.PaymentTransactionService {
+@Slf4j
+public class PaymentTransactionServiceImpl implements PaymentTransactionService {
 
 	private final PaymentTransactionRepository transactionRepository;
 	private final MerchantRepository merchantRepository;
@@ -50,11 +54,13 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 	private final TerminalRepository terminalRepository;
 	private final MerchantLedgerRepository ledgerRepository;
 
+	private final WebhookDeliveryService webhookDeliveryService;
+
 	// Group 2 (Core Banking System) သို့ API လှမ်းခေါ်မည့် Client Class
 	private final CoreBankingClient coreBankingClient;
-	
+
 	@Value("${payment.gateway.redirect-url}")
-    private String paymentRedirectUrl;
+	private String paymentRedirectUrl;
 
 	@Transactional
 	public PaymentInitiateResponseDto initiateTransaction(PaymentInitiateRequestDto requestDto, String idempotencyKey) {
@@ -97,6 +103,12 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 				.orElseThrow(() -> new RuntimeException("Merchant fee configuration not found"));
 
 		BigDecimal flatFee = merchantFee.getFlatFee() != null ? merchantFee.getFlatFee() : BigDecimal.ZERO;
+
+		if (requestDto.getAmount()
+				.compareTo(flatFee) < 0) {
+			throw new IllegalArgumentException("Transaction amount must be greater than or equal to flat fee.");
+		}
+
 		BigDecimal netAmount = requestDto.getAmount()
 				.subtract(flatFee);
 
@@ -144,8 +156,25 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 				.orElseThrow(() -> new RuntimeException("Invalid or expired payment token"));
 
 		// 2. Transaction Status စစ်ဆေးခြင်း (INITIATED ဖြစ်မှသာ ဆက်လုပ်မည်)
-		if (!"INITIATED".equals(transaction.getStatus())) {
+		if (transaction.getStatus() != PaymentTransactionStatus.INITIATED) {
 			throw new RuntimeException("Transaction has already been processed or is invalid");
+		}
+
+		if ("FAILED".equalsIgnoreCase(requestDto.getStatus())) {
+			transaction.setStatus(PaymentTransactionStatus.FAILED);
+			transaction.setFailureReason(requestDto.getFailureReason());
+			transaction.setUpdatedAt(LocalDateTime.now());
+
+			PaymentTransaction failedTxn = transactionRepository.save(transaction);
+
+			// WebhookDeliveryService သို့ လွှဲပြောင်းပေးပို့ခြင်း
+			webhookDeliveryService.sendWebhook(failedTxn, "PAYMENT_FAILED");
+
+			return PaymentAuthorizeResponseDto.builder()
+					.transactionReference(failedTxn.getTransactionReference())
+					.status("FAILED")
+					.failureReason(failedTxn.getFailureReason())
+					.build();
 		}
 
 		BigDecimal feeAmount = transaction.getFeeAmount(); // Fee Amount ရယူခြင်း2
@@ -159,10 +188,14 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 			transaction.setStatus(PaymentTransactionStatus.FAILED);
 			transaction.setFailureReason(coreBankingResponse.getFailureReason());
 			transaction.setUpdatedAt(LocalDateTime.now());
-			transactionRepository.save(transaction);
+			PaymentTransaction failedTxn = transactionRepository.save(transaction);
+
+			// WebhookDeliveryService ခေါ်ယူခြင်းနှင့် Reference အဟောင်းအစား
+			// failedTxn.getTransactionReference() သို့ ပြင်ဆင်ခြင်း
+			webhookDeliveryService.sendWebhook(failedTxn, "PAYMENT_FAILED");
 
 			return PaymentAuthorizeResponseDto.builder()
-					.transactionReference(transaction.getTransactionReference())
+					.transactionReference(failedTxn.getTransactionReference())
 					.status("FAILED")
 					.failureReason(coreBankingResponse.getFailureReason())
 					.build();
@@ -186,6 +219,9 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 
 		ledgerRepository.save(ledgerEntry);
 
+		// WebhookDeliveryService ဖြင့် PAYMENT_COMPLETED Event ပို့ပေးခြင်း
+		webhookDeliveryService.sendWebhook(completedTxn, "PAYMENT_COMPLETED");
+
 		// 7. Response ပြန်လည်ထုတ်ပေးခြင်း
 		return PaymentAuthorizeResponseDto.builder()
 				.transactionReference(completedTxn.getTransactionReference())
@@ -198,6 +234,7 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 				.build();
 	}
 
+	@Transactional(readOnly = true)
 	public PaymentStatusResponseDto getTransactionStatus(String transactionReference) {
 		PaymentTransaction transaction = transactionRepository.findByTransactionReference(transactionReference)
 				.orElseThrow(() -> new RuntimeException("Transaction not found"));
@@ -214,6 +251,7 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 				.build();
 	}
 
+	@Transactional(readOnly = true)
 	public List<PaymentTransactionSummaryDto> getMerchantTransactions(UUID merchantId) {
 		List<PaymentTransaction> transactions = transactionRepository.findByMerchantId(merchantId);
 
@@ -230,14 +268,35 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 				.collect(Collectors.toList());
 	}
 
+	@Transactional(readOnly = true)
+	public PaymentCheckoutInfoDto getCheckoutInfoByToken(String token) {
+		PaymentTransaction transaction = transactionRepository.findByPaymentToken(token)
+				.orElseThrow(() -> new RuntimeException("Invalid or expired payment token"));
+
+		if (transaction.getStatus() != PaymentTransactionStatus.INITIATED) {
+			throw new RuntimeException("This transaction has already been processed or is invalid");
+		}
+
+		return PaymentCheckoutInfoDto.builder()
+				.businessName(transaction.getMerchant()
+						.getBusinessName())
+				.orderId(transaction.getOrderId())
+				.amount(transaction.getAmount())
+				.currency(transaction.getCurrency())
+				.status(transaction.getStatus()
+						.name())
+				.build();
+	}
+
 	private void validateMerchant(Merchant merchant) {
 		if (merchant == null) {
 			throw new RuntimeException("Invalid merchant account");
 		}
-		
-		if (merchant.getStatus() == null || !"ACTIVE".equalsIgnoreCase(merchant.getStatus().name())) {
-	        throw new RuntimeException("Merchant account is not active");
-	    }
+
+		if (merchant.getStatus() == null || !"ACTIVE".equalsIgnoreCase(merchant.getStatus()
+				.name())) {
+			throw new RuntimeException("Merchant account is not active");
+		}
 	}
 
 	private void checkDuplicatePayment(UUID merchantId, String orderId) {
@@ -246,27 +305,5 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 			throw new RuntimeException("Duplicate transaction: Order ID '" + orderId + "' has already been initiated.");
 		}
 	}
-	
-
-	public PaymentCheckoutInfoDto getCheckoutInfoByToken(String token) {
-	    // Token ဖြင့် Database တွင် ရှာဖွေခြင်း
-	    PaymentTransaction transaction = transactionRepository.findByPaymentToken(token)
-	            .orElseThrow(() -> new RuntimeException("Invalid or expired payment token"));
-
-	    // INITIATED မဟုတ်ပါက (ဥပမာ COMPLETED သို့ FAILED ဖြစ်ပြီးသားဆိုလျှင်) အချက်အလက် မပြတော့ပါ
-	    if (transaction.getStatus() != PaymentTransactionStatus.INITIATED) {
-	        throw new RuntimeException("This transaction has already been processed or is invalid");
-	    }
-
-	    // Customer Portal သို့ ပြသရန် အချက်အလက်များ ပြန်ထုတ်ပေးခြင်း
-	    return PaymentCheckoutInfoDto.builder()
-	            .businessName(transaction.getMerchant().getBusinessName())
-	            .orderId(transaction.getOrderId())
-	            .amount(transaction.getAmount())
-	            .currency(transaction.getCurrency())
-	            .status(transaction.getStatus().name())
-	            .build();
-	}
-
 
 }

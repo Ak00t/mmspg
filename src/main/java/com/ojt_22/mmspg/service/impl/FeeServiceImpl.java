@@ -61,7 +61,7 @@ public class FeeServiceImpl implements FeeService {
 		response.setStatus(savedFee.getStatus()
 				.name());
 		response.setCreatedAt(savedFee.getCreatedAt());
-		response.setUpdatedAt(savedFee.getUpdatedAt());
+//		response.setUpdatedAt(savedFee.getUpdatedAt());
 
 		return response;
 	}
