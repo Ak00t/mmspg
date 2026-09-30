@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.JwtAuthResponse;
 import com.ojt_22.mmspg.dto.MerchantLoginRequest;
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.entity.Merchant;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.security.CustomMerchantDetailsService; // 🔴 ၁။ ဤ Import ကို ထည့်ပါ
@@ -40,6 +41,7 @@ public class MerchantAuthController {
 	private final MerchantRepository merchantRepository;
 
 	@PostMapping("/login")
+	@Auditable(menuName = "Merchant Authentication", action = "LOGIN", description = "Merchant login")
 	@Operation(summary = "Login to Merchant Portal", description = "Authenticates a merchant by email and password and returns a JWT token.")
 	@ApiResponse(responseCode = "200", description = "Successful login")
 	@ApiResponse(responseCode = "401", description = "Unauthorized - Invalid credentials or account inactive")
