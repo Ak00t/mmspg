@@ -44,7 +44,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.PaymentTransactionService {
+public class PaymentTransactionServiceImpl implements PaymentTransactionService {
 
 	private final PaymentTransactionRepository transactionRepository;
 	private final MerchantRepository merchantRepository;
@@ -59,9 +59,9 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 
 	// Group 2 (Core Banking System) သို့ API လှမ်းခေါ်မည့် Client Class
 	private final CoreBankingClient coreBankingClient;
-	
+
 	@Value("${payment.gateway.redirect-url}")
-    private String paymentRedirectUrl;
+	private String paymentRedirectUrl;
 
 	@Transactional
 	public PaymentInitiateResponseDto initiateTransaction(PaymentInitiateRequestDto requestDto, String idempotencyKey) {
@@ -178,8 +178,7 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 
 		BigDecimal feeAmount = transaction.getFeeAmount(); // Fee Amount ရယူခြင်း2
 
-		CoreBankingResponseDto coreBankingResponse = coreBankingClient.executeDebit(
-				requestDto.getCustomerId(),
+		CoreBankingResponseDto coreBankingResponse = coreBankingClient.executeDebit(requestDto.getCustomerId(),
 				transaction.getAmount(), feeAmount, // <-- Fee Amount ပါ ထည့်သွင်းပေးလိုက်ပါသည်
 				transaction.getTransactionReference());
 
@@ -267,7 +266,7 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 						.build())
 				.collect(Collectors.toList());
 	}
-	
+
 	@Transactional(readOnly = true)
 	public PaymentCheckoutInfoDto getCheckoutInfoByToken(String token) {
 		PaymentTransaction transaction = transactionRepository.findByPaymentToken(token)
@@ -278,11 +277,13 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 		}
 
 		return PaymentCheckoutInfoDto.builder()
-				.businessName(transaction.getMerchant().getBusinessName())
+				.businessName(transaction.getMerchant()
+						.getBusinessName())
 				.orderId(transaction.getOrderId())
 				.amount(transaction.getAmount())
 				.currency(transaction.getCurrency())
-				.status(transaction.getStatus().name())
+				.status(transaction.getStatus()
+						.name())
 				.build();
 	}
 
@@ -290,10 +291,11 @@ public class PaymentTransactionServiceImpl implements com.ojt_22.mmspg.service.P
 		if (merchant == null) {
 			throw new RuntimeException("Invalid merchant account");
 		}
-		
-		if (merchant.getStatus() == null || !"ACTIVE".equalsIgnoreCase(merchant.getStatus().name())) {
-	        throw new RuntimeException("Merchant account is not active");
-	    }
+
+		if (merchant.getStatus() == null || !"ACTIVE".equalsIgnoreCase(merchant.getStatus()
+				.name())) {
+			throw new RuntimeException("Merchant account is not active");
+		}
 	}
 
 	private void checkDuplicatePayment(UUID merchantId, String orderId) {

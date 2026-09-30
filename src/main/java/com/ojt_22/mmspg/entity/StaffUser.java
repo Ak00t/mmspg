@@ -15,7 +15,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -36,8 +35,8 @@ public class StaffUser {
 	@Column(name = "staff_id", columnDefinition = "BINARY(16)")
 	private UUID id;
 
-	@Column(nullable = false, length = 100, unique = true)
-	private String username;
+//	@Column(nullable = false, length = 100, unique = true)
+//	private String username;
 
 	@Column(name = "password_hash", nullable = false, length = 255)
 	private String passwordHash;
@@ -68,10 +67,10 @@ public class StaffUser {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by", updatable = false, foreignKey = @ForeignKey(name = "none", value = jakarta.persistence.ConstraintMode.NO_CONSTRAINT))
+	@JoinColumn(name = "created_by", updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "updated_by", foreignKey = @ForeignKey(name = "none", value = jakarta.persistence.ConstraintMode.NO_CONSTRAINT))
+	@JoinColumn(name = "updated_by")
 	private StaffUser updatedBy;
 }
