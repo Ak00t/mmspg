@@ -1,11 +1,12 @@
 package com.ojt_22.mmspg.service;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import com.ojt_22.mmspg.dto.MerchantDashboardSummaryResponse;
 
 public interface DashboardService {
 
-	public MerchantDashboardSummaryResponse getDashboardSummary(UUID merchantId);
+	public MerchantDashboardSummaryResponse getDashboardSummary(UUID merchantId, LocalDate startDate, LocalDate endDate);
 
 }

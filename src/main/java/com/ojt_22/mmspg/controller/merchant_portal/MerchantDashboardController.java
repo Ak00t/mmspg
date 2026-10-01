@@ -1,11 +1,13 @@
 package com.ojt_22.mmspg.controller.merchant_portal;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.MerchantDashboardSummaryResponse;
@@ -21,8 +23,11 @@ public class MerchantDashboardController {
 	private final DashboardService dashboardService;
 
 	@GetMapping("/{merchantId}/summary")
-	public ResponseEntity<MerchantDashboardSummaryResponse> getSummary(@PathVariable UUID merchantId) {
-		MerchantDashboardSummaryResponse response = dashboardService.getDashboardSummary(merchantId);
+	public ResponseEntity<MerchantDashboardSummaryResponse> getSummary(
+			@PathVariable UUID merchantId,
+			@RequestParam(required = false) LocalDate startDate,
+			@RequestParam(required = false) LocalDate endDate) {
+		MerchantDashboardSummaryResponse response = dashboardService.getDashboardSummary(merchantId, startDate, endDate);
 		return ResponseEntity.ok(response);
 	}
 
