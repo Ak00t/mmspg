@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.MerchantRegistrationRequest;
 import com.ojt_22.mmspg.entity.Merchant;
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.service.MerchantService;
 
 import jakarta.validation.Valid;
@@ -25,6 +26,7 @@ public class AdminMerchantController {
     private final MerchantService merchantService;
 
     @PostMapping("/register")
+    @Auditable(menuName = "Merchant Management", action = "REGISTER", targetType = "MERCHANT")
     // 🔴 ဤနေရာကို ပြင်ဆင်လိုက်ပါသည် (ADMIN သို့မဟုတ် STAFF နှစ်ခုလုံးကို ခွင့်ပြုပါမည်)
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')") 
     public ResponseEntity<?> registerMerchant(@Valid @RequestBody MerchantRegistrationRequest request) {

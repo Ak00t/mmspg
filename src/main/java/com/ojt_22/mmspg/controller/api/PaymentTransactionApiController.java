@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.PaymentAuthorizeRequestDto;
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.dto.PaymentAuthorizeResponseDto;
 import com.ojt_22.mmspg.dto.PaymentCheckoutInfoDto;
 import com.ojt_22.mmspg.dto.PaymentInitiateRequestDto;
@@ -35,6 +36,7 @@ public class PaymentTransactionApiController {
     private final PaymentTransactionService transactionService;
 
     @PostMapping("/initiate")
+    @Auditable(menuName = "Payments", action = "INITIATE", targetType = "PAYMENT_TRANSACTION")
     public ResponseEntity<PaymentInitiateResponseDto> initiateTransaction(
             @Parameter(
                 name = "Idempotency-Key", 
@@ -50,6 +52,7 @@ public class PaymentTransactionApiController {
     }
     
     @PostMapping("/authorize")
+    @Auditable(menuName = "Payments", action = "AUTHORIZE", targetType = "PAYMENT_TRANSACTION")
     public ResponseEntity<PaymentAuthorizeResponseDto> authorizeTransaction(@Valid @RequestBody PaymentAuthorizeRequestDto requestDto) {
         return ResponseEntity.ok(transactionService.authorizeTransaction(requestDto));
     }
