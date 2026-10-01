@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import com.ojt_22.mmspg.enums.FeeType;
+import com.ojt_22.mmspg.enums.MerchantFeeStatus;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -31,7 +32,7 @@ public class FeeConfigResponse {
 
     private LocalDateTime effectiveTo;
 
-    private String status;
+    private MerchantFeeStatus status;
 
     private LocalDateTime createdAt;
 

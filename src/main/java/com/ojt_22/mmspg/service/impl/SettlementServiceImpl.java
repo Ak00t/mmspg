@@ -21,81 +21,104 @@ import com.ojt_22.mmspg.repository.SettlementRepository;
 import com.ojt_22.mmspg.repository.StaffUserRepository;
 import com.ojt_22.mmspg.service.SettlementService;
 
-import lombok.RequiredArgsConstructor;
-
 @Service
-@RequiredArgsConstructor
 public class SettlementServiceImpl implements SettlementService {
 
-	private final SettlementRepository settlementRepository;
-	private final PaymentTransactionRepository paymentTransactionRepository;
-	private final StaffUserRepository staffUserRepository;
+    private final SettlementRepository settlementRepository;
+    private final PaymentTransactionRepository paymentTransactionRepository;
+    private final StaffUserRepository staffUserRepository;
 
-	public SettlementResponse processSettlement(UUID transactionId) {
+    public SettlementServiceImpl(
+            SettlementRepository settlementRepository,
+            PaymentTransactionRepository paymentTransactionRepository,
+            StaffUserRepository staffUserRepository) {
 
-		PaymentTransaction transaction = paymentTransactionRepository.findById(transactionId)
-				.orElseThrow(() -> new ResourceNotFoundException("Transaction not found: " + transactionId));
+        this.settlementRepository = settlementRepository;
+        this.paymentTransactionRepository = paymentTransactionRepository;
+        this.staffUserRepository = staffUserRepository;
+    }
 
-		if (settlementRepository.existsByTransactionId(transactionId)) {
-			throw new SettlementAlreadyExistsException("Settlement already exists for transaction: " + transactionId);
-		}
+    @Override
+    public SettlementResponse processSettlement(UUID transactionId) {
 
-		if (transaction.getStatus() != PaymentTransactionStatus.COMPLETED) {
-			throw new InvalidTransactionStatusException("Only COMPLETED transaction can be settled");
-		}
+        PaymentTransaction transaction =
+                paymentTransactionRepository.findById(transactionId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Transaction not found: " + transactionId));
 
-		String email = SecurityContextHolder.getContext()
-				.getAuthentication()
-				.getName();
+        if (settlementRepository.existsByTransactionId(transactionId)) {
+            throw new SettlementAlreadyExistsException(
+                    "Settlement already exists for transaction: " + transactionId);
+        }
 
-		StaffUser currentAdmin = staffUserRepository.findByEmail(email)
-				.orElseThrow(() -> new ResourceNotFoundException("Staff user not found: " + email));
+        if (transaction.getStatus() != PaymentTransactionStatus.COMPLETED) {
+            throw new InvalidTransactionStatusException(
+                    "Only COMPLETED transaction can be settled");
+        }
 
-		// Settlement object ဆောက်
-		Settlement settlement = new Settlement();
+        String email = SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getName();
 
-		settlement.setCreatedBy(currentAdmin);
-		settlement.setTransaction(transaction);
-		settlement.setMerchant(transaction.getMerchant());
+        StaffUser currentAdmin = staffUserRepository
+                .findByEmail(email)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Staff user not found: " + email));
 
-		settlement.setGrossAmount(transaction.getAmount());
-		settlement.setFeeAmount(transaction.getFeeAmount());
-		settlement.setNetAmount(transaction.getNetAmount());
+        Settlement settlement = new Settlement();
 
-		settlement.setSettlementDate(LocalDate.now());
+        settlement.setCreatedBy(currentAdmin);
+        settlement.setTransaction(transaction);
+        settlement.setMerchant(transaction.getMerchant());
 
-		settlement.setSettlementReference("STL-" + UUID.randomUUID());
+        settlement.setGrossAmount(transaction.getAmount());
+        settlement.setFeeAmount(transaction.getFeeAmount());
+        settlement.setNetAmount(transaction.getNetAmount());
 
-		settlement.setBankAccountNo(transaction.getMerchant()
-				.getSettlementAccountNo());
+        settlement.setSettlementDate(LocalDate.now());
 
-		settlement.setStatus(SettlementStatus.COMPLETED);
-		settlement.setProcessedAt(LocalDateTime.now());
+        settlement.setSettlementReference(
+                "STL-" + UUID.randomUUID());
 
-		// DB ထဲ save
-		Settlement savedSettlement = settlementRepository.save(settlement);
+        settlement.setBankAccountNo(
+                transaction.getMerchant().getSettlementAccountNo());
 
-		// DTO ဆောက်
-		SettlementResponse response = new SettlementResponse();
+        settlement.setStatus(SettlementStatus.COMPLETED);
+        settlement.setProcessedAt(LocalDateTime.now());
 
-		response.setSettlementId(savedSettlement.getId());
-		response.setTransactionId(savedSettlement.getTransaction()
-				.getId());
-		response.setMerchantId(savedSettlement.getMerchant()
-				.getId());
+        Settlement savedSettlement =
+                settlementRepository.save(settlement);
 
-		response.setSettlementReference(savedSettlement.getSettlementReference());
-		response.setSettlementDate(savedSettlement.getSettlementDate());
+        SettlementResponse response = new SettlementResponse();
 
-		response.setGrossAmount(savedSettlement.getGrossAmount());
-		response.setFeeAmount(savedSettlement.getFeeAmount());
-		response.setNetAmount(savedSettlement.getNetAmount());
+        response.setSettlementId(savedSettlement.getId());
+        response.setTransactionId(
+                savedSettlement.getTransaction().getId());
+        response.setMerchantId(
+                savedSettlement.getMerchant().getId());
 
-		response.setBankAccountNo(savedSettlement.getBankAccountNo());
-		response.setStatus(savedSettlement.getStatus());
-		response.setProcessedAt(savedSettlement.getProcessedAt());
+        response.setSettlementReference(
+                savedSettlement.getSettlementReference());
+        response.setSettlementDate(
+                savedSettlement.getSettlementDate());
 
-		return response;
-	}
+        response.setGrossAmount(
+                savedSettlement.getGrossAmount());
+        response.setFeeAmount(
+                savedSettlement.getFeeAmount());
+        response.setNetAmount(
+                savedSettlement.getNetAmount());
 
+        response.setBankAccountNo(
+                savedSettlement.getBankAccountNo());
+        response.setStatus(
+                savedSettlement.getStatus());
+        response.setProcessedAt(
+                savedSettlement.getProcessedAt());
+
+        return response;
+    }
 }

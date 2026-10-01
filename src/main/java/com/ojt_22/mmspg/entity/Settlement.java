@@ -57,8 +57,7 @@ public class Settlement {
 	@Column(name = "fee_amount", nullable = false, precision = 18, scale = 4)
 	private BigDecimal feeAmount;
 
-	@Column(name = "refund_amount", nullable = false, precision = 18, scale = 4)
-	private BigDecimal refundAmount;
+	
 
 	@Column(name = "net_amount", nullable = false, precision = 18, scale = 4)
 	private BigDecimal netAmount;
