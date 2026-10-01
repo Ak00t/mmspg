@@ -190,8 +190,6 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 			transaction.setUpdatedAt(LocalDateTime.now());
 			PaymentTransaction failedTxn = transactionRepository.save(transaction);
 
-			// WebhookDeliveryService ခေါ်ယူခြင်းနှင့် Reference အဟောင်းအစား
-			// failedTxn.getTransactionReference() သို့ ပြင်ဆင်ခြင်း
 			webhookDeliveryService.sendWebhook(failedTxn, "PAYMENT_FAILED");
 
 			return PaymentAuthorizeResponseDto.builder()
@@ -213,7 +211,7 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 		ledgerEntry.setMerchant(completedTxn.getMerchant());
 		ledgerEntry.setTransaction(completedTxn);
 		ledgerEntry.setMerchantLedgerEntryType(MerchantLedgerEntryType.CREDIT);
-		ledgerEntry.setBalanceType(MerchantLedgerEntryBalanceType.PENDING);
+		ledgerEntry.setBalanceType(MerchantLedgerEntryBalanceType.SETTLED);
 		ledgerEntry.setAmount(completedTxn.getNetAmount());
 		ledgerEntry.setDescription("Payment settlement for Order ID: " + completedTxn.getOrderId());
 
