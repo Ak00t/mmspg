@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.MerchantPendingDto;
 import com.ojt_22.mmspg.dto.MerchantRejectRequest;
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.service.MerchantService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -42,6 +43,7 @@ public class AdminMerchantApprovalController {
     }
 
     @PutMapping("/{id}/approve")
+    @Auditable(menuName = "Merchant Approval", action = "APPROVE", targetType = "MERCHANT")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Approve Merchant", description = "Approves a pending merchant and updates status to ACTIVE.")
     public ResponseEntity<?> approveMerchant(@PathVariable UUID id) {
@@ -54,6 +56,7 @@ public class AdminMerchantApprovalController {
     }
 
     @PutMapping("/{id}/reject")
+    @Auditable(menuName = "Merchant Approval", action = "REJECT", targetType = "MERCHANT")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Reject Merchant", description = "Rejects a pending merchant and updates status to REJECTED.")
     public ResponseEntity<?> rejectMerchant(

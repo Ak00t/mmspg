@@ -55,7 +55,7 @@ public class AuditLogAspect {
 			}
 
 			UUID actorId = null;
-			String actorType = "STAFF";
+			String actorType = "SYSTEM";
 			String roleName = "UNKNOWN";
 
 			Authentication auth = SecurityContextHolder.getContext()
@@ -83,10 +83,6 @@ public class AuditLogAspect {
 							.map(StaffUser::getId)
 							.orElse(null);
 				}
-			}
-
-			if (actorId == null) {
-				actorId = UUID.fromString("00000000-0000-0000-0000-000000000000");
 			}
 
 			AuditLogCreateRequest auditRequest = AuditLogCreateRequest.builder()

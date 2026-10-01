@@ -39,7 +39,7 @@ public class AuditLog {
 	@Column(name = "audit_id", nullable = false, updatable = false)
 	private Long auditId;
 
-	@Column(name = "actor_id", columnDefinition = "BINARY(16)", nullable = false, updatable = false)
+	@Column(name = "actor_id", columnDefinition = "BINARY(16)", updatable = false)
 	private UUID actorId;
 
 	@Column(name = "actor_type", length = 50, nullable = false, updatable = false)
