@@ -19,6 +19,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -35,6 +36,10 @@ public class Settlement {
 	@UuidGenerator(style = UuidGenerator.Style.VERSION_7)
 	@Column(name = "settlement_id", columnDefinition = "BINARY(16)")
 	private UUID id;
+
+	@OneToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "transaction_id", unique = true)
+	private PaymentTransaction transaction;
 
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "merchant_id", nullable = false)

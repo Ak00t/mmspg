@@ -9,16 +9,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.SettlementResponse;
-import com.ojt_22.mmspg.service.SettlementService;
+import com.ojt_22.mmspg.service.impl.SettlementServiceImpl;
 
 @RestController
 @RequestMapping("/api/admin/settlements")
 public class SettlementController {
 
-    private final SettlementService settlementService;
+    private final SettlementServiceImpl settlementServiceImpl;
 
-    public SettlementController(SettlementService settlementService) {
-        this.settlementService = settlementService;
+    public SettlementController(SettlementServiceImpl settlementServiceImpl) {
+        this.settlementServiceImpl = settlementServiceImpl;
     }
 
     @PostMapping("/{transactionId}")
@@ -26,7 +26,7 @@ public class SettlementController {
             @PathVariable UUID transactionId) {
 
         SettlementResponse response =
-                settlementService.processSettlement(transactionId);
+                settlementServiceImpl.processSettlement(transactionId);
 
         return ResponseEntity.ok(response);
     }
