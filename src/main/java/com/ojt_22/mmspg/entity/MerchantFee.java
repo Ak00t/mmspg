@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
@@ -49,7 +50,7 @@ public class MerchantFee {
 	private BigDecimal flatFee;
 
 	@Column(name = "minimum_fee", precision = 18, scale = 3)
-	private BigDecimal miniumnFee;
+	private BigDecimal minimumFee;
 
 	@Column(name = "maximum_fee", precision = 18, scale = 3)
 	private BigDecimal maximumFee;
@@ -63,7 +64,8 @@ public class MerchantFee {
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, columnDefinition = "enum('ACTIVE','INACTIVE') DEFAULT 'ACTIVE' ")
 	private MerchantFeeStatus status = MerchantFeeStatus.ACTIVE;
-
+    
+	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
