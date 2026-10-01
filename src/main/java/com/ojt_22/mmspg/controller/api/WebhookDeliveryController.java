@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.WebhookDeliveryDto;
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.service.WebhookDeliveryService;
 
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class WebhookDeliveryController {
 
     // မအောင်မြင်သော Webhook ကို အတင်းအကျပ် Manual ပြန်ပို့ခြင်း (Manual Redelivery)[cite: 14]
     @PostMapping("/{deliveryId}/redeliver")
+    @Auditable(menuName = "Webhook Delivery", action = "REDELIVER", targetType = "WEBHOOK_DELIVERY")
     public ResponseEntity<String> redeliver(@PathVariable UUID deliveryId) {
         webhookDeliveryService.redeliver(deliveryId);
         return ResponseEntity.ok("Redelivery task triggered successfully.");

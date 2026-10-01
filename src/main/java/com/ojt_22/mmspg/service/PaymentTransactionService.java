@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import com.ojt_22.mmspg.dto.PaymentAuthorizeRequestDto;
 import com.ojt_22.mmspg.dto.PaymentAuthorizeResponseDto;
+import com.ojt_22.mmspg.dto.PaymentCheckoutInfoDto;
 import com.ojt_22.mmspg.dto.PaymentInitiateRequestDto;
 import com.ojt_22.mmspg.dto.PaymentInitiateResponseDto;
 import com.ojt_22.mmspg.dto.PaymentStatusResponseDto;
@@ -18,5 +19,7 @@ public interface PaymentTransactionService {
 	public PaymentStatusResponseDto getTransactionStatus(String transactionReference);
 
 	public List<PaymentTransactionSummaryDto> getMerchantTransactions(UUID merchantId);
-
+	
+	// Customer Portal မှ Amount/Merchant အချက်အလက် လှမ်းယူရန်
+	public PaymentCheckoutInfoDto getCheckoutInfoByToken(String token);
 }

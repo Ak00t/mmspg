@@ -14,9 +14,7 @@ import com.ojt_22.mmspg.enums.WebhookConfigStatus;
 
 public interface WebhookConfigRepository extends JpaRepository<WebhookConfig, UUID> {
 	
-	// Merchant ID နှင့် ACTIVE Status ဖြင့် Active Webhook Config ကို ရှာပေးမည့် Method
-    Optional<WebhookConfig> findByMerchantIdAndStatus(UUID merchantId, WebhookConfigStatus status);
-
+	Optional<WebhookConfig> findByMerchantIdAndStatus(UUID merchantId, WebhookConfigStatus status);
 
 	boolean existsByMerchantIdAndStatus(UUID merchantId, String status);
 }

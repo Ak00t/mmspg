@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ojt_22.mmspg.dto.FeeCalculationResponse;
 import com.ojt_22.mmspg.dto.FeeConfigRequest;
 import com.ojt_22.mmspg.dto.FeeConfigResponse;
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.service.FeeService;
 
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class FeeController {
 	private final FeeService feeService;
 
 	@PostMapping
+	@Auditable(menuName = "Fee Configuration", action = "CREATE", targetType = "FEE_CONFIG")
 	public ResponseEntity<FeeConfigResponse> createFeeConfig(@RequestBody FeeConfigRequest request) {
 
 		FeeConfigResponse response = feeService.createFeeConfig(request);
@@ -37,6 +39,7 @@ public class FeeController {
 	}
 
 	@PutMapping("/{feeId}")
+	@Auditable(menuName = "Fee Configuration", action = "UPDATE", targetType = "FEE_CONFIG")
 	public ResponseEntity<FeeConfigResponse> updateFeeConfig(@PathVariable UUID feeId,
 			@RequestBody FeeConfigRequest request) {
 

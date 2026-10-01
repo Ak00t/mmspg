@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.PaymentAuthorizeRequestDto;
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.dto.PaymentAuthorizeResponseDto;
+import com.ojt_22.mmspg.dto.PaymentCheckoutInfoDto;
 import com.ojt_22.mmspg.dto.PaymentInitiateRequestDto;
 import com.ojt_22.mmspg.dto.PaymentInitiateResponseDto;
 import com.ojt_22.mmspg.dto.PaymentStatusResponseDto;
@@ -23,6 +25,7 @@ import com.ojt_22.mmspg.service.PaymentTransactionService;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -33,6 +36,7 @@ public class PaymentTransactionApiController {
     private final PaymentTransactionService transactionService;
 
     @PostMapping("/initiate")
+    @Auditable(menuName = "Payments", action = "INITIATE", targetType = "PAYMENT_TRANSACTION")
     public ResponseEntity<PaymentInitiateResponseDto> initiateTransaction(
             @Parameter(
                 name = "Idempotency-Key", 
@@ -40,6 +44,7 @@ public class PaymentTransactionApiController {
                 required = true, 
                 in = ParameterIn.HEADER
             )
+            @NotBlank(message = "Idempotency-Key header must not be blank")
             @RequestHeader(value = "Idempotency-Key", required = true) String idempotencyKey,
             @Valid @RequestBody PaymentInitiateRequestDto requestDto) {
         
@@ -47,6 +52,7 @@ public class PaymentTransactionApiController {
     }
     
     @PostMapping("/authorize")
+    @Auditable(menuName = "Payments", action = "AUTHORIZE", targetType = "PAYMENT_TRANSACTION")
     public ResponseEntity<PaymentAuthorizeResponseDto> authorizeTransaction(@Valid @RequestBody PaymentAuthorizeRequestDto requestDto) {
         return ResponseEntity.ok(transactionService.authorizeTransaction(requestDto));
     }
@@ -59,5 +65,10 @@ public class PaymentTransactionApiController {
     @GetMapping("/merchant/{merchantId}")
     public ResponseEntity<List<PaymentTransactionSummaryDto>> getMerchantTransactions(@PathVariable UUID merchantId) {
         return ResponseEntity.ok(transactionService.getMerchantTransactions(merchantId));
+    }
+
+    @GetMapping("/checkout-info/{token}")
+    public ResponseEntity<PaymentCheckoutInfoDto> getCheckoutInfo(@PathVariable String token) {
+        return ResponseEntity.ok(transactionService.getCheckoutInfoByToken(token));
     }
 }

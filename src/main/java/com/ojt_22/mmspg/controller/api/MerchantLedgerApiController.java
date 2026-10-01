@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.entity.MerchantLedgerEntry;
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.repository.MerchantLedgerRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class MerchantLedgerApiController {
      * PUT /api/v1/merchant-ledgers/{ledgerId}/balance-type?status=SETTLED
      */
     @PutMapping("/{ledgerId}/balance-type")
+    @Auditable(menuName = "Merchant Ledger", action = "UPDATE_BALANCE_TYPE", targetType = "MERCHANT_LEDGER")
     @Transactional
     public ResponseEntity<String> updateBalanceType(
             @PathVariable UUID ledgerId,
