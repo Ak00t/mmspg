@@ -6,12 +6,14 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -187,5 +189,15 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
         delivery.setNextRetryAt(LocalDateTime.now());
         webhookDeliveryRepository.save(delivery);
         executeDelivery(deliveryId);
+    }
+    @Scheduled(fixedDelay = 60000) // ၁ မိနစ်တစ်ကြိမ် အလိုအလျောက် စစ်မည်
+    public void retryFailedWebhooks() {
+        // List<WebhookDelivery> ဟု Generic Type ထည့်ပြီး LocalDateTime ကို L အကြီးဖြင့် ရေးပါ
+        List<WebhookDelivery> pendingRetries = webhookDeliveryRepository
+                .findByStatusAndNextRetryAtBefore(WebhookDeliveryStatus.PENDING, LocalDateTime.now());
+
+        for (WebhookDelivery delivery : pendingRetries) {
+            executeDelivery(delivery.getId());
+        }
     }
 }

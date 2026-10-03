@@ -90,13 +90,25 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 
 		// 🔴 [ဖြည့်ရန် ၁.၃] Order ID ထပ်နေခြင်း ရှိမရှိ စစ်ဆေးရန် ထည့်ပါ
 		checkDuplicatePayment(requestDto.getMerchantId(), requestDto.getOrderId());
-		// 2. Branch ရှိမရှိ စစ်ဆေးရန်
-		MerchantBranch branch = branchRepository.findById(requestDto.getBranchId())
-				.orElseThrow(() -> new RuntimeException("Branch not found"));
+		
+		// ၁။ နှစ်ခုလုံး null ဖြစ်နေပါက (တစ်လှည့်မှ မပါလာပါက) Exception တက်စေရန် စစ်ဆေးခြင်း
+		if (requestDto.getBranchId() == null && requestDto.getTerminalId() == null) {
+		    throw new RuntimeException("At least one of Branch ID or Terminal ID must be provided.");
+		}
 
-		// 3. Terminal ရှိမရှိ စစ်ဆေးရန်
-		Terminal terminal = terminalRepository.findById(requestDto.getTerminalId())
-				.orElseThrow(() -> new RuntimeException("Terminal not found"));
+		// ၂။ Branch ID ပါလာမှသာ DB တွင် ရှာမည်၊ ပါမလာပါက branch ကို null ထားမည်
+		MerchantBranch branch = null;
+		if (requestDto.getBranchId() != null) {
+		    branch = branchRepository.findById(requestDto.getBranchId())
+		            .orElseThrow(() -> new RuntimeException("Branch not found"));
+		}
+
+		// ၃။ Terminal ID ပါလာမှသာ DB တွင် ရှာမည်၊ ပါမလာပါက terminal ကို null ထားမည်
+		Terminal terminal = null;
+		if (requestDto.getTerminalId() != null) {
+		    terminal = terminalRepository.findById(requestDto.getTerminalId())
+		            .orElseThrow(() -> new RuntimeException("Terminal not found"));
+		}
 
 		// 4. Fee အချက်အလက်ကို ရှာယူခြင်း
 		MerchantFee merchantFee = merchantFeeRepository.findByMerchantId(requestDto.getMerchantId())

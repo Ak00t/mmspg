@@ -5,12 +5,14 @@ import com.ojt_22.mmspg.dto.CreateWebhookRequest;
 import com.ojt_22.mmspg.dto.UpdateWebhookRequest;
 import com.ojt_22.mmspg.dto.WebhookConfigResponse;
 
+import jakarta.validation.Valid;
+
 public interface WebhookConfigService {
 
     /**
      * Webhook အသစ် ဖန်တီးခြင်း
      */
-    WebhookConfigResponse createWebhook(CreateWebhookRequest request);
+    WebhookConfigResponse createWebhook(@Valid CreateWebhookRequest request);
 
     /**
      * Webhook အချက်အလက် ပြင်ဆင်ခြင်း

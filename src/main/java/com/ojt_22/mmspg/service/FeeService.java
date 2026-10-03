@@ -19,4 +19,5 @@ public interface FeeService {
 	public BigDecimal calculateNetAmount(BigDecimal amount, BigDecimal feeAmount);
 
 	public FeeCalculationResponse calculateFee(UUID feeId, BigDecimal amount);
+
 }
