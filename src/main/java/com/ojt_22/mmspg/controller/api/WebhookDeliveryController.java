@@ -37,7 +37,7 @@ public class WebhookDeliveryController {
 
     // မအောင်မြင်သော Webhook ကို အတင်းအကျပ် Manual ပြန်ပို့ခြင်း (Manual Redelivery)[cite: 14]
     @PostMapping("/{deliveryId}/redeliver")
-    @Auditable(menuName = "Webhook Delivery", action = "REDELIVER", targetType = "WEBHOOK_DELIVERY")
+    @Auditable(menuName = "Webhook Delivery", action = "REDELIVER", targetType = "WEBHOOK_DELIVERY", targetId = "#deliveryId")
     public ResponseEntity<String> redeliver(@PathVariable UUID deliveryId) {
         webhookDeliveryService.redeliver(deliveryId);
         return ResponseEntity.ok("Redelivery task triggered successfully.");

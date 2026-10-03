@@ -39,7 +39,7 @@ public class MerchantLedgerApiController {
      * PUT /api/v1/merchant-ledgers/{ledgerId}/balance-type?status=SETTLED
      */
     @PutMapping("/{ledgerId}/balance-type")
-    @Auditable(menuName = "Merchant Ledger", action = "UPDATE_BALANCE_TYPE", targetType = "MERCHANT_LEDGER")
+    @Auditable(menuName = "Merchant Ledger", action = "UPDATE_BALANCE_TYPE", targetType = "MERCHANT_LEDGER", targetId = "#ledgerId")
     @Transactional
     public ResponseEntity<String> updateBalanceType(
             @PathVariable UUID ledgerId,

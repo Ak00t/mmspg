@@ -43,7 +43,7 @@ public class AdminMerchantApprovalController {
     }
 
     @PutMapping("/{id}/approve")
-    @Auditable(menuName = "Merchant Approval", action = "APPROVE", targetType = "MERCHANT")
+    @Auditable(menuName = "Merchant Approval", action = "APPROVE", targetType = "MERCHANT", targetId = "#id")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Approve Merchant", description = "Approves a pending merchant and updates status to ACTIVE.")
     public ResponseEntity<?> approveMerchant(@PathVariable UUID id) {
@@ -56,7 +56,7 @@ public class AdminMerchantApprovalController {
     }
 
     @PutMapping("/{id}/reject")
-    @Auditable(menuName = "Merchant Approval", action = "REJECT", targetType = "MERCHANT")
+    @Auditable(menuName = "Merchant Approval", action = "REJECT", targetType = "MERCHANT", targetId = "#id")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Reject Merchant", description = "Rejects a pending merchant and updates status to REJECTED.")
     public ResponseEntity<?> rejectMerchant(

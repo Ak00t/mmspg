@@ -36,7 +36,7 @@ public class PaymentTransactionApiController {
     private final PaymentTransactionService transactionService;
 
     @PostMapping("/initiate")
-    @Auditable(menuName = "Payments", action = "INITIATE", targetType = "PAYMENT_TRANSACTION")
+    @Auditable(menuName = "Payments", action = "INITIATE", targetType = "PAYMENT_TRANSACTION", targetId = "#result?.body?.transactionReference")
     public ResponseEntity<PaymentInitiateResponseDto> initiateTransaction(
             @Parameter(
                 name = "Idempotency-Key", 
@@ -52,7 +52,7 @@ public class PaymentTransactionApiController {
     }
     
     @PostMapping("/authorize")
-    @Auditable(menuName = "Payments", action = "AUTHORIZE", targetType = "PAYMENT_TRANSACTION")
+    @Auditable(menuName = "Payments", action = "AUTHORIZE", targetType = "PAYMENT_TRANSACTION", targetId = "#result?.body?.transactionReference")
     public ResponseEntity<PaymentAuthorizeResponseDto> authorizeTransaction(@Valid @RequestBody PaymentAuthorizeRequestDto requestDto) {
         return ResponseEntity.ok(transactionService.authorizeTransaction(requestDto));
     }

@@ -38,7 +38,7 @@ public class AdminFeeController {
     }
 
     @PostMapping
-    @Auditable(menuName = "Merchant Fees", action = "CREATE", targetType = "MERCHANT_FEE")
+    @Auditable(menuName = "Merchant Fees", action = "CREATE", targetType = "MERCHANT_FEE", targetId = "#result?.body?.feeId")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create Merchant Fee", description = "Creates a new fee rule (PERCENTAGE, FLAT, or MIXED) for a merchant.")
     public ResponseEntity<?> createMerchantFee(@Valid @RequestBody MerchantFeeRequestDto request) {

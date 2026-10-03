@@ -27,7 +27,7 @@
 
 	   
 	    @PostMapping
-	    @Auditable(menuName = "API Credentials", action = "CREATE", targetType = "API_CREDENTIAL")
+	    @Auditable(menuName = "API Credentials", action = "CREATE", targetType = "API_CREDENTIAL", targetId = "#result?.body?.credentialId")
 	    public ResponseEntity<CredentialResponse> createCredential(@RequestBody CreateCredentialRequest request) {
 	        CredentialResponse response = apiCredentialService.createApiCredential(request);
 	        return new ResponseEntity<>(response, HttpStatus.CREATED);
@@ -35,7 +35,7 @@
 
 	    
 	    @PutMapping("/{credentialId}/regenerate-secret")
-	    @Auditable(menuName = "API Credentials", action = "REGENERATE_SECRET", targetType = "API_CREDENTIAL")
+	    @Auditable(menuName = "API Credentials", action = "REGENERATE_SECRET", targetType = "API_CREDENTIAL", targetId = "#credentialId")
 	    public ResponseEntity<CredentialResponse> regenerateSecret(@PathVariable UUID credentialId) {
 	        CredentialResponse response = apiCredentialService.regenerateClientSecret(credentialId);
 	        return ResponseEntity.ok(response);
@@ -43,7 +43,7 @@
 
 	    
 	    @PutMapping("/{credentialId}/revoke")
-	    @Auditable(menuName = "API Credentials", action = "REVOKE", targetType = "API_CREDENTIAL")
+	    @Auditable(menuName = "API Credentials", action = "REVOKE", targetType = "API_CREDENTIAL", targetId = "#credentialId")
 	    public ResponseEntity<String> revokeCredential(@PathVariable UUID credentialId) {
 	        apiCredentialService.revokeApiCredential(credentialId);
 	        return ResponseEntity.ok("API Credential has been revoked successfully.");

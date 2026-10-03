@@ -35,7 +35,7 @@ public class AdminTerminalController {
     private final TerminalService terminalService;
 
     @PostMapping("/provision")
-    @Auditable(menuName = "Terminal Management", action = "PROVISION", targetType = "TERMINAL")
+    @Auditable(menuName = "Terminal Management", action = "PROVISION", targetType = "TERMINAL", targetId = "#result?.body?.terminalId")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Provision Terminal", description = "Provisions a new physical POS or virtual API terminal for a specific branch.")
     public ResponseEntity<?> provisionTerminal(@Valid @RequestBody TerminalRequestDto request) {
@@ -55,7 +55,7 @@ public class AdminTerminalController {
     }
 
     @PutMapping("/{id}/status")
-    @Auditable(menuName = "Terminal Management", action = "UPDATE_STATUS", targetType = "TERMINAL")
+    @Auditable(menuName = "Terminal Management", action = "UPDATE_STATUS", targetType = "TERMINAL", targetId = "#id")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update Terminal Status", description = "Updates a terminal's status to ONLINE, OFFLINE, or SUSPENDED.")
     public ResponseEntity<?> updateTerminalStatus(

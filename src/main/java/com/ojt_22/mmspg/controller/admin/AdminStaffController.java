@@ -41,7 +41,7 @@ public class AdminStaffController {
     }
 
     @PostMapping
-    @Auditable(menuName = "Staff Management", action = "CREATE", targetType = "STAFF")
+    @Auditable(menuName = "Staff Management", action = "CREATE", targetType = "STAFF", targetId = "#result?.body?.id")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create Staff User", description = "Creates a new staff user with encrypted password.")
     public ResponseEntity<?> createStaffUser(@Valid @RequestBody StaffRequestDto request) {
@@ -54,7 +54,7 @@ public class AdminStaffController {
     }
 
     @PutMapping("/{id}/status")
-    @Auditable(menuName = "Staff Management", action = "UPDATE_STATUS", targetType = "STAFF")
+    @Auditable(menuName = "Staff Management", action = "UPDATE_STATUS", targetType = "STAFF", targetId = "#id")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Toggle Staff Status", description = "Toggles a staff member's status between ACTIVE and DISABLED.")
     public ResponseEntity<?> toggleStaffStatus(@PathVariable UUID id) {

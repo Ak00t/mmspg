@@ -37,7 +37,7 @@ public class AdminMccController {
     }
 
     @PostMapping
-    @Auditable(menuName = "MCC Configuration", action = "CREATE", targetType = "MCC_CODE")
+    @Auditable(menuName = "MCC Configuration", action = "CREATE", targetType = "MCC_CODE", targetId = "#result?.body?.id")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Add new MCC", description = "Creates a new MCC code in the dictionary.")
     public ResponseEntity<MccCodeResponseDto> addMccCode(@Valid @RequestBody MccCodeRequestDto request) {

@@ -18,5 +18,12 @@ public @interface Auditable {
 
 	String targetType() default "";
 
+	/**
+	 * Optional SpEL expression to resolve the audit target_id. Method parameters
+	 * are available by name (e.g. "#id") and the return value as "#result" (e.g.
+	 * "#result.body.branchId"). Empty means no target id.
+	 */
+	String targetId() default "";
+
 	String permissionUsed() default "";
 }

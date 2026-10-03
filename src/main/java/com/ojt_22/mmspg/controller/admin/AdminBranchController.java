@@ -35,7 +35,7 @@ public class AdminBranchController {
     private final BranchService branchService;
 
     @PostMapping
-    @Auditable(menuName = "Branch Management", action = "CREATE", targetType = "BRANCH")
+    @Auditable(menuName = "Branch Management", action = "CREATE", targetType = "BRANCH", targetId = "#result?.body?.branchId")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create Branch", description = "Creates a new branch for a specific merchant.")
     public ResponseEntity<?> createBranch(@Valid @RequestBody BranchRequestDto request) {
@@ -57,7 +57,7 @@ public class AdminBranchController {
     }
 
     @PutMapping("/{id}")
-    @Auditable(menuName = "Branch Management", action = "UPDATE", targetType = "BRANCH")
+    @Auditable(menuName = "Branch Management", action = "UPDATE", targetType = "BRANCH", targetId = "#id")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update Branch", description = "Updates an existing branch.")
     public ResponseEntity<?> updateBranch(
@@ -72,7 +72,7 @@ public class AdminBranchController {
     }
 
     @PutMapping("/{id}/status")
-    @Auditable(menuName = "Branch Management", action = "UPDATE_STATUS", targetType = "BRANCH")
+    @Auditable(menuName = "Branch Management", action = "UPDATE_STATUS", targetType = "BRANCH", targetId = "#id")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Toggle Branch Status", description = "Toggles branch status between ACTIVE and INACTIVE.")
     public ResponseEntity<?> toggleBranchStatus(@PathVariable UUID id) {

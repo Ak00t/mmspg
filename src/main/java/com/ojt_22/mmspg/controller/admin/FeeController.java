@@ -29,7 +29,7 @@ public class FeeController {
 	private final FeeService feeService;
 
 	@PostMapping
-	@Auditable(menuName = "Fee Configuration", action = "CREATE", targetType = "FEE_CONFIG")
+	@Auditable(menuName = "Fee Configuration", action = "CREATE", targetType = "FEE_CONFIG", targetId = "#result?.body?.feeId")
 	public ResponseEntity<FeeConfigResponse> createFeeConfig(@RequestBody FeeConfigRequest request) {
 
 		FeeConfigResponse response = feeService.createFeeConfig(request);
@@ -39,7 +39,7 @@ public class FeeController {
 	}
 
 	@PutMapping("/{feeId}")
-	@Auditable(menuName = "Fee Configuration", action = "UPDATE", targetType = "FEE_CONFIG")
+	@Auditable(menuName = "Fee Configuration", action = "UPDATE", targetType = "FEE_CONFIG", targetId = "#feeId")
 	public ResponseEntity<FeeConfigResponse> updateFeeConfig(@PathVariable UUID feeId,
 			@RequestBody FeeConfigRequest request) {
 

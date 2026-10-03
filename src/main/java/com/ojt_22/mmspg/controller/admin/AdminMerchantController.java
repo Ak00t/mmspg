@@ -26,7 +26,7 @@ public class AdminMerchantController {
     private final MerchantService merchantService;
 
     @PostMapping("/register")
-    @Auditable(menuName = "Merchant Management", action = "REGISTER", targetType = "MERCHANT")
+    @Auditable(menuName = "Merchant Management", action = "REGISTER", targetType = "MERCHANT", targetId = "#result?.body?.merchantId")
     // 🔴 ဤနေရာကို ပြင်ဆင်လိုက်ပါသည် (ADMIN သို့မဟုတ် STAFF နှစ်ခုလုံးကို ခွင့်ပြုပါမည်)
     @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')") 
     public ResponseEntity<?> registerMerchant(@Valid @RequestBody MerchantRegistrationRequest request) {

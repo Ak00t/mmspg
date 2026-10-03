@@ -126,10 +126,8 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 		transaction.setPaymentToken(token);
 		transaction.setAmount(requestDto.getAmount());
 		transaction.setCurrency(requestDto.getCurrency() != null ? requestDto.getCurrency() : "MMK");
-
 		transaction.setFeeAmount(flatFee);
 		transaction.setNetAmount(netAmount);
-
 		transaction.setStatus(PaymentTransactionStatus.INITIATED);
 		transaction.setInitiatedAt(LocalDateTime.now());
 		// transaction.setUpdatedAt(LocalDateTime.now());
