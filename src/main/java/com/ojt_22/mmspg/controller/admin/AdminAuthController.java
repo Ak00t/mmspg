@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.dto.AdminAuthResponse;
 import com.ojt_22.mmspg.dto.AdminLoginRequest;
-import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.entity.StaffUser;
 import com.ojt_22.mmspg.repository.StaffUserRepository;
 import com.ojt_22.mmspg.security.CustomStaffDetailsService;
@@ -101,6 +101,7 @@ public class AdminAuthController {
 				.orElseThrow(() -> new UsernameNotFoundException("Staff not found"));
 
 		if (!staff.getRole()
+				.name()
 				.equals("STAFF")) {
 			throw new BadCredentialsException("Access Denied: This login portal is ONLY for Staffs!");
 		}
