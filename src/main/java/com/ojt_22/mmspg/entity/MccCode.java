@@ -36,6 +36,7 @@ public class MccCode {
 	@Column(name = "mcc_code", nullable = false, length = 10, unique = true)
 	private String mccCode;
 
+
 	@Column(name = "mcc_name", nullable = false, length = 150)
 	private String mccName;
 

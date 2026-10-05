@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,12 +30,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
+@CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173"})
 // 🔴 ၁။ လမ်းကြောင်းများကို ခွဲထုတ်ရန် ဤနေရာတွင် "/api/v1" ဟုသာ ထားပါမည်
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
 @Tag(name = "Admin & Staff Authentication", description = "Endpoints for Admin and Staff Portal Login")
 public class AdminAuthController {
-
+ 
 	private final CustomStaffDetailsService customStaffDetailsService;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
@@ -62,10 +64,8 @@ public class AdminAuthController {
 		StaffUser staff = staffUserRepository.findByEmail(loginRequest.getEmail())
 				.orElseThrow(() -> new UsernameNotFoundException("Staff not found"));
 
-		if (!staff.getRole()
-				.name()
-				.equals("ADMIN")) {
-			throw new BadCredentialsException("Access Denied: This login portal is ONLY for Admins!");
+		if (!staff.getRole().name().equals("ADMIN")) {
+		    throw new BadCredentialsException("Access Denied: This login portal is ONLY for Admins!");
 		}
 
 		Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
@@ -100,9 +100,9 @@ public class AdminAuthController {
 		StaffUser staff = staffUserRepository.findByEmail(loginRequest.getEmail())
 				.orElseThrow(() -> new UsernameNotFoundException("Staff not found"));
 
-		if (!staff.getRole()
-				.equals("STAFF")) {
-			throw new BadCredentialsException("Access Denied: This login portal is ONLY for Staffs!");
+		String roleName = staff.getRole().name();
+		if (!roleName.equals("SUPPORT") && !roleName.equals("AUDITOR")) {
+		    throw new BadCredentialsException("Access Denied: This login portal is ONLY for Staffs!");
 		}
 
 		Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
