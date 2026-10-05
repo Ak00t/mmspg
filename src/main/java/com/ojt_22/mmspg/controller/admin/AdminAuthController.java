@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.AdminAuthResponse;
 import com.ojt_22.mmspg.dto.AdminLoginRequest;
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.entity.StaffUser;
 import com.ojt_22.mmspg.repository.StaffUserRepository;
 import com.ojt_22.mmspg.security.CustomStaffDetailsService;
@@ -45,6 +46,7 @@ public class AdminAuthController {
 	// 🔴 ၂။ ADMIN သီးသန့် လမ်းကြောင်း (Admin မဟုတ်ပါက ပိတ်ချမည်)
 	// ========================================================
 	@PostMapping("/admin/login")
+	@Auditable(menuName = "Admin Authentication", action = "LOGIN", description = "Admin login")
 	@Operation(summary = "Login to Admin Portal", description = "Only Admin can login here.")
 	public ResponseEntity<AdminAuthResponse> adminLogin(@Valid @RequestBody AdminLoginRequest loginRequest) {
 
@@ -80,6 +82,7 @@ public class AdminAuthController {
 	// 🔵 ၃။ STAFF သီးသန့် လမ်းကြောင်း (Staff မဟုတ်ပါက ပိတ်ချမည်)
 	// ========================================================
 	@PostMapping("/staff/login")
+	@Auditable(menuName = "Staff Authentication", action = "LOGIN", description = "Staff login")
 	@Operation(summary = "Login to Staff Portal", description = "Only Staff can login here.")
 	public ResponseEntity<AdminAuthResponse> staffLogin(@Valid @RequestBody AdminLoginRequest loginRequest) {
 
@@ -117,6 +120,7 @@ public class AdminAuthController {
 	// 🟢 ၄။ LOGOUT လမ်းကြောင်း (ယခင် /api/v1/admin/logout အတိုင်း ဖြစ်စေရန်)
 	// ========================================================
 	@PostMapping("/admin/logout")
+	@Auditable(menuName = "Admin Authentication", action = "LOGOUT", description = "Admin logout")
 	@Operation(summary = "Logout Admin", description = "Logs out the admin/staff user.")
 	public ResponseEntity<?> logout() {
 		return ResponseEntity.ok(Map.of("message", "Logged out successfully. Please clear your token in client."));

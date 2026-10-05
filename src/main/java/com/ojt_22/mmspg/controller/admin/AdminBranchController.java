@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.BranchRequestDto;
 import com.ojt_22.mmspg.dto.BranchResponseDto;
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.service.BranchService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,6 +37,7 @@ public class AdminBranchController {
     private final BranchService branchService;
 
     @PostMapping
+    @Auditable(menuName = "Branch Management", action = "CREATE", targetType = "BRANCH")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create Branch", description = "Creates a new branch for a specific merchant.")
     public ResponseEntity<?> createBranch(@Valid @RequestBody BranchRequestDto request) {
@@ -57,6 +59,7 @@ public class AdminBranchController {
     }
 
     @PutMapping("/{id}")
+    @Auditable(menuName = "Branch Management", action = "UPDATE", targetType = "BRANCH")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update Branch", description = "Updates an existing branch.")
     public ResponseEntity<?> updateBranch(
@@ -71,6 +74,7 @@ public class AdminBranchController {
     }
 
     @PutMapping("/{id}/status")
+    @Auditable(menuName = "Branch Management", action = "UPDATE_STATUS", targetType = "BRANCH")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Toggle Branch Status", description = "Toggles branch status between ACTIVE and INACTIVE.")
     public ResponseEntity<?> toggleBranchStatus(@PathVariable UUID id) {

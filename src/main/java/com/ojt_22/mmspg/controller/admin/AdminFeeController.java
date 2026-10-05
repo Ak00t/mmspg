@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.MerchantFeeRequestDto;
 import com.ojt_22.mmspg.dto.MerchantFeeResponseDto;
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.service.MerchantFeeService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,6 +40,7 @@ public class AdminFeeController {
     }
 
     @PostMapping
+    @Auditable(menuName = "Merchant Fees", action = "CREATE", targetType = "MERCHANT_FEE")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create Merchant Fee", description = "Creates a new fee rule (PERCENTAGE, FLAT, or MIXED) for a merchant.")
     public ResponseEntity<?> createMerchantFee(@Valid @RequestBody MerchantFeeRequestDto request) {

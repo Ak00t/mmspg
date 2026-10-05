@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.MccCodeRequestDto;
 import com.ojt_22.mmspg.dto.MccCodeResponseDto;
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.service.MccService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,6 +40,7 @@ public class AdminMccController {
     }
 
     @PostMapping
+    @Auditable(menuName = "MCC Configuration", action = "CREATE", targetType = "MCC_CODE")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Add new MCC", description = "Creates a new MCC code in the dictionary.")
     public ResponseEntity<MccCodeResponseDto> addMccCode(@Valid @RequestBody MccCodeRequestDto request) {

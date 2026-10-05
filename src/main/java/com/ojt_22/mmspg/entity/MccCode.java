@@ -44,8 +44,8 @@ public class MccCode {
 	private String description;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, columnDefinition = "enum('ACTIVE','INACTIVE')")
-	private MccCodeStatus status;
+	@Column(nullable = false, columnDefinition = "enum('ACTIVE','INACTIVE') default 'ACTIVE' ")
+	private MccCodeStatus status = MccCodeStatus.ACTIVE;
 
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)

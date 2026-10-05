@@ -19,6 +19,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -36,6 +37,10 @@ public class Settlement {
 	@Column(name = "settlement_id", columnDefinition = "BINARY(16)")
 	private UUID id;
 
+	@OneToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "transaction_id", unique = true)
+	private PaymentTransaction transaction;
+
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "merchant_id", nullable = false)
 	private Merchant merchant;
@@ -52,8 +57,7 @@ public class Settlement {
 	@Column(name = "fee_amount", nullable = false, precision = 18, scale = 4)
 	private BigDecimal feeAmount;
 
-	@Column(name = "refund_amount", nullable = false, precision = 18, scale = 4)
-	private BigDecimal refundAmount;
+	
 
 	@Column(name = "net_amount", nullable = false, precision = 18, scale = 4)
 	private BigDecimal netAmount;
@@ -62,7 +66,7 @@ public class Settlement {
 	private String bankAccountNo;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, columnDefinition = "enum('PENDING','PROCESSING','COMPLETED','FAILED')")
+	@Column(nullable = false, columnDefinition = "enum('PENDING','PROCESSING','COMPLETED','FAILED') DEFAULT 'PENDING'")
 	private SettlementStatus status = SettlementStatus.PENDING;
 
 	@Column(name = "processed_at")
@@ -77,7 +81,7 @@ public class Settlement {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by", updatable = false)
+	@JoinColumn(name = "created_by", nullable = false, updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)

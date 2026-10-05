@@ -15,6 +15,10 @@ public class PaymentAuthorizeRequestDto {
     @NotBlank(message = "Payment token is required")
     private String paymentToken;
 
-    @NotBlank(message = "Customer ID is required")
     private String customerId;
+    
+    @NotBlank(message = "Status is required")
+    private String status;
+    
+    private String failureReason;
 }

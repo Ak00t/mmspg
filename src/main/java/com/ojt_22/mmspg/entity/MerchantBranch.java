@@ -55,8 +55,8 @@ public class MerchantBranch {
 	private String phone;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, columnDefinition = "enum('ACTIVE','INACTIVE')")
-	private MerchantBranchStatus status;
+	@Column(nullable = false, columnDefinition = "enum('ACTIVE','INACTIVE') DEFAULT 'ACTIVE' ")
+	private MerchantBranchStatus status = MerchantBranchStatus.ACTIVE;
 
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
