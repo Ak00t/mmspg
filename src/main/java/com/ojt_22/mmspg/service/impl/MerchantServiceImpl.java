@@ -101,6 +101,36 @@ public class MerchantServiceImpl implements MerchantService {
 		merchantRepository.save(merchant);
 	}
 
+	
+	@Override
+	@Transactional(readOnly = true)
+	public java.util.List<com.ojt_22.mmspg.dto.MerchantResponseDto> getAllMerchants() {
+		java.util.List<Merchant> merchants = merchantRepository.findAll();
+
+		return merchants.stream().map(merchant -> {
+			com.ojt_22.mmspg.dto.MerchantResponseDto dto = new com.ojt_22.mmspg.dto.MerchantResponseDto();
+			
+			dto.setMerchantId(merchant.getId());
+			dto.setMerchantCode(merchant.getMerchantCode());
+			// ⚠️ သင့် Entity တွင် businessName ဟုပေးထားသဖြင့် React လိုချင်သော merchantName ထဲသို့ ထည့်ပေးပါသည်
+			dto.setMerchantName(merchant.getBusinessName()); 
+			dto.setEmail(merchant.getEmail());
+			dto.setCreatedAt(merchant.getCreatedAt());
+			
+			// ⚠️ သင့် Entity တွင် riskLevel မရှိသေးပါက လောလောဆယ် "LOW" ဟု ပုံသေထားပေးပါမည်
+			dto.setRiskLevel("LOW"); 
+			
+			dto.setStatus(merchant.getStatus() != null ? merchant.getStatus().name() : "PENDING");
+			
+			return dto;
+		}).collect(java.util.stream.Collectors.toList());
+	}
+	
+	
+	
+	
+	
+	
 	@Override
 	@Transactional
 	public void rejectMerchant(java.util.UUID merchantId, String reason) {

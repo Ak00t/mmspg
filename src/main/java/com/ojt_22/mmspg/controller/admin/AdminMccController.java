@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/admin/mcc")
+@CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173"})
 @RequiredArgsConstructor
 @Tag(name = "Admin MCC Configuration", description = "Endpoints for managing MCC Dictionary")
 public class AdminMccController {
@@ -29,7 +31,8 @@ public class AdminMccController {
     private final MccService mccService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    // 🔴 ဤနေရာကို ADMIN သို့မဟုတ် STAFF နှစ်ခုလုံး ဝင်ခွင့်ရအောင် ပြင်ဆင်ထားပါသည်
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
     @Operation(summary = "List all MCC codes", description = "Retrieves a list of all MCC codes and their descriptions.")
     public ResponseEntity<List<MccCodeResponseDto>> getAllMccCodes() {
         return ResponseEntity.ok(mccService.getAllMccCodes());

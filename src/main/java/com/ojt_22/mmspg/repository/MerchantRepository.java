@@ -13,6 +13,7 @@ import com.ojt_22.mmspg.enums.MerchantStatus;
 @Repository
 public interface MerchantRepository extends JpaRepository<Merchant, UUID> {
     Optional<Merchant> findByEmail(String email);
+    Optional<Merchant> findByResetToken(String resetToken);
     boolean existsByEmail(String email);
     boolean existsByMerchantCode(String merchantCode);
     

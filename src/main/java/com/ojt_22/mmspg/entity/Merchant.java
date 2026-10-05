@@ -91,4 +91,10 @@ public class Merchant {
 
 	@Column(name = "password_hash", nullable = false, length = 255)
 	private String passwordHash;
+
+	@Column(name = "reset_token", length = 100)
+	private String resetToken;
+
+	@Column(name = "reset_token_expiry")
+	private LocalDateTime resetTokenExpiry;
 }

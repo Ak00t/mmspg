@@ -11,6 +11,8 @@ import com.ojt_22.mmspg.enums.TerminalType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -44,9 +46,11 @@ public class Terminal {
 	@Column(name = "terminal_name", length = 100)
 	private String terminalName;
 
+	@Enumerated(EnumType.STRING)
 	@Column(name = "terminal_type", nullable = false, columnDefinition = "enum('PHYSICAL_POS','VIRTUAL_API')")
 	private TerminalType terminalType;
 
+	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, columnDefinition = "enum('ONLINE','OFFLINE','SUSPENDED')")
 	private TerminalStatus status = TerminalStatus.ONLINE;
 
