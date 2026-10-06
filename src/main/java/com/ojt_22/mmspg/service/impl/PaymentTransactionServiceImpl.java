@@ -1,6 +1,7 @@
 package com.ojt_22.mmspg.service.impl;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -110,19 +111,26 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 		            .orElseThrow(() -> new RuntimeException("Terminal not found"));
 		}
 
-		// 4. Fee အချက်အလက်ကို ရှာယူခြင်း
-		MerchantFee merchantFee = merchantFeeRepository.findByMerchantId(requestDto.getMerchantId())
-				.orElseThrow(() -> new RuntimeException("Merchant fee configuration not found"));
+		// 4. Fee အချက်အလက်ကို ရှာယူခြင်းနှင့် Flat + Percentage Fee တွက်ချက်ခြင်း
+				MerchantFee merchantFee = merchantFeeRepository.findByMerchantId(requestDto.getMerchantId())
+						.orElseThrow(() -> new RuntimeException("Merchant fee configuration not found"));
 
-		BigDecimal flatFee = merchantFee.getFlatFee() != null ? merchantFee.getFlatFee() : BigDecimal.ZERO;
+				BigDecimal flatFee = merchantFee.getFlatFee() != null ? merchantFee.getFlatFee() : BigDecimal.ZERO;
+				BigDecimal percentageRate = merchantFee.getPercentageRate() != null ? merchantFee.getPercentageRate() : BigDecimal.ZERO;
 
-		if (requestDto.getAmount()
-				.compareTo(flatFee) < 0) {
-			throw new IllegalArgumentException("Transaction amount must be greater than or equal to flat fee.");
-		}
+			// Percentage Fee တွက်ချက်ခြင်း = (Amount * Rate) / 100
+				BigDecimal percentageFee = requestDto.getAmount()
+						.multiply(percentageRate)
+						.divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
 
-		BigDecimal netAmount = requestDto.getAmount()
-				.subtract(flatFee);
+				// Total Fee = Flat Fee + Percentage Fee
+				BigDecimal totalFee = flatFee.add(percentageFee);
+
+				if (requestDto.getAmount().compareTo(totalFee) < 0) {
+					throw new IllegalArgumentException("Transaction amount must be greater than or equal to total fee.");
+				}
+
+				BigDecimal netAmount = requestDto.getAmount().subtract(totalFee);
 
 		String refNo = "TXN-" + System.currentTimeMillis();
 		String token = UUID.randomUUID()
@@ -138,8 +146,10 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 		transaction.setPaymentToken(token);
 		transaction.setAmount(requestDto.getAmount());
 		transaction.setCurrency(requestDto.getCurrency() != null ? requestDto.getCurrency() : "MMK");
-		transaction.setFeeAmount(flatFee);
+
+		transaction.setFeeAmount(totalFee);
 		transaction.setNetAmount(netAmount);
+
 		transaction.setStatus(PaymentTransactionStatus.INITIATED);
 		transaction.setInitiatedAt(LocalDateTime.now());
 		// transaction.setUpdatedAt(LocalDateTime.now());

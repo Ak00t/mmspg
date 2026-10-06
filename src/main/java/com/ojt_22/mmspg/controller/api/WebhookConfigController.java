@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.ojt_22.mmspg.dto.CreateWebhookRequest;
 import com.ojt_22.mmspg.annotation.Auditable;
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/webhooks")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('MERCHANT')")
 public class WebhookConfigController {
 
 

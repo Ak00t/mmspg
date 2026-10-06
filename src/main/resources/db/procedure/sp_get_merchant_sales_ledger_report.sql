@@ -8,7 +8,7 @@ BEGIN
            l.amount AS amount, l.description AS description, t.status AS transactionStatus,
            s.settlement_reference AS settlementReference, l.created_at AS createdAt,
            s.settlement_date AS settlementDate
-    FROM merchant_ledger_Entries l
+    FROM merchant_ledger_entries l
     LEFT JOIN payment_transactions t ON t.transaction_id = l.transaction_id
     LEFT JOIN settlements s ON s.settlement_id = l.settlement_id
     WHERE l.merchant_id = p_merchant_id

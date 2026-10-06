@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.ojt_22.mmspg.entity.MerchantLedgerEntry;
 import com.ojt_22.mmspg.annotation.Auditable;
@@ -21,6 +22,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/v1/merchant-ledgers")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('MERCHANT')")
 public class MerchantLedgerApiController {
 
     private final MerchantLedgerRepository ledgerRepository;
