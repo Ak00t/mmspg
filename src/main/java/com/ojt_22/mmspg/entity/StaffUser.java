@@ -58,6 +58,12 @@ public class StaffUser {
 	@Column(name = "last_login_at")
 	private LocalDateTime lastLoginAt;
 
+	@Column(name = "reset_token", length = 100)
+	private String resetToken;
+
+	@Column(name = "reset_token_expiry")
+	private LocalDateTime resetTokenExpiry;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;

@@ -1,7 +1,11 @@
 package com.ojt_22.mmspg.config;
 
 import java.util.Arrays;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import org.springframework.security.config.Customizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -42,6 +46,7 @@ public class SecurityConfig {
 		return configuration.getAuthenticationManager();
 	}
 
+
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
@@ -66,14 +71,9 @@ public class SecurityConfig {
 						.requestMatchers("/api/v1/admin/login", "/api/v1/staff/login",
 								"/api/v1/merchant-portal/auth/login")
 						.permitAll()
-						.requestMatchers("/api/v1/credentials/**", "/api/v1/logs/**", "/api/v1/webhooks/**",
-								"/api/v1/webhook-deliveries/**", "/api/v1/webhook-deliveries")
-						.permitAll()
-						.requestMatchers("/api/v1/auth/**")
-						.permitAll()
+						// .requestMatchers("/api/v1/auth/**")
+						// .permitAll()
 						.requestMatchers("/error")
-						.permitAll()
-						.requestMatchers("/api/v1/credentials/**")
 						.permitAll()
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
 						.permitAll()
