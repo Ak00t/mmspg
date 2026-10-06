@@ -5,6 +5,13 @@ import java.util.UUID;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.reflect.MethodSignature;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.expression.MapAccessor;
+import org.springframework.expression.ExpressionParser;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -29,6 +36,9 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuditLogAspect {
 
+	private static final Logger log = LoggerFactory.getLogger(AuditLogAspect.class);
+	private static final ExpressionParser SPEL_PARSER = new SpelExpressionParser();
+
 	private final AuditLogService auditLogService;
 	private final MerchantRepository merchantRepository;
 
@@ -36,7 +46,7 @@ public class AuditLogAspect {
 
 	@Around("@annotation(auditable)")
 	public Object logAuditActivity(ProceedingJoinPoint joinPoint, Auditable auditable) throws Throwable {
-		Object result;
+		Object result = null;
 		AuditStatus status = AuditStatus.SUCCESS;
 
 		try {
@@ -97,11 +107,42 @@ public class AuditLogAspect {
 							.isEmpty() ? null : auditable.description())
 					.targetType(auditable.targetType()
 							.isEmpty() ? null : auditable.targetType())
-					.targetId(null)
+					.targetId(resolveTargetId(auditable, joinPoint, result))
 					.status(status)
 					.sourceType(SourceType.BACKEND_API)
 					.build();
 			auditLogService.logActivity(auditRequest, request);
+		}
+	}
+
+	/**
+	 * Evaluates the SpEL expression in {@link Auditable#targetId()} against the
+	 * method parameters (by name) and the return value (#result). Never throws:
+	 * any failure results in a null target id so the request is not affected.
+	 */
+	private String resolveTargetId(Auditable auditable, ProceedingJoinPoint joinPoint, Object result) {
+		String expression = auditable.targetId();
+		if (expression == null || expression.isBlank()) {
+			return null;
+		}
+		try {
+			StandardEvaluationContext context = new StandardEvaluationContext();
+			context.addPropertyAccessor(new MapAccessor());
+
+			String[] names = ((MethodSignature) joinPoint.getSignature()).getParameterNames();
+			Object[] args = joinPoint.getArgs();
+			if (names != null) {
+				for (int i = 0; i < names.length; i++) {
+					context.setVariable(names[i], args[i]);
+				}
+			}
+			context.setVariable("result", result);
+
+			Object value = SPEL_PARSER.parseExpression(expression).getValue(context);
+			return value != null ? String.valueOf(value) : null;
+		} catch (Exception e) {
+			log.warn("Could not resolve audit targetId '{}': {}", expression, e.getMessage());
+			return null;
 		}
 	}
 }

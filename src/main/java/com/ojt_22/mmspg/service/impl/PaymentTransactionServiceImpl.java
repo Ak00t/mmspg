@@ -149,7 +149,6 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 
 		transaction.setFeeAmount(totalFee);
 		transaction.setNetAmount(netAmount);
-
 		transaction.setStatus(PaymentTransactionStatus.INITIATED);
 		transaction.setInitiatedAt(LocalDateTime.now());
 		// transaction.setUpdatedAt(LocalDateTime.now());

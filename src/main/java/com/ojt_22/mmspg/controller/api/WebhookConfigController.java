@@ -29,14 +29,14 @@ public class WebhookConfigController {
     private final WebhookConfigService webhookConfigService;
 
     @PostMapping
-    @Auditable(menuName = "Webhook Configuration", action = "CREATE", targetType = "WEBHOOK_CONFIG")
+    @Auditable(menuName = "Webhook Configuration", action = "CREATE", targetType = "WEBHOOK_CONFIG", targetId = "#result?.body?.webhookId")
     public ResponseEntity<WebhookConfigResponse> createWebhook(@RequestBody CreateWebhookRequest request) {
         WebhookConfigResponse response = webhookConfigService.createWebhook(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
     @PutMapping("/{webhookId}")
-    @Auditable(menuName = "Webhook Configuration", action = "UPDATE", targetType = "WEBHOOK_CONFIG")
+    @Auditable(menuName = "Webhook Configuration", action = "UPDATE", targetType = "WEBHOOK_CONFIG", targetId = "#webhookId")
     public ResponseEntity<WebhookConfigResponse> updateWebhook(
             @PathVariable UUID webhookId,
             @RequestBody UpdateWebhookRequest request
@@ -46,14 +46,14 @@ public class WebhookConfigController {
     }
 
     @DeleteMapping("/{webhookId}")
-    @Auditable(menuName = "Webhook Configuration", action = "DELETE", targetType = "WEBHOOK_CONFIG")
+    @Auditable(menuName = "Webhook Configuration", action = "DELETE", targetType = "WEBHOOK_CONFIG", targetId = "#webhookId")
     public ResponseEntity<String> deleteWebhook(@PathVariable UUID webhookId) {
         webhookConfigService.deleteWebhook(webhookId);
         return ResponseEntity.ok("Webhook configuration has been deactivated successfully.");
     }
 
     @PostMapping("/{webhookId}/test")
-    @Auditable(menuName = "Webhook Configuration", action = "TEST", targetType = "WEBHOOK_CONFIG")
+    @Auditable(menuName = "Webhook Configuration", action = "TEST", targetType = "WEBHOOK_CONFIG", targetId = "#webhookId")
     public ResponseEntity<String> testWebhook(@PathVariable UUID webhookId) {
         String result = webhookConfigService.testWebhook(webhookId);
         return ResponseEntity.ok(result);

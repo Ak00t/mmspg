@@ -48,7 +48,7 @@ public class StaffUser {
 	private String email;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, columnDefinition = "enum('ADMIN','AUDITOR','SUPPORT')")
+	@Column(nullable = false, columnDefinition = "enum('ADMIN','AUDITOR','STAFF')")
 	private StaffUserRole role;
 
 	@Enumerated(EnumType.STRING)
