@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 
 import org.springframework.stereotype.Repository;
 import com.ojt_22.mmspg.entity.PaymentTransaction;
+import com.ojt_22.mmspg.enums.PaymentTransactionStatus;
 
 @Repository
 public interface PaymentTransactionRepository extends JpaRepository<PaymentTransaction, UUID> {
@@ -46,5 +47,9 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
     boolean existsByMerchantIdAndOrderId(UUID merchantId, String orderId);
     
     Optional<PaymentTransaction> findByIdempotencyKey(String idempotencyKey);
-
+    
+    List<PaymentTransaction> findByStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+            PaymentTransactionStatus status,
+            LocalDateTime startDate,
+            LocalDateTime endDate);
 }
