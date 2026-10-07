@@ -24,6 +24,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.ojt_22.mmspg.security.ApiKeyAuthenticationFilter;
 import com.ojt_22.mmspg.security.JwtAuthenticationFilter;
 
 import lombok.RequiredArgsConstructor;
@@ -35,6 +36,7 @@ import lombok.RequiredArgsConstructor;
 public class SecurityConfig {
 
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
+	private final ApiKeyAuthenticationFilter apiKeyAuthenticationFilter;
 
 	@Bean
 	public PasswordEncoder passwordEncoder() {
@@ -46,14 +48,14 @@ public class SecurityConfig {
 		return configuration.getAuthenticationManager();
 	}
 
-
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
 		configuration.setAllowedOrigins(Arrays.asList("http://127.0.0.1:5173", "http://localhost:5173"));
 		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept",
-				"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));
+				"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", "X-Client-ID",
+				"X-Client-Secret", "Idempotency-Key"));
 		configuration
 				.setExposedHeaders(Arrays.asList("Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"));
 		configuration.setAllowCredentials(true);
@@ -71,16 +73,24 @@ public class SecurityConfig {
 						.requestMatchers("/api/v1/admin/login", "/api/v1/staff/login",
 								"/api/v1/merchant-portal/auth/login")
 						.permitAll()
-						// .requestMatchers("/api/v1/auth/**")
-						// .permitAll()
 						.requestMatchers("/error")
 						.permitAll()
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
 						.permitAll()
+						// Customer Portal (Token-based checkout & authorization)
+						.requestMatchers("/api/v1/payments/checkout-info/**", "/api/v1/payments/authorize")
+						.permitAll()
+						// Mock Core Banking Debit API
+						.requestMatchers("/api/v1/core/**")
+						.permitAll()
+						// Payment endpoints (Merchant API key or portal users)
+						.requestMatchers("/api/v1/payments/**")
+						.hasAnyRole("API_CLIENT", "ADMIN", "STAFF", "MERCHANT")
 						.anyRequest()
 						.authenticated())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
+		http.addFilterBefore(apiKeyAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 		http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();

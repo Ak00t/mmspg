@@ -12,8 +12,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class PaymentInitiateRequestDto {
-	
-	@NotNull(message = "Merchant ID must not be null")
     private UUID merchantId;
 	
     private UUID branchId;

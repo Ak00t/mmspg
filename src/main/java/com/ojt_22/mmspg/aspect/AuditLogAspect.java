@@ -71,7 +71,7 @@ public class AuditLogAspect {
 			Authentication auth = SecurityContextHolder.getContext()
 					.getAuthentication();
 			if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
-				String email = auth.getName();
+				String identifier = auth.getName();
 
 				roleName = auth.getAuthorities()
 						.stream()
@@ -80,16 +80,23 @@ public class AuditLogAspect {
 						.findFirst()
 						.orElse("UNKNOWN");
 
-				if ("MERCHANT".equals(roleName)) {
+				if ("API_CLIENT".equals(roleName)) {
+					actorType = "MERCHANT";
+					try {
+						actorId = UUID.fromString(identifier);
+					} catch (Exception e) {
+						actorId = null;
+					}
+				} else if ("MERCHANT".equals(roleName)) {
 					actorType = "MERCHANT";
 
-					actorId = merchantRepository.findByEmail(email)
+					actorId = merchantRepository.findByEmail(identifier)
 							.map(Merchant::getId)
 							.orElse(null);
 				} else {
 					actorType = "STAFF";
 
-					actorId = staffUserRepository.findByEmail(email)
+					actorId = staffUserRepository.findByEmail(identifier)
 							.map(StaffUser::getId)
 							.orElse(null);
 				}

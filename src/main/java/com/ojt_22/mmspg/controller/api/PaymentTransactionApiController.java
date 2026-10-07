@@ -22,6 +22,9 @@ import com.ojt_22.mmspg.dto.PaymentStatusResponseDto;
 import com.ojt_22.mmspg.dto.PaymentTransactionSummaryDto;
 import com.ojt_22.mmspg.service.PaymentTransactionService;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import jakarta.validation.Valid;
@@ -46,8 +49,20 @@ public class PaymentTransactionApiController {
             )
             @NotBlank(message = "Idempotency-Key header must not be blank")
             @RequestHeader(value = "Idempotency-Key", required = true) String idempotencyKey,
-            @Valid @RequestBody PaymentInitiateRequestDto requestDto) {
+            @Valid @RequestBody PaymentInitiateRequestDto requestDto,
+            Authentication authentication) {
         
+        if (authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_API_CLIENT".equals(a.getAuthority()))) {
+            UUID authMerchantId = UUID.fromString(authentication.getName());
+            if (requestDto.getMerchantId() != null && !authMerchantId.equals(requestDto.getMerchantId())) {
+                throw new IllegalArgumentException("Merchant ID does not match authenticated API client");
+            }
+            requestDto.setMerchantId(authMerchantId);
+        } else if (requestDto.getMerchantId() == null) {
+            throw new IllegalArgumentException("Merchant ID must not be null");
+        }
+
         return ResponseEntity.ok(transactionService.initiateTransaction(requestDto, idempotencyKey));
     }
     
@@ -63,7 +78,16 @@ public class PaymentTransactionApiController {
     }
 
     @GetMapping("/merchant/{merchantId}")
-    public ResponseEntity<List<PaymentTransactionSummaryDto>> getMerchantTransactions(@PathVariable UUID merchantId) {
+    public ResponseEntity<List<PaymentTransactionSummaryDto>> getMerchantTransactions(
+            @PathVariable UUID merchantId,
+            Authentication authentication) {
+        if (authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_API_CLIENT".equals(a.getAuthority()))) {
+            UUID authMerchantId = UUID.fromString(authentication.getName());
+            if (!authMerchantId.equals(merchantId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
         return ResponseEntity.ok(transactionService.getMerchantTransactions(merchantId));
     }
 
