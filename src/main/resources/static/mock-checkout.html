@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock Customer Banking Portal - Checkout</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #334155;
+        }
+        .checkout-card {
+            background: #ffffff;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 460px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+            overflow: hidden;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .header {
+            background: #0284c7;
+            padding: 24px;
+            color: white;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .header p {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+        .badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 8px;
+        }
+        .content {
+            padding: 24px;
+        }
+        .order-summary {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .summary-row:last-child {
+            margin-bottom: 0;
+            padding-top: 8px;
+            border-top: 1px dashed #cbd5e1;
+        }
+        .summary-label {
+            color: #64748b;
+        }
+        .summary-value {
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .amount-highlight {
+            font-size: 18px;
+            color: #0284c7;
+            font-weight: 700;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 6px;
+        }
+        input {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #0284c7;
+            box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+        }
+        .hint {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: #0284c7;
+            color: white;
+            margin-bottom: 10px;
+        }
+        .btn-primary:hover {
+            background: #0369a1;
+        }
+        .btn-primary:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: transparent;
+            color: #64748b;
+            border: 1px solid #cbd5e1;
+        }
+        .btn-secondary:hover {
+            background: #f1f5f9;
+            color: #334155;
+        }
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .alert-error {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+        .alert-success {
+            background: #f0fdf4;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+        .spinner {
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 2px solid #ffffff;
+            width: 16px;
+            height: 16px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .footer {
+            text-align: center;
+            padding: 16px;
+            border-top: 1px solid #f1f5f9;
+            font-size: 12px;
+            color: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+
+<div class="checkout-card">
+    <div class="header">
+        <h1>Customer Banking Portal</h1>
+        <p>Mock Payment Authorization (Group 1)</p>
+        <span class="badge">Sandbox Simulator</span>
+    </div>
+
+    <div class="content">
+        <div id="errorAlert" class="alert alert-error"></div>
+        <div id="successAlert" class="alert alert-success"></div>
+
+        <div id="loadingInfo" style="text-align: center; padding: 24px; color: #64748b;">
+            <div class="spinner" style="border-color: #cbd5e1; border-top-color: #0284c7; width: 24px; height: 24px; margin: 0 auto 12px;"></div>
+            Fetching checkout details...
+        </div>
+
+        <div id="checkoutForm" style="display: none;">
+            <div class="order-summary">
+                <div class="summary-row">
+                    <span class="summary-label">Merchant</span>
+                    <span class="summary-value" id="merchantName">-</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Order Reference</span>
+                    <span class="summary-value" id="orderId">-</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Status</span>
+                    <span class="summary-value" id="statusBadge">-</span>
+                </div>
+                <div class="summary-row">
+                    <span class="summary-label">Total Payable</span>
+                    <span class="amount-highlight" id="totalAmount">-</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="customerId">Bank Customer ID</label>
+                <input type="text" id="customerId" value="CUST-1001" placeholder="e.g. CUST-1001">
+                <p class="hint">Use <code>FAIL_CUST</code> to test Core Banking debit failure scenario.</p>
+            </div>
+
+            <div class="form-group">
+                <label for="pin">Customer PIN</label>
+                <input type="password" id="pin" value="123456" maxlength="6" placeholder="Enter 6-digit PIN">
+            </div>
+
+            <button id="payBtn" class="btn btn-primary" onclick="handleAuthorize('COMPLETED')">
+                <span id="btnText">Confirm & Pay</span>
+            </button>
+            <button id="cancelBtn" class="btn btn-secondary" onclick="handleAuthorize('FAILED')">
+                Cancel Payment
+            </button>
+        </div>
+
+        <div id="completedView" style="display: none; text-align: center; padding: 12px 0;">
+            <div id="resultIcon" style="font-size: 48px; margin-bottom: 12px;">🎉</div>
+            <h2 id="resultTitle" style="font-size: 18px; color: #0f172a; margin-bottom: 8px;">Payment Completed!</h2>
+            <p id="resultMessage" style="font-size: 14px; color: #64748b; margin-bottom: 16px; word-break: break-all;"></p>
+            <button class="btn btn-secondary" onclick="window.close()">Close Window</button>
+        </div>
+    </div>
+
+    <div class="footer">
+        Secured by MMSPG Payment Gateway &bull; Mock Environment
+    </div>
+</div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    const loadingInfo = document.getElementById('loadingInfo');
+    const checkoutForm = document.getElementById('checkoutForm');
+    const completedView = document.getElementById('completedView');
+    const errorAlert = document.getElementById('errorAlert');
+    const successAlert = document.getElementById('successAlert');
+
+    function showError(msg) {
+        errorAlert.textContent = msg;
+        errorAlert.style.display = 'block';
+        successAlert.style.display = 'none';
+    }
+
+    function showSuccess(msg) {
+        successAlert.textContent = msg;
+        successAlert.style.display = 'block';
+        errorAlert.style.display = 'none';
+    }
+
+    async function loadCheckoutInfo() {
+        if (!token) {
+            loadingInfo.style.display = 'none';
+            showError("Missing '?token=' parameter in URL. Please initiate payment from merchant first.");
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/v1/payments/checkout-info/${token}`);
+            if (!res.ok) {
+                const errData = await res.text();
+                throw new Error("Invalid or expired checkout token: " + errData);
+            }
+            const data = await res.json();
+            
+            document.getElementById('merchantName').textContent = data.businessName || 'Merchant Store';
+            document.getElementById('orderId').textContent = data.orderId || '-';
+            document.getElementById('statusBadge').textContent = data.status || 'INITIATED';
+            document.getElementById('totalAmount').textContent = `${Number(data.amount).toLocaleString()} ${data.currency}`;
+
+            loadingInfo.style.display = 'none';
+            checkoutForm.style.display = 'block';
+        } catch (err) {
+            loadingInfo.style.display = 'none';
+            showError(err.message);
+        }
+    }
+
+    async function handleAuthorize(status) {
+        const customerId = document.getElementById('customerId').value.trim();
+        const pin = document.getElementById('pin').value.trim();
+        const payBtn = document.getElementById('payBtn');
+        const cancelBtn = document.getElementById('cancelBtn');
+
+        if (status === 'COMPLETED' && (!customerId || !pin)) {
+            showError("Please enter both Customer ID and PIN.");
+            return;
+        }
+
+        payBtn.disabled = true;
+        cancelBtn.disabled = true;
+        document.getElementById('btnText').innerHTML = '<div class="spinner"></div> Processing with Core Banking...';
+
+        const payload = {
+            paymentToken: token,
+            customerId: customerId || 'CUST-ANON',
+            status: status,
+            failureReason: status === 'FAILED' ? 'User cancelled payment on customer portal' : null
+        };
+
+        try {
+            const res = await fetch('/api/v1/payments/authorize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            checkoutForm.style.display = 'none';
+            completedView.style.display = 'block';
+
+            if (data.status === 'COMPLETED') {
+                document.getElementById('resultIcon').textContent = '✅';
+                document.getElementById('resultTitle').textContent = 'Payment Authorized & Completed!';
+                document.getElementById('resultMessage').innerHTML = `
+                    Transaction Ref: <strong>${data.transactionReference}</strong><br>
+                    Amount: <strong>${Number(data.amount).toLocaleString()} ${data.currency}</strong><br>
+                    Completed At: ${data.completedAt || new Date().toISOString()}
+                `;
+            } else {
+                document.getElementById('resultIcon').textContent = '❌';
+                document.getElementById('resultTitle').textContent = 'Payment Failed';
+                document.getElementById('resultMessage').innerHTML = `
+                    Transaction Ref: <strong>${data.transactionReference || 'N/A'}</strong><br>
+                    Reason: <span style="color:#dc2626">${data.failureReason || 'Declined'}</span>
+                `;
+            }
+        } catch (err) {
+            showError("Authorization failed: " + err.message);
+            payBtn.disabled = false;
+            cancelBtn.disabled = false;
+            document.getElementById('btnText').textContent = 'Confirm & Pay';
+        }
+    }
+
+    loadCheckoutInfo();
+</script>
+
+</body>
+</html>

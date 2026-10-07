@@ -71,7 +71,8 @@ public class SecurityConfig {
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
 						.permitAll()
 						// Customer Portal (Token-based checkout & authorization)
-						.requestMatchers("/api/v1/payments/checkout-info/**", "/api/v1/payments/authorize")
+						.requestMatchers("/api/v1/payments/checkout-info/**", "/api/v1/payments/authorize",
+								"/mock-checkout.html", "/favicon.ico")
 						.permitAll()
 						// Mock Core Banking Debit API
 						.requestMatchers("/api/v1/core/**")
