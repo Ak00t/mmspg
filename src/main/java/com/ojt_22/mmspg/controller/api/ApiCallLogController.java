@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.ApiCallLogDto;
 import com.ojt_22.mmspg.service.ApiCallLogService;
+import com.ojt_22.mmspg.security.AuthenticatedMerchantService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class ApiCallLogController {
 
     private final ApiCallLogService apiCallLogService;
+    private final AuthenticatedMerchantService authenticatedMerchantService;
 
     
     @GetMapping("/merchant/{merchantId}")
@@ -32,6 +34,7 @@ public class ApiCallLogController {
             @RequestParam(defaultValue = "10") int size
             
     ) {
+        authenticatedMerchantService.assertMerchantAccess(merchantId);
         Pageable pageable = PageRequest.of(page, size);
         Page<ApiCallLogDto> logs = apiCallLogService.getLogsByMerchant(merchantId, pageable);
         return ResponseEntity.ok(logs);

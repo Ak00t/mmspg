@@ -21,6 +21,7 @@ import com.ojt_22.mmspg.dto.PaymentInitiateResponseDto;
 import com.ojt_22.mmspg.dto.PaymentStatusResponseDto;
 import com.ojt_22.mmspg.dto.PaymentTransactionSummaryDto;
 import com.ojt_22.mmspg.service.PaymentTransactionService;
+import com.ojt_22.mmspg.security.AuthenticatedMerchantService;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -37,6 +38,7 @@ import lombok.RequiredArgsConstructor;
 public class PaymentTransactionApiController {
 
     private final PaymentTransactionService transactionService;
+    private final AuthenticatedMerchantService authenticatedMerchantService;
 
     @PostMapping("/initiate")
     @Auditable(menuName = "Payments", action = "INITIATE", targetType = "PAYMENT_TRANSACTION", targetId = "#result?.body?.transactionReference")
@@ -59,8 +61,12 @@ public class PaymentTransactionApiController {
                 throw new IllegalArgumentException("Merchant ID does not match authenticated API client");
             }
             requestDto.setMerchantId(authMerchantId);
-        } else if (requestDto.getMerchantId() == null) {
-            throw new IllegalArgumentException("Merchant ID must not be null");
+        } else {
+            UUID authMerchantId = authenticatedMerchantService.resolveMerchantId();
+            if (requestDto.getMerchantId() != null && !authMerchantId.equals(requestDto.getMerchantId())) {
+                throw new IllegalArgumentException("Merchant ID does not match authenticated merchant");
+            }
+            requestDto.setMerchantId(authMerchantId);
         }
 
         return ResponseEntity.ok(transactionService.initiateTransaction(requestDto, idempotencyKey));
@@ -81,13 +87,7 @@ public class PaymentTransactionApiController {
     public ResponseEntity<List<PaymentTransactionSummaryDto>> getMerchantTransactions(
             @PathVariable UUID merchantId,
             Authentication authentication) {
-        if (authentication != null && authentication.getAuthorities().stream()
-                .anyMatch(a -> "ROLE_API_CLIENT".equals(a.getAuthority()))) {
-            UUID authMerchantId = UUID.fromString(authentication.getName());
-            if (!authMerchantId.equals(merchantId)) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-            }
-        }
+        authenticatedMerchantService.assertMerchantAccess(merchantId);
         return ResponseEntity.ok(transactionService.getMerchantTransactions(merchantId));
     }
 

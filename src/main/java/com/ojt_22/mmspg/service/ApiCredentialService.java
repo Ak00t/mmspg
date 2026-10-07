@@ -19,6 +19,7 @@ import com.ojt_22.mmspg.enums.ApiCredentialStatus;
 import com.ojt_22.mmspg.repository.ApiCredentialRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.repository.StaffUserRepository;
+import com.ojt_22.mmspg.security.AuthenticatedMerchantService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,6 +32,7 @@ public class ApiCredentialService {
 	private final StaffUserRepository staffUserRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final SecureRandom secureRandom = new SecureRandom();
+	private final AuthenticatedMerchantService authenticatedMerchantService;
 
 	/**
 	 * Unique Client ID ထုတ်ပေးသည့် Method
@@ -57,7 +59,11 @@ public class ApiCredentialService {
 
 	@Transactional
 	public CredentialResponse createApiCredential(CreateCredentialRequest request) {
-		Merchant merchant = merchantRepository.findById(request.getMerchantId())
+		UUID authenticatedMerchantId = authenticatedMerchantService.resolveMerchantId();
+		if (request.getMerchantId() != null && !authenticatedMerchantId.equals(request.getMerchantId())) {
+			throw new IllegalArgumentException("Merchant ID does not match authenticated merchant");
+		}
+		Merchant merchant = merchantRepository.findById(authenticatedMerchantId)
 				.orElseThrow(
 						() -> new IllegalArgumentException("Merchant not found with ID: " + request.getMerchantId()));
 
@@ -100,6 +106,7 @@ public class ApiCredentialService {
 	public CredentialResponse regenerateClientSecret(UUID credentialId) {
 		ApiCredential credential = credentialRepository.findById(credentialId)
 				.orElseThrow(() -> new IllegalArgumentException("Credential not found with ID: " + credentialId));
+		authenticatedMerchantService.assertMerchantAccess(credential.getMerchant().getId());
 
 		String newRawSecret = generateClientSecret();
 		credential.setClientSecretHash(passwordEncoder.encode(newRawSecret));
@@ -121,6 +128,7 @@ public class ApiCredentialService {
 	public void revokeApiCredential(UUID credentialId) {
 		ApiCredential credential = credentialRepository.findById(credentialId)
 				.orElseThrow(() -> new IllegalArgumentException("Credential not found with ID: " + credentialId));
+		authenticatedMerchantService.assertMerchantAccess(credential.getMerchant().getId());
 
 		credential.setStatus(ApiCredentialStatus.REVOKED);
 		credential.setRevokedAt(LocalDateTime.now());
