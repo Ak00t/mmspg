@@ -12,6 +12,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -24,6 +25,7 @@ import com.ojt_22.mmspg.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
+@EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
@@ -58,7 +60,7 @@ public class SecurityConfig {
 
 		http.cors(Customizer.withDefaults())
 		        .csrf(AbstractHttpConfigurer::disable)
-				.authorizeHttpRequests(authorize -> authorize.requestMatchers("/")
+				.authorizeHttpRequests(authorize -> authorize.requestMatchers("/**")
 						.permitAll() // remove it after test
 						.requestMatchers("/api/v1/admin/staff/**").permitAll()
 						.requestMatchers("/api/v1/admin/terminals/**").permitAll()

@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.TerminalRequestDto;
 import com.ojt_22.mmspg.dto.TerminalResponseDto;
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.service.TerminalService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,7 +37,8 @@ public class AdminTerminalController {
     private final TerminalService terminalService;
 
     @PostMapping("/provision")
-    @PreAuthorize("hasAuthority('ADMIN') or hasRole('ADMIN')")
+    @Auditable(menuName = "Terminal Management", action = "PROVISION", targetType = "TERMINAL")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Provision Terminal", description = "Provisions a new physical POS or virtual API terminal for a specific branch.")
     public ResponseEntity<?> provisionTerminal(@Valid @RequestBody TerminalRequestDto request) {
         try {
@@ -55,6 +57,7 @@ public class AdminTerminalController {
     }
 
     @PutMapping("/{id}/status")
+    @Auditable(menuName = "Terminal Management", action = "UPDATE_STATUS", targetType = "TERMINAL")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update Terminal Status", description = "Updates a terminal's status to ONLINE, OFFLINE, or SUSPENDED.")
     public ResponseEntity<?> updateTerminalStatus(

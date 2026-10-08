@@ -27,16 +27,16 @@ public class StaffUserServiceImpl implements StaffUserService {
 	@Transactional
 	public StaffUser registerStaff(StaffUserRegisterRequest request) {
 
-		if (staffUserRepository.existsByUsername(request.getUsername())) {
-			throw new IllegalArgumentException("Username is already taken");
-		}
+//		if (staffUserRepository.existsByUsername(request.getUsername())) {
+//			throw new IllegalArgumentException("Username is already taken");
+//		}
 
 		if (staffUserRepository.existsByEmail(request.getEmail())) {
 			throw new IllegalArgumentException("Email is already in use");
 		}
 
 		StaffUser staffUser = new StaffUser();
-		staffUser.setUsername(request.getUsername());
+//		staffUser.setUsername(request.getUsername());
 		staffUser.setEmail(request.getEmail());
 		staffUser.setFullName(request.getFullName());
 		staffUser.setRole(StaffUserRole.valueOf(request.getRole()));
@@ -69,7 +69,7 @@ public class StaffUserServiceImpl implements StaffUserService {
 		}
 
 		StaffUser staffUser = new StaffUser();
-		staffUser.setUsername(request.getEmail()); // Using email as username since UI doesn't provide it
+//		staffUser.setUsername(request.getEmail()); // Using email as username since UI doesn't provide it
 		staffUser.setEmail(request.getEmail());
 		staffUser.setFullName(request.getName());
 

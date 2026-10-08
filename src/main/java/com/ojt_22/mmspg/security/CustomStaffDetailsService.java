@@ -12,14 +12,13 @@ import org.springframework.stereotype.Service;
 import com.ojt_22.mmspg.entity.StaffUser;
 import com.ojt_22.mmspg.repository.StaffUserRepository;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class CustomStaffDetailsService implements UserDetailsService {
 
 	private final StaffUserRepository staffUserRepository;
-
-	public CustomStaffDetailsService(StaffUserRepository staffUserRepository) {
-		this.staffUserRepository = staffUserRepository;
-	}
 
 	@Override
 	public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {

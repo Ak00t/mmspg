@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.BranchRequestDto;
 import com.ojt_22.mmspg.dto.BranchResponseDto;
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.service.BranchService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,7 +38,8 @@ public class AdminBranchController {
 
     // 🔴 ၁။ အသစ်ဖန်တီးခြင်း (AUDITOR မပါပါ)
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
+    @Auditable(menuName = "Branch Management", action = "CREATE", targetType = "BRANCH")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create Branch", description = "Creates a new branch for a specific merchant.")
     public ResponseEntity<?> createBranch(@Valid @RequestBody BranchRequestDto request) {
         try {
@@ -60,7 +62,8 @@ public class AdminBranchController {
 
     // 🔴 ၂။ ပြင်ဆင်ခြင်း (AUDITOR မပါပါ၊ @Valid ကို ဖြုတ်လိုက်ပါပြီ)
     @PutMapping("/{id}")
-    @Valid @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
+    @Auditable(menuName = "Branch Management", action = "UPDATE", targetType = "BRANCH")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update Branch", description = "Updates an existing branch.")
     public ResponseEntity<?> updateBranch(
             @PathVariable UUID id, 
@@ -75,7 +78,8 @@ public class AdminBranchController {
 
     // 🔴 ၃။ Status ပြောင်းခြင်း (AUDITOR မပါပါ)
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
+    @Auditable(menuName = "Branch Management", action = "UPDATE_STATUS", targetType = "BRANCH")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Toggle Branch Status", description = "Toggles branch status between ACTIVE and INACTIVE.")
     public ResponseEntity<?> toggleBranchStatus(@PathVariable UUID id) {
         try {

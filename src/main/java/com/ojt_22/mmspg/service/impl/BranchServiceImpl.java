@@ -45,7 +45,7 @@ public class BranchServiceImpl implements BranchService {
 		branch.setAddress(request.getAddress());
 		branch.setPhone(request.getPhone());
 		branch.setStatus(MerchantBranchStatus.ACTIVE);
-		branch.setUpdatedAt(LocalDateTime.now());
+//		branch.setUpdatedAt(LocalDateTime.now());
 
 		MerchantBranch savedBranch = branchRepository.save(branch);
 		return mapToResponseDto(savedBranch);

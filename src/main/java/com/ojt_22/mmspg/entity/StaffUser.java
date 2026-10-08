@@ -35,8 +35,8 @@ public class StaffUser {
 	@Column(name = "staff_id", columnDefinition = "BINARY(16)")
 	private UUID id;
 
-	@Column(nullable = false, length = 100, unique = true)
-	private String username;
+//	@Column(nullable = false, length = 100, unique = true)
+//	private String username;
 
 	@Column(name = "password_hash", nullable = false, length = 255)
 	private String passwordHash;
@@ -73,7 +73,7 @@ public class StaffUser {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by", nullable = false, updatable = false)
+	@JoinColumn(name = "created_by", updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)

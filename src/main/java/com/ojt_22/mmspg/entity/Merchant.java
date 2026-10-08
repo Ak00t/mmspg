@@ -63,8 +63,8 @@ public class Merchant {
 	private String address;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, columnDefinition = "enum('PENDING','ACTIVE','REJECTED','SUSPENDED','CLOSED')")
-	private MerchantStatus status;
+	@Column(nullable = false, columnDefinition = "enum('PENDING','ACTIVE','REJECTED','SUSPENDED','CLOSED') DEFAULT 'PENDING' ")
+	private MerchantStatus status = MerchantStatus.PENDING;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "approved_by")
@@ -82,7 +82,7 @@ public class Merchant {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by", nullable = false, updatable = false)
+	@JoinColumn(name = "created_by", updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)

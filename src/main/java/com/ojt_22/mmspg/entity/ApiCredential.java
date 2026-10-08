@@ -52,8 +52,8 @@ public class ApiCredential {
 	private ApiCredentialEnvironment environment;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, columnDefinition = "enum('ACTIVE','REVOKED','EXPIRED')")
-	private ApiCredentialStatus status;
+	@Column(nullable = false, columnDefinition = "enum('ACTIVE','REVOKED','EXPIRED') default 'ACTIVE'")
+	private ApiCredentialStatus status = ApiCredentialStatus.ACTIVE;
 
 	@Column(name = "key_name", nullable = false, length = 100)
 	private String keyName;

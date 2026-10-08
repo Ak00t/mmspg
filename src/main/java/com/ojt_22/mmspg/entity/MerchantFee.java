@@ -4,10 +4,12 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import com.ojt_22.mmspg.enums.FeeType;
+import com.ojt_22.mmspg.enums.MerchantFeeStatus;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -48,7 +50,7 @@ public class MerchantFee {
 	private BigDecimal flatFee;
 
 	@Column(name = "minimum_fee", precision = 18, scale = 3)
-	private BigDecimal miniumnFee;
+	private BigDecimal minimumFee;
 
 	@Column(name = "maximum_fee", precision = 18, scale = 3)
 	private BigDecimal maximumFee;
@@ -59,9 +61,11 @@ public class MerchantFee {
 	@Column(name = "effective_to")
 	private LocalDateTime effectiveTo;
 
-	@Column(nullable = false, columnDefinition = "enum('ACTIVE','INACTIVE')")
-	private String status;
-
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false, columnDefinition = "enum('ACTIVE','INACTIVE') DEFAULT 'ACTIVE' ")
+	private MerchantFeeStatus status = MerchantFeeStatus.ACTIVE;
+    
+	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
@@ -70,7 +74,7 @@ public class MerchantFee {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by", updatable = false)
+	@JoinColumn(name = "created_by", nullable = false, updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)
