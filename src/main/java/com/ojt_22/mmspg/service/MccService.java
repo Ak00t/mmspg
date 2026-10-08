@@ -7,4 +7,6 @@ import com.ojt_22.mmspg.dto.MccCodeResponseDto;
 public interface MccService {
     List<MccCodeResponseDto> getAllMccCodes();
     MccCodeResponseDto addMccCode(MccCodeRequestDto request);
+    MccCodeResponseDto updateMccCode(Long id, MccCodeRequestDto request);
+    void deleteMccCode(Long id);
 }

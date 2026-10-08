@@ -30,95 +30,64 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173"})
-// 🔴 ၁။ လမ်းကြောင်းများကို ခွဲထုတ်ရန် ဤနေရာတွင် "/api/v1" ဟုသာ ထားပါမည်
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor
-@Tag(name = "Admin & Staff Authentication", description = "Endpoints for Admin and Staff Portal Login")
+@Tag(name = "Portal Authentication", description = "Unified Endpoint for Admin and Staff Portal Login")
 public class AdminAuthController {
- 
-	private final CustomStaffDetailsService customStaffDetailsService;
-	private final PasswordEncoder passwordEncoder;
-	private final JwtTokenProvider jwtTokenProvider;
-	private final StaffUserRepository staffUserRepository;
 
-	// ========================================================
-	// 🔴 ၂။ ADMIN သီးသန့် လမ်းကြောင်း (Admin မဟုတ်ပါက ပိတ်ချမည်)
-	// ========================================================
-	@PostMapping("/admin/login")
-	@Operation(summary = "Login to Admin Portal", description = "Only Admin can login here.")
-	public ResponseEntity<AdminAuthResponse> adminLogin(@Valid @RequestBody AdminLoginRequest loginRequest) {
+    private final CustomStaffDetailsService customStaffDetailsService;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final StaffUserRepository staffUserRepository;
 
-		UserDetails userDetails;
-		try {
-			userDetails = customStaffDetailsService.loadUserByUsername(loginRequest.getEmail());
-		} catch (UsernameNotFoundException ex) {
-			throw new BadCredentialsException("Invalid email or password");
-		}
+    // ========================================================
+    // 🔴 Admin နှင့် Staff အားလုံးအတွက် လမ်းကြောင်းတစ်ခုတည်း (Unified Login)
+    // ========================================================
+    @PostMapping("/login")
+    @Operation(summary = "Login to Portal", description = "Allows both Admin and Staff to login with correct password.")
+    public ResponseEntity<AdminAuthResponse> login(@Valid @RequestBody AdminLoginRequest loginRequest) {
 
-		if (!passwordEncoder.matches(loginRequest.getPassword(), userDetails.getPassword())) {
-			throw new BadCredentialsException("Invalid email or password");
-		}
+        UserDetails userDetails;
+        try {
+            userDetails = customStaffDetailsService.loadUserByUsername(loginRequest.getEmail());
+        } catch (UsernameNotFoundException ex) {
+            throw new BadCredentialsException("Invalid email or password");
+        }
 
-		StaffUser staff = staffUserRepository.findByEmail(loginRequest.getEmail())
-				.orElseThrow(() -> new UsernameNotFoundException("Staff not found"));
+        // ၁။ Password မှန်/မမှန် အရင်ဆုံး စစ်ဆေးပါမည်
+        if (!passwordEncoder.matches(loginRequest.getPassword(), userDetails.getPassword())) {
+            throw new BadCredentialsException("Invalid email or password");
+        }
 
-		if (!staff.getRole().name().equals("ADMIN")) {
-		    throw new BadCredentialsException("Access Denied: This login portal is ONLY for Admins!");
-		}
+        // ၂။ Database မှ သက်ဆိုင်ရာ User ကို ဆွဲထုတ်ပါမည်
+        StaffUser staff = staffUserRepository.findByEmail(loginRequest.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-		Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
-				userDetails.getAuthorities());
-		SecurityContextHolder.getContext()
-				.setAuthentication(authentication);
-		String token = jwtTokenProvider.generateToken(authentication);
+        // ၃။ Role စစ်ဆေးပါမည် (ADMIN, SUPPORT, AUDITOR တစ်ခုခု ဖြစ်ရပါမည်)
+        String roleName = staff.getRole().name();
+        if (!roleName.equals("ADMIN") && !roleName.equals("SUPPORT") && !roleName.equals("AUDITOR")) {
+            throw new BadCredentialsException("Access Denied: You do not have permission to access this portal.");
+        }
 
-		AdminAuthResponse authResponse = new AdminAuthResponse(token, staff.getId(), staff.getFullName());
-		return ResponseEntity.ok(authResponse);
-	}
+        // ၄။ Password လည်းမှန်ကန်ပြီး Role လည်းရှိပါက Token ထုတ်ပေးပါမည်
+        Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
+                userDetails.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
-	// ========================================================
-	// 🔵 ၃။ STAFF သီးသန့် လမ်းကြောင်း (Staff မဟုတ်ပါက ပိတ်ချမည်)
-	// ========================================================
-	@PostMapping("/staff/login")
-	@Operation(summary = "Login to Staff Portal", description = "Only Staff can login here.")
-	public ResponseEntity<AdminAuthResponse> staffLogin(@Valid @RequestBody AdminLoginRequest loginRequest) {
+        String token = jwtTokenProvider.generateToken(authentication);
 
-		UserDetails userDetails;
-		try {
-			userDetails = customStaffDetailsService.loadUserByUsername(loginRequest.getEmail());
-		} catch (UsernameNotFoundException ex) {
-			throw new BadCredentialsException("Invalid email or password");
-		}
+        // 🔴 ဤနေရာတွင် roleName ကို နောက်ဆုံးတွင် ထည့်ပေးလိုက်ပါ
+        AdminAuthResponse authResponse = new AdminAuthResponse(token, staff.getId(), staff.getFullName(), roleName);
+        
+        return ResponseEntity.ok(authResponse);
+    }
 
-		if (!passwordEncoder.matches(loginRequest.getPassword(), userDetails.getPassword())) {
-			throw new BadCredentialsException("Invalid email or password");
-		}
-
-		StaffUser staff = staffUserRepository.findByEmail(loginRequest.getEmail())
-				.orElseThrow(() -> new UsernameNotFoundException("Staff not found"));
-
-		String roleName = staff.getRole().name();
-		if (!roleName.equals("SUPPORT") && !roleName.equals("AUDITOR")) {
-		    throw new BadCredentialsException("Access Denied: This login portal is ONLY for Staffs!");
-		}
-
-		Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
-				userDetails.getAuthorities());
-		SecurityContextHolder.getContext()
-				.setAuthentication(authentication);
-
-		String token = jwtTokenProvider.generateToken(authentication);
-
-		AdminAuthResponse authResponse = new AdminAuthResponse(token, staff.getId(), staff.getFullName());
-		return ResponseEntity.ok(authResponse);
-	}
-
-	// ========================================================
-	// 🟢 ၄။ LOGOUT လမ်းကြောင်း (ယခင် /api/v1/admin/logout အတိုင်း ဖြစ်စေရန်)
-	// ========================================================
-	@PostMapping("/admin/logout")
-	@Operation(summary = "Logout Admin", description = "Logs out the admin/staff user.")
-	public ResponseEntity<?> logout() {
-		return ResponseEntity.ok(Map.of("message", "Logged out successfully. Please clear your token in client."));
-	}
+    // ========================================================
+    // 🟢 LOGOUT လမ်းကြောင်း
+    // ========================================================
+    @PostMapping("/logout")
+    @Operation(summary = "Logout User", description = "Logs out the current user.")
+    public ResponseEntity<?> logout() {
+        return ResponseEntity.ok(Map.of("message", "Logged out successfully. Please clear your token in client."));
+    }
 }

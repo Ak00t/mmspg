@@ -35,8 +35,9 @@ public class AdminBranchController {
 
     private final BranchService branchService;
 
+    // 🔴 ၁။ အသစ်ဖန်တီးခြင်း (AUDITOR မပါပါ)
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
     @Operation(summary = "Create Branch", description = "Creates a new branch for a specific merchant.")
     public ResponseEntity<?> createBranch(@Valid @RequestBody BranchRequestDto request) {
         try {
@@ -47,8 +48,9 @@ public class AdminBranchController {
         }
     }
 
+    // စာရင်းကြည့်ခြင်း (အားလုံး ကြည့်ခွင့်ရှိသည်)
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT', 'AUDITOR')")
     @Operation(summary = "Get All Branches", description = "Retrieves all branches. Optionally filters by merchantId.")
     public ResponseEntity<List<BranchResponseDto>> getAllBranches(
             @RequestParam(required = false) UUID merchantId) {
@@ -56,12 +58,13 @@ public class AdminBranchController {
         return ResponseEntity.ok(branches);
     }
 
+    // 🔴 ၂။ ပြင်ဆင်ခြင်း (AUDITOR မပါပါ၊ @Valid ကို ဖြုတ်လိုက်ပါပြီ)
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @Valid @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
     @Operation(summary = "Update Branch", description = "Updates an existing branch.")
     public ResponseEntity<?> updateBranch(
             @PathVariable UUID id, 
-            @Valid @RequestBody BranchRequestDto request) {
+            @RequestBody BranchRequestDto request) { // <-- @Valid ကို ဖယ်ရှားလိုက်ပါသည်
         try {
             BranchResponseDto response = branchService.updateBranch(id, request);
             return ResponseEntity.ok(response);
@@ -70,8 +73,9 @@ public class AdminBranchController {
         }
     }
 
+    // 🔴 ၃။ Status ပြောင်းခြင်း (AUDITOR မပါပါ)
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
     @Operation(summary = "Toggle Branch Status", description = "Toggles branch status between ACTIVE and INACTIVE.")
     public ResponseEntity<?> toggleBranchStatus(@PathVariable UUID id) {
         try {

@@ -36,7 +36,7 @@ public class AdminTerminalController {
     private final TerminalService terminalService;
 
     @PostMapping("/provision")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ADMIN') or hasRole('ADMIN')")
     @Operation(summary = "Provision Terminal", description = "Provisions a new physical POS or virtual API terminal for a specific branch.")
     public ResponseEntity<?> provisionTerminal(@Valid @RequestBody TerminalRequestDto request) {
         try {
@@ -63,6 +63,40 @@ public class AdminTerminalController {
         try {
             terminalService.updateTerminalStatus(id, status);
             return ResponseEntity.ok(Map.of("message", "Terminal status updated successfully to " + status.toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
+    
+    
+    
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Edit Terminal", description = "Updates terminal name and type.")
+    public ResponseEntity<?> editTerminal(
+            @PathVariable UUID id, 
+            @RequestBody TerminalRequestDto request) {
+        try {
+            // မှတ်ချက်: TerminalService တွင် editTerminal (သို့မဟုတ် updateTerminal) ကို ရေးသားပေးရန် လိုအပ်ပါသည်
+            TerminalResponseDto response = terminalService.updateTerminal(id, request);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}/suspend")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Suspend Terminal", description = "Suspends a terminal and sets its status to SUSPENDED.")
+    public ResponseEntity<?> suspendTerminal(
+            @PathVariable UUID id, 
+            @RequestBody Map<String, String> requestBody) {
+        try {
+            String reason = requestBody.get("reason");
+            terminalService.updateTerminalStatus(id, "SUSPENDED");
+            // အကယ်၍ reason ကို Database တွင် သိမ်းလိုပါက Service ၌ suspendTerminal(id, reason) ဟု ရေး၍ ခေါ်နိုင်ပါသည်
+            return ResponseEntity.ok(Map.of("message", "Terminal suspended successfully"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

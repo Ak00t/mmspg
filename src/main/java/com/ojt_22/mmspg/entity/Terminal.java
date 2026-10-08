@@ -40,6 +40,10 @@ public class Terminal {
 	@JoinColumn(name = "branch_id", nullable = false)
 	private MerchantBranch branch;
 
+	@ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "merchant_id", nullable = false)
+    private Merchant merchant;
+	
 	@Column(name = "terminal_code", nullable = false, length = 50)
 	private String terminalCode;
 
