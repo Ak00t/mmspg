@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,9 +15,11 @@ import com.ojt_22.mmspg.dto.BranchRequestDto;
 import com.ojt_22.mmspg.dto.BranchResponseDto;
 import com.ojt_22.mmspg.entity.Merchant;
 import com.ojt_22.mmspg.entity.MerchantBranch;
+import com.ojt_22.mmspg.entity.StaffUser;
 import com.ojt_22.mmspg.enums.MerchantBranchStatus;
 import com.ojt_22.mmspg.repository.BranchRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
+import com.ojt_22.mmspg.repository.StaffUserRepository;
 import com.ojt_22.mmspg.service.BranchService;
 
 import lombok.RequiredArgsConstructor;
@@ -25,6 +30,7 @@ public class BranchServiceImpl implements BranchService {
 
 	private final BranchRepository branchRepository;
 	private final MerchantRepository merchantRepository;
+	private final StaffUserRepository staffUserRepository;
 
 	@Override
 	@Transactional
@@ -36,6 +42,14 @@ public class BranchServiceImpl implements BranchService {
 		if (branchRepository.existsByBranchCodeAndMerchantId(request.getBranchCode(), request.getMerchantId())) {
 			throw new IllegalArgumentException("Branch code already exists for this merchant.");
 		}
+		Authentication authentication = SecurityContextHolder.getContext()
+				.getAuthentication();
+		if (authentication == null || !authentication.isAuthenticated()
+				|| "anonymousUser".equals(authentication.getPrincipal())) {
+			throw new AccessDeniedException("Authentication is required");
+		}
+		StaffUser staffUser = staffUserRepository.findByEmail(authentication.getName())
+				.orElseThrow(() -> new AccessDeniedException("Authenticated merchant was not found"));
 
 		MerchantBranch branch = new MerchantBranch();
 		branch.setMerchant(merchant);
@@ -45,6 +59,8 @@ public class BranchServiceImpl implements BranchService {
 		branch.setAddress(request.getAddress());
 		branch.setPhone(request.getPhone());
 		branch.setStatus(MerchantBranchStatus.ACTIVE);
+		branch.setCreatedBy(staffUser);
+
 //		branch.setUpdatedAt(LocalDateTime.now());
 
 		MerchantBranch savedBranch = branchRepository.save(branch);
