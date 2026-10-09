@@ -9,5 +9,4 @@ public interface TerminalService {
     TerminalResponseDto provisionTerminal(TerminalRequestDto request);
     List<TerminalResponseDto> getAllTerminals();
     void updateTerminalStatus(UUID terminalId, String status);
-    TerminalResponseDto updateTerminal(UUID id, TerminalRequestDto request);
 }

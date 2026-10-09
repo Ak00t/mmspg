@@ -24,8 +24,7 @@ public class AdminDashboardController {
     private final AdminDashboardService adminDashboardService;
 
     @GetMapping("/summary")
-    // 🔴 ဤနေရာတွင် ADMIN, SUPPORT, AUDITOR အားလုံး ဝင်ကြည့်နိုင်ရန် ပြင်ဆင်လိုက်ပါသည်
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT', 'AUDITOR')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get Dashboard Summary", description = "Retrieves aggregated statistics and recent requests for the admin dashboard.")
     public ResponseEntity<DashboardSummaryResponse> getDashboardSummary() {
         DashboardSummaryResponse summary = adminDashboardService.getDashboardSummary();

@@ -36,7 +36,6 @@ public class AdminBranchController {
 
     private final BranchService branchService;
 
-    // 🔴 ၁။ အသစ်ဖန်တီးခြင်း (AUDITOR မပါပါ)
     @PostMapping
     @Auditable(menuName = "Branch Management", action = "CREATE", targetType = "BRANCH", targetId = "#result?.body?.branchId")
     @PreAuthorize("hasRole('ADMIN')")
@@ -50,9 +49,8 @@ public class AdminBranchController {
         }
     }
 
-    // စာရင်းကြည့်ခြင်း (အားလုံး ကြည့်ခွင့်ရှိသည်)
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT', 'AUDITOR')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Get All Branches", description = "Retrieves all branches. Optionally filters by merchantId.")
     public ResponseEntity<List<BranchResponseDto>> getAllBranches(
             @RequestParam(required = false) UUID merchantId) {
@@ -60,14 +58,13 @@ public class AdminBranchController {
         return ResponseEntity.ok(branches);
     }
 
-    // 🔴 ၂။ ပြင်ဆင်ခြင်း (AUDITOR မပါပါ၊ @Valid ကို ဖြုတ်လိုက်ပါပြီ)
     @PutMapping("/{id}")
     @Auditable(menuName = "Branch Management", action = "UPDATE", targetType = "BRANCH", targetId = "#id")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update Branch", description = "Updates an existing branch.")
     public ResponseEntity<?> updateBranch(
             @PathVariable UUID id, 
-            @RequestBody BranchRequestDto request) { // <-- @Valid ကို ဖယ်ရှားလိုက်ပါသည်
+            @Valid @RequestBody BranchRequestDto request) {
         try {
             BranchResponseDto response = branchService.updateBranch(id, request);
             return ResponseEntity.ok(response);
@@ -76,7 +73,6 @@ public class AdminBranchController {
         }
     }
 
-    // 🔴 ၃။ Status ပြောင်းခြင်း (AUDITOR မပါပါ)
     @PutMapping("/{id}/status")
     @Auditable(menuName = "Branch Management", action = "UPDATE_STATUS", targetType = "BRANCH", targetId = "#id")
     @PreAuthorize("hasRole('ADMIN')")
