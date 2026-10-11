@@ -13,7 +13,6 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -28,7 +27,6 @@ import com.ojt_22.mmspg.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 
 @Configuration
-@EnableWebSecurity
 @EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
@@ -61,9 +59,17 @@ public class SecurityConfig {
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
 		http.cors(Customizer.withDefaults())
-				.csrf(AbstractHttpConfigurer::disable)
-				.authorizeHttpRequests(authorize -> authorize
-						.requestMatchers("/api/v1/admin/login", "/api/v1/staff/login",
+		        .csrf(AbstractHttpConfigurer::disable)
+				.authorizeHttpRequests(authorize -> authorize.requestMatchers("/")
+						.permitAll() // remove it after test
+						.requestMatchers("/api/v1/admin/staff/**").permitAll()
+						.requestMatchers("/api/v1/admin/terminals/**").permitAll()
+						.requestMatchers("/api/v1/admin/mcc/**").permitAll()
+						.requestMatchers("/api/v1/admin/branches/**").permitAll()
+						.requestMatchers("/api/v1/admin/merchants/**").permitAll()
+						.requestMatchers("/api/v1/merchant-portal/auth/**")
+						.permitAll()
+						.requestMatchers("/api/v1/login", 
 								"/api/v1/merchant-portal/auth/login")
 						.permitAll()
 						.requestMatchers("/error")

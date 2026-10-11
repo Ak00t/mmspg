@@ -13,4 +13,5 @@ public class AdminAuthResponse {
     private String token;
     private UUID staffId; // 🔴 ဤနေရာတွင် Long အစား UUID သို့ ပြောင်းပေးပါ
     private String fullName;
+    private String role;
 }
