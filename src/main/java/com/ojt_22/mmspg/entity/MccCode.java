@@ -31,11 +31,10 @@ public class MccCode {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@Column(name = "mcc_id")
-	private Integer id;
+	private Long id;
 
 	@Column(name = "mcc_code", nullable = false, length = 10, unique = true)
 	private String mccCode;
-
 
 	@Column(name = "mcc_name", nullable = false, length = 150)
 	private String mccName;
