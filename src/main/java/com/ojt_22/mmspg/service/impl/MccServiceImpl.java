@@ -53,4 +53,50 @@ public class MccServiceImpl implements MccService {
 				.name());
 		return dto;
 	}
+	
+	
+	@Override
+    @Transactional
+    public void deleteMccCode(Long id) {
+        // Database Repository က Integer တောင်းသဖြင့် id.intValue() ဟု ပြောင်းပေးပါသည်
+        if (!mccCodeRepository.existsById(id.intValue())) {
+            throw new IllegalArgumentException("MCC not found with ID: " + id);
+        }
+        
+        try {
+            mccCodeRepository.deleteById(id.intValue());
+        } catch (Exception e) {
+            // အကယ်၍ Merchant နှင့် ချိတ်ဆက်ထားသဖြင့် ဖျက်မရပါက Error Message ပြန်ပေးမည်
+            throw new IllegalArgumentException("Cannot delete this MCC code because it is being used by existing merchants.");
+        }
+    }
+	
+	@Override
+    @Transactional
+    public MccCodeResponseDto updateMccCode(Long id, MccCodeRequestDto request) { // Parameter သည် Long အတိုင်း ဆက်ရှိနေမည်
+        
+        // 🔴 id.intValue() ဟု ပြောင်းရေးလိုက်ပါ
+        MccCode mcc = mccCodeRepository.findById(id.intValue())
+                .orElseThrow(() -> new IllegalArgumentException("MCC not found with ID: " + id));
+
+        // Frontend မှ Data ပါလာမှသာ (null မဟုတ်မှသာ) အစားထိုးမည်
+        if (request.getMccCode() != null && !request.getMccCode().trim().isEmpty()) {
+            mcc.setMccCode(request.getMccCode());
+        }
+        
+        if (request.getMccName() != null && !request.getMccName().trim().isEmpty()) {
+            mcc.setMccName(request.getMccName());
+        }
+        
+        if (request.getDescription() != null) {
+            mcc.setDescription(request.getDescription());
+        }
+
+        MccCode updatedMcc = mccCodeRepository.save(mcc);
+        
+        return mapToResponseDto(updatedMcc); 
+    }
+	
+	
+	
 }
