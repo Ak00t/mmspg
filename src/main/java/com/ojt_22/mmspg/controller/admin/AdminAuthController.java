@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.dto.AdminAuthResponse;
 import com.ojt_22.mmspg.dto.AdminLoginRequest;
 import com.ojt_22.mmspg.entity.StaffUser;
@@ -36,13 +35,10 @@ import lombok.RequiredArgsConstructor;
 @Tag(name = "Portal Authentication", description = "Unified Endpoint for Admin and Staff Portal Login")
 public class AdminAuthController {
 
-	// ========================================================
-	// 🔴 ၂။ ADMIN သီးသန့် လမ်းကြောင်း (Admin မဟုတ်ပါက ပိတ်ချမည်)
-	// ========================================================
-	@PostMapping("/admin/login")
-	@Auditable(menuName = "Admin Authentication", action = "LOGIN", description = "Admin login")
-	@Operation(summary = "Login to Admin Portal", description = "Only Admin can login here.")
-	public ResponseEntity<AdminAuthResponse> adminLogin(@Valid @RequestBody AdminLoginRequest loginRequest) {
+    private final CustomStaffDetailsService customStaffDetailsService;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final StaffUserRepository staffUserRepository;
 
     // ========================================================
     // 🔴 Admin နှင့် Staff အားလုံးအတွက် လမ်းကြောင်းတစ်ခုတည်း (Unified Login)
@@ -78,13 +74,7 @@ public class AdminAuthController {
                 userDetails.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-	// ========================================================
-	// 🔵 ၃။ STAFF သီးသန့် လမ်းကြောင်း (Staff မဟုတ်ပါက ပိတ်ချမည်)
-	// ========================================================
-	@PostMapping("/staff/login")
-	@Auditable(menuName = "Staff Authentication", action = "LOGIN", description = "Staff login")
-	@Operation(summary = "Login to Staff Portal", description = "Only Staff can login here.")
-	public ResponseEntity<AdminAuthResponse> staffLogin(@Valid @RequestBody AdminLoginRequest loginRequest) {
+        String token = jwtTokenProvider.generateToken(authentication);
 
         // 🔴 ဤနေရာတွင် roleName ကို နောက်ဆုံးတွင် ထည့်ပေးလိုက်ပါ
         AdminAuthResponse authResponse = new AdminAuthResponse(token, staff.getId(), staff.getFullName(), roleName);
@@ -92,36 +82,12 @@ public class AdminAuthController {
         return ResponseEntity.ok(authResponse);
     }
 
-		if (!passwordEncoder.matches(loginRequest.getPassword(), userDetails.getPassword())) {
-			throw new BadCredentialsException("Invalid email or password");
-		}
-
-		StaffUser staff = staffUserRepository.findByEmail(loginRequest.getEmail())
-				.orElseThrow(() -> new UsernameNotFoundException("Staff not found"));
-
-		String roleName = staff.getRole().name();
-		if (!roleName.equals("SUPPORT") && !roleName.equals("AUDITOR")) {
-		    throw new BadCredentialsException("Access Denied: This login portal is ONLY for Staffs!");
-		}
-
-		Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
-				userDetails.getAuthorities());
-		SecurityContextHolder.getContext()
-				.setAuthentication(authentication);
-
-		String token = jwtTokenProvider.generateToken(authentication);
-
-		AdminAuthResponse authResponse = new AdminAuthResponse(token, staff.getId(), staff.getFullName());
-		return ResponseEntity.ok(authResponse);
-	}
-
-	// ========================================================
-	// 🟢 ၄။ LOGOUT လမ်းကြောင်း (ယခင် /api/v1/admin/logout အတိုင်း ဖြစ်စေရန်)
-	// ========================================================
-	@PostMapping("/admin/logout")
-	@Auditable(menuName = "Admin Authentication", action = "LOGOUT", description = "Admin logout")
-	@Operation(summary = "Logout Admin", description = "Logs out the admin/staff user.")
-	public ResponseEntity<?> logout() {
-		return ResponseEntity.ok(Map.of("message", "Logged out successfully. Please clear your token in client."));
-	}
+    // ========================================================
+    // 🟢 LOGOUT လမ်းကြောင်း
+    // ========================================================
+    @PostMapping("/logout")
+    @Operation(summary = "Logout User", description = "Logs out the current user.")
+    public ResponseEntity<?> logout() {
+        return ResponseEntity.ok(Map.of("message", "Logged out successfully. Please clear your token in client."));
+    }
 }
