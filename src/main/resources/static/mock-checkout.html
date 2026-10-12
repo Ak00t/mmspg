@@ -338,14 +338,29 @@
             failureReason: status === 'FAILED' ? 'User cancelled payment on customer portal' : null
         };
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000);
+
         try {
             const res = await fetch('/api/v1/payments/authorize', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify(payload),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
 
-            const data = await res.json();
+            let data;
+            const resText = await res.text();
+            try {
+                data = JSON.parse(resText);
+            } catch (e) {
+                throw new Error(resText || ("Server returned error: HTTP " + res.status));
+            }
+
+            if (!res.ok && (!data || !data.status)) {
+                throw new Error(data.message || data.error || ("Server error: HTTP " + res.status));
+            }
 
             checkoutForm.style.display = 'none';
             completedView.style.display = 'block';
@@ -367,7 +382,9 @@
                 `;
             }
         } catch (err) {
-            showError("Authorization failed: " + err.message);
+            clearTimeout(timeoutId);
+            const msg = err.name === 'AbortError' ? 'Request timed out after 15 seconds. Please try again.' : err.message;
+            showError("Authorization failed: " + msg);
             payBtn.disabled = false;
             cancelBtn.disabled = false;
             document.getElementById('btnText').textContent = 'Confirm & Pay';
