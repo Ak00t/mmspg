@@ -23,7 +23,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MerchantLedgerServiceImpl implements MerchantLedgerService {
 
-	private final MerchantLedgerRepository ledgerRepository;
 	private final MerchantLedgerRepository merchantLedgerRepository;
 	private final PaymentTransactionRepository paymentTransactionRepository;
 
@@ -32,7 +31,7 @@ public class MerchantLedgerServiceImpl implements MerchantLedgerService {
 	 */
 	@Transactional
 	public void markLedgerAsSettled(UUID ledgerId) {
-		int updatedRows = ledgerRepository.updateBalanceType(ledgerId, "SETTLED");
+		int updatedRows = merchantLedgerRepository.updateBalanceType(ledgerId, "SETTLED");
 
 		if (updatedRows == 0) {
 			throw new RuntimeException("Ledger entry not found with ID: " + ledgerId);
