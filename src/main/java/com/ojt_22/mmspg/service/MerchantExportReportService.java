@@ -8,4 +8,6 @@ public interface MerchantExportReportService {
     ByteArrayResource settlements(LocalDate from, LocalDate to);
     ExportedReport salesLedger(LocalDate from, LocalDate to, String format);
     ExportedReport settlements(LocalDate from, LocalDate to, String format);
+    ExportedReport salesLedger(LocalDate from, LocalDate to, String format, String status);
+    ExportedReport settlements(LocalDate from, LocalDate to, String format, String status);
 }

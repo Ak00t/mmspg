@@ -15,8 +15,12 @@ import lombok.RequiredArgsConstructor;
 public class MerchantExportReportRepository {
     private final JdbcTemplate jdbcTemplate;
 
-    public List<SalesLedgerReportRow> salesLedger(UUID id, LocalDate from, LocalDate to) {
-        return jdbcTemplate.query("CALL sp_get_merchant_sales_ledger_report(UUID_TO_BIN(?), ?, ?)",
+    private String normalizeStatus(String status) {
+        return (status == null || status.isBlank() || "ALL".equalsIgnoreCase(status.trim())) ? null : status.trim();
+    }
+
+    public List<SalesLedgerReportRow> salesLedger(UUID id, LocalDate from, LocalDate to, String status) {
+        return jdbcTemplate.query("CALL sp_get_merchant_sales_ledger_report(UUID_TO_BIN(?), ?, ?, ?)",
             (rs, n) -> {
                 SalesLedgerReportRow r = new SalesLedgerReportRow();
                 r.setLedgerId(rs.getString("ledgerId"));
@@ -31,11 +35,16 @@ public class MerchantExportReportRepository {
                 if (settled != null) r.setSettlementDate(settled.toLocalDate());
                 return r;
             }, id.toString(), Timestamp.valueOf(from.atStartOfDay()),
-            Timestamp.valueOf(to.plusDays(1).atStartOfDay().minusNanos(1)));
+            Timestamp.valueOf(to.plusDays(1).atStartOfDay().minusNanos(1)),
+            normalizeStatus(status));
     }
 
-    public List<SettlementReportRow> settlements(UUID id, LocalDate from, LocalDate to) {
-        return jdbcTemplate.query("CALL sp_get_merchant_settlement_report(UUID_TO_BIN(?), ?, ?)",
+    public List<SalesLedgerReportRow> salesLedger(UUID id, LocalDate from, LocalDate to) {
+        return salesLedger(id, from, to, null);
+    }
+
+    public List<SettlementReportRow> settlements(UUID id, LocalDate from, LocalDate to, String status) {
+        return jdbcTemplate.query("CALL sp_get_merchant_settlement_report(UUID_TO_BIN(?), ?, ?, ?)",
             (rs, n) -> {
                 SettlementReportRow r = new SettlementReportRow();
                 r.setSettlementId(rs.getString("settlementId"));
@@ -50,6 +59,10 @@ public class MerchantExportReportRepository {
                 if (processed != null) r.setProcessedAt(processed.toLocalDateTime());
                 if (created != null) r.setCreatedAt(created.toLocalDateTime());
                 return r;
-            }, id.toString(), from, to);
+            }, id.toString(), from, to, normalizeStatus(status));
+    }
+
+    public List<SettlementReportRow> settlements(UUID id, LocalDate from, LocalDate to) {
+        return settlements(id, from, to, null);
     }
 }
