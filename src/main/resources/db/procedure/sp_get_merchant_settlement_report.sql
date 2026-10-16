@@ -1,7 +1,7 @@
 DELIMITER $$
 DROP PROCEDURE IF EXISTS sp_get_merchant_settlement_report$$
 CREATE PROCEDURE sp_get_merchant_settlement_report(
-    IN p_merchant_id BINARY(16), IN p_start_date DATE, IN p_end_date DATE)
+    IN p_merchant_id BINARY(16), IN p_start_date DATE, IN p_end_date DATE, IN p_status VARCHAR(50))
 BEGIN
     SELECT BIN_TO_UUID(s.settlement_id) AS settlementId, s.settlement_reference AS settlementReference,
            t.transaction_reference AS transactionReference, s.settlement_date AS settlementDate,
@@ -13,6 +13,7 @@ BEGIN
     WHERE s.merchant_id = p_merchant_id
       AND (p_start_date IS NULL OR s.settlement_date >= p_start_date)
       AND (p_end_date IS NULL OR s.settlement_date <= p_end_date)
+      AND (p_status IS NULL OR p_status = '' OR p_status = 'ALL' OR s.status = p_status)
     ORDER BY s.settlement_date DESC, s.created_at DESC;
 END$$
 DELIMITER ;

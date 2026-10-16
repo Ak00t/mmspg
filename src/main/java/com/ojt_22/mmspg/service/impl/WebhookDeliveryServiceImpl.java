@@ -92,7 +92,18 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
 
         WebhookDelivery saved = webhookDeliveryRepository.save(delivery);
 
-        executeDeliveryAsync(saved.getId());
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isSynchronizationActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        java.util.concurrent.CompletableFuture.runAsync(() -> executeDelivery(saved.getId()));
+                    }
+                }
+            );
+        } else {
+            java.util.concurrent.CompletableFuture.runAsync(() -> executeDelivery(saved.getId()));
+        }
     }
 
     @Async

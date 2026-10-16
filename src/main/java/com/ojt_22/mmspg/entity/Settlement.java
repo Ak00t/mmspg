@@ -57,7 +57,8 @@ public class Settlement {
 	@Column(name = "fee_amount", nullable = false, precision = 18, scale = 4)
 	private BigDecimal feeAmount;
 
-	
+	@Column(nullable = false, length = 3, columnDefinition = "char(3)")
+	private String currency = "MMK";
 
 	@Column(name = "net_amount", nullable = false, precision = 18, scale = 4)
 	private BigDecimal netAmount;

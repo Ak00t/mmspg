@@ -1,9 +1,13 @@
 package com.ojt_22.mmspg.exception;
 
+import java.time.Instant;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+import com.ojt_22.mmspg.dto.ErrorResponse;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -47,5 +51,14 @@ public class GlobalExceptionHandler {
 	public ResponseEntity<String> handelMerchantNotFound(MerchantNotFoundException ex) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
 				.body(ex.getMessage());
+	}
+
+	@ExceptionHandler(Exception.class)
+	public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
+
+		ErrorResponse body = new ErrorResponse(Instant.now(), HttpStatus.INTERNAL_SERVER_ERROR.value(),
+				HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(), "An unexpected internal server error occurred.");
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(body);
 	}
 }
