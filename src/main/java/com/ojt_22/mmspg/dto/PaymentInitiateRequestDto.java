@@ -27,4 +27,6 @@ public class PaymentInitiateRequestDto {
     
     @NotBlank
     private String currency;
+
+    private String returnUrl;
 }

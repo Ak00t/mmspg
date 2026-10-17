@@ -63,15 +63,29 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
             return;
         }
 
-        // WebhookPayloadDto နှင့် ObjectMapper ဖြင့် Valid JSON Format တည်ဆောက်ခြင်း[cite: 29]
+        String mappedStatus;
+        if ("PAYMENT_COMPLETED".equalsIgnoreCase(eventType)) {
+            mappedStatus = "SUCCESS";
+        } else if ("PAYMENT_FAILED".equalsIgnoreCase(eventType)) {
+            mappedStatus = "FAILED";
+        } else {
+            mappedStatus = transaction.getStatus() != null ? transaction.getStatus().name() : null;
+        }
+
+        String externalEventId = "EVT-" + UUID.randomUUID();
+
+        // WebhookPayloadDto နှင့် ObjectMapper ဖြင့် Valid JSON Format တည်ဆောက်ခြင်း
         String payload;
         try {
             WebhookPayloadDto payloadDto = WebhookPayloadDto.builder()
                     .event(eventType)
+                    .externalEventId(externalEventId)
+                    .transactionRef(transaction.getTransactionReference())
+                    .orderId(transaction.getOrderId())
                     .transactionId(transaction.getId())
                     .amount(transaction.getAmount())
                     .currency(transaction.getCurrency())
-                    .status(transaction.getStatus() != null ? transaction.getStatus().name() : null)
+                    .status(mappedStatus)
                     .timestamp(LocalDateTime.now())
                     .build();
 
