@@ -1,6 +1,7 @@
 package com.ojt_22.mmspg.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -8,7 +9,16 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+
+import org.springframework.web.multipart.MultipartFile;
+
 import com.ojt_22.mmspg.dto.MerchantPendingDto;
+import com.ojt_22.mmspg.dto.MerchantProfileResponseDto;
 import com.ojt_22.mmspg.dto.MerchantRegistrationRequest;
 import com.ojt_22.mmspg.entity.MccCode;
 import com.ojt_22.mmspg.entity.Merchant;
@@ -16,6 +26,7 @@ import com.ojt_22.mmspg.enums.MerchantStatus;
 import com.ojt_22.mmspg.repository.MccCodeRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.service.MerchantService;
+import com.ojt_22.mmspg.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,6 +37,7 @@ public class MerchantServiceImpl implements MerchantService {
 	private final MerchantRepository merchantRepository;
 	private final MccCodeRepository mccCodeRepository;
 	private final PasswordEncoder passwordEncoder;
+	private final NotificationService notificationService;
 
 	@Override
 	@Transactional
@@ -59,9 +71,16 @@ public class MerchantServiceImpl implements MerchantService {
 		merchant.setStatus(MerchantStatus.PENDING);
 
 		// updatedAt must be set manually if there's no @UpdateTimestamp
-//		merchant.setUpdatedAt(LocalDateTime.now());
+		Merchant savedMerchant = merchantRepository.save(merchant);
 
-		return merchantRepository.save(merchant);
+		// Trigger notification on success
+		notificationService.sendNotificationToCurrentStaff(
+				"New Merchant Added",
+				"Merchant \"" + savedMerchant.getBusinessName() + "\" (Code: " + savedMerchant.getMerchantCode() + ") has been successfully registered with PENDING status.",
+				"MERCHANT"
+		);
+
+		return savedMerchant;
 	}
 
 	@Override
@@ -100,6 +119,20 @@ public class MerchantServiceImpl implements MerchantService {
 		merchant.setApprovedAt(LocalDateTime.now());
 		merchant.setUpdatedAt(LocalDateTime.now());
 		merchantRepository.save(merchant);
+
+		// Trigger notification to the currently logged-in Admin
+		notificationService.sendNotificationToCurrentStaff(
+				"Merchant Approved",
+				"You approved merchant \"" + merchant.getBusinessName() + "\" (Code: " + merchant.getMerchantCode() + ").",
+				"MERCHANT"
+		);
+
+		// Broadcast to all other staff/auditors
+		notificationService.sendNotificationToAllStaff(
+				"Merchant Approved",
+				"Merchant \"" + merchant.getBusinessName() + "\" (Code: " + merchant.getMerchantCode() + ") has been approved successfully.",
+				"MERCHANT"
+		);
 	}
 
 	
@@ -144,9 +177,127 @@ public class MerchantServiceImpl implements MerchantService {
 
 		merchant.setStatus(MerchantStatus.REJECTED);
 		merchant.setUpdatedAt(LocalDateTime.now());
-		// Since there is no 'rejectionReason' field in Merchant entity based on
-		// previous exploration, we just update status.
-		// If there was a log table, we would insert the reason there.
 		merchantRepository.save(merchant);
+
+		// Trigger notification to the currently logged-in Admin
+		notificationService.sendNotificationToCurrentStaff(
+				"Merchant Rejected",
+				"You rejected merchant \"" + merchant.getBusinessName() + "\" (Code: " + merchant.getMerchantCode() + "). Reason: " + reason,
+				"MERCHANT"
+		);
+
+		// Broadcast notification to other staff/admins
+		notificationService.sendNotificationToAllStaff(
+				"Merchant Rejected",
+				"Merchant \"" + merchant.getBusinessName() + "\" (Code: " + merchant.getMerchantCode() + ") has been rejected. Reason: " + reason,
+				"MERCHANT"
+		);
 	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public MerchantProfileResponseDto getMerchantProfile(java.util.UUID merchantId) {
+		Merchant merchant = merchantRepository.findById(merchantId)
+				.orElseThrow(() -> new IllegalArgumentException("Merchant not found with ID: " + merchantId));
+
+		return MerchantProfileResponseDto.builder()
+				.id(merchant.getId())
+				.merchantCode(merchant.getMerchantCode())
+				.businessName(merchant.getBusinessName())
+				.businessRegistrationNo(merchant.getBusinessRegistrationNo())
+				.settlementAccountNo(merchant.getSettlementAccountNo())
+				.contactName(merchant.getContactName())
+				.email(merchant.getEmail())
+				.phone(merchant.getPhone())
+				.address(merchant.getAddress())
+				.status(merchant.getStatus() != null ? merchant.getStatus().name() : null)
+				.profileImageUrl(merchant.getProfileImageUrl())
+				.businessType(merchant.getMccCode() != null ? merchant.getMccCode().getMccName() : null)
+				.createdAt(merchant.getCreatedAt())
+				.build();
+	}
+
+	@Override
+	@Transactional
+	public String uploadMerchantProfilePicture(java.util.UUID merchantId, MultipartFile file) {
+		if (file == null || file.isEmpty()) {
+			throw new IllegalArgumentException("Profile image file cannot be empty");
+		}
+
+		Merchant merchant = merchantRepository.findById(merchantId)
+				.orElseThrow(() -> new IllegalArgumentException("Merchant not found with ID: " + merchantId));
+
+		try {
+			Path uploadDir = Paths.get("uploads", "merchants");
+			if (!Files.exists(uploadDir)) {
+				Files.createDirectories(uploadDir);
+			}
+
+			String originalFilename = file.getOriginalFilename();
+			String extension = "";
+			if (originalFilename != null && originalFilename.contains(".")) {
+				extension = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
+			}
+
+			String fileName = merchantId + "_" + System.currentTimeMillis() + extension;
+			Path targetPath = uploadDir.resolve(fileName);
+
+			Files.copy(file.getInputStream(), targetPath, StandardCopyOption.REPLACE_EXISTING);
+
+			String fileUrl = "/uploads/merchants/" + fileName;
+			merchant.setProfileImageUrl(fileUrl);
+			merchant.setUpdatedAt(LocalDateTime.now());
+			merchantRepository.save(merchant);
+
+			return fileUrl;
+		} catch (IOException e) {
+			throw new RuntimeException("Failed to upload profile picture: " + e.getMessage(), e);
+		}
+	}
+	
+	@Override
+	@Transactional
+	public void updateMerchant(UUID merchantId, String businessName, String merchantCode) {
+		Merchant merchant = merchantRepository.findById(merchantId)
+				.orElseThrow(() -> new IllegalArgumentException("Merchant not found with ID: " + merchantId));
+
+		merchant.setBusinessName(businessName);
+		merchant.setMerchantCode(merchantCode);
+		merchant.setUpdatedAt(LocalDateTime.now());
+		
+		merchantRepository.save(merchant);
+
+		// Trigger Notification on Edit
+		notificationService.sendNotificationToCurrentStaff(
+				"Merchant Updated",
+				"Details for merchant \"" + merchant.getBusinessName() + "\" have been successfully updated.",
+				"MERCHANT"
+		);
+	}
+
+	@Override
+	@Transactional
+	public void updateMerchantStatus(UUID merchantId, String status, String reason) {
+		Merchant merchant = merchantRepository.findById(merchantId)
+				.orElseThrow(() -> new IllegalArgumentException("Merchant not found with ID: " + merchantId));
+
+		try {
+			merchant.setStatus(MerchantStatus.valueOf(status.toUpperCase()));
+		} catch (IllegalArgumentException e) {
+			throw new IllegalArgumentException("Invalid status provided: " + status);
+		}
+		
+		merchant.setUpdatedAt(LocalDateTime.now());
+		merchantRepository.save(merchant);
+
+		// Trigger Notification on Status Change (Suspend)
+		notificationService.sendNotificationToCurrentStaff(
+				"Merchant Status Updated",
+				"Merchant \"" + merchant.getBusinessName() + "\" status was changed to " + status + ". Reason: " + reason,
+				"MERCHANT"
+		);
+	}
+
+	
+
 }

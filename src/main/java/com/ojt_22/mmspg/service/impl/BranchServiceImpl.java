@@ -16,6 +16,7 @@ import com.ojt_22.mmspg.enums.MerchantBranchStatus;
 import com.ojt_22.mmspg.repository.BranchRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.service.BranchService;
+import com.ojt_22.mmspg.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -25,6 +26,7 @@ public class BranchServiceImpl implements BranchService {
 
 	private final BranchRepository branchRepository;
 	private final MerchantRepository merchantRepository;
+	private final NotificationService notificationService;
 
 	@Override
 	@Transactional
@@ -48,6 +50,13 @@ public class BranchServiceImpl implements BranchService {
 //		branch.setUpdatedAt(LocalDateTime.now());
 
 		MerchantBranch savedBranch = branchRepository.save(branch);
+		
+		notificationService.sendNotificationToCurrentStaff(
+				"New Branch Added",
+				"Branch \"" + savedBranch.getBranchName() + "\" (Code: " + savedBranch.getBranchCode() + ") has been successfully created.",
+				"BRANCH"
+		);
+		
 		return mapToResponseDto(savedBranch);
 	}
 
@@ -106,6 +115,12 @@ public class BranchServiceImpl implements BranchService {
         branch.setUpdatedAt(java.time.LocalDateTime.now());
 
         MerchantBranch updatedBranch = branchRepository.save(branch);
+        
+        notificationService.sendNotificationToCurrentStaff(
+				"Branch Updated",
+				"Details for branch \"" + updatedBranch.getBranchName() + "\" (Code: " + updatedBranch.getBranchCode() + ") have been updated.",
+				"BRANCH"
+		);
         return mapToResponseDto(updatedBranch);
     }
 
@@ -115,14 +130,21 @@ public class BranchServiceImpl implements BranchService {
 		MerchantBranch branch = branchRepository.findById(branchId)
 				.orElseThrow(() -> new IllegalArgumentException("Branch not found with ID: " + branchId));
 
-		if ("ACTIVE".equals(branch.getStatus())) {
+		if (MerchantBranchStatus.ACTIVE.equals(branch.getStatus())) {
 			branch.setStatus(MerchantBranchStatus.INACTIVE);
 		} else {
 			branch.setStatus(MerchantBranchStatus.ACTIVE);
 		}
 
 		branch.setUpdatedAt(LocalDateTime.now());
-		branchRepository.save(branch);
+		MerchantBranch savedBranch = branchRepository.save(branch);
+
+		// Trigger notification on status toggle
+		notificationService.sendNotificationToCurrentStaff(
+				"Branch Status Changed",
+				"Branch \"" + savedBranch.getBranchName() + "\" status was changed to " + savedBranch.getStatus() + ".",
+				"BRANCH"
+		);
 	}
 
 	private BranchResponseDto mapToResponseDto(MerchantBranch branch) {

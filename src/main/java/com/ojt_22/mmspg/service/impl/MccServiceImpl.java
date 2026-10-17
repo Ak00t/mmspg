@@ -12,6 +12,7 @@ import com.ojt_22.mmspg.entity.MccCode;
 import com.ojt_22.mmspg.enums.MccCodeStatus;
 import com.ojt_22.mmspg.repository.MccCodeRepository;
 import com.ojt_22.mmspg.service.MccService;
+import com.ojt_22.mmspg.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 public class MccServiceImpl implements MccService {
 
 	private final MccCodeRepository mccCodeRepository;
-
+	private final NotificationService notificationService;
 	@Override
 	@Transactional(readOnly = true)
 	public List<MccCodeResponseDto> getAllMccCodes() {
@@ -40,6 +41,12 @@ public class MccServiceImpl implements MccService {
 		mcc.setStatus(MccCodeStatus.ACTIVE);
 
 		MccCode saved = mccCodeRepository.save(mcc);
+		
+		notificationService.sendNotificationToCurrentStaff(
+				"MCC Added",
+				"MCC code \"" + saved.getMccCode() + " - " + saved.getMccName() + "\" has been successfully created.",
+				"SYSTEM"
+		);
 		return mapToResponseDto(saved);
 	}
 
@@ -65,6 +72,12 @@ public class MccServiceImpl implements MccService {
         
         try {
             mccCodeRepository.deleteById(id.intValue());
+            
+            notificationService.sendNotificationToCurrentStaff(
+                    "MCC Deleted",
+                    "An MCC code has been removed from the system.",
+                    "SYSTEM"
+            );
         } catch (Exception e) {
             // အကယ်၍ Merchant နှင့် ချိတ်ဆက်ထားသဖြင့် ဖျက်မရပါက Error Message ပြန်ပေးမည်
             throw new IllegalArgumentException("Cannot delete this MCC code because it is being used by existing merchants.");
@@ -93,7 +106,11 @@ public class MccServiceImpl implements MccService {
         }
 
         MccCode updatedMcc = mccCodeRepository.save(mcc);
-        
+        notificationService.sendNotificationToCurrentStaff(
+                "MCC Updated",
+                "MCC code \"" + updatedMcc.getMccCode() + " - " + updatedMcc.getMccName() + "\" has been successfully updated.",
+                "SYSTEM"
+        );
         return mapToResponseDto(updatedMcc); 
     }
 	

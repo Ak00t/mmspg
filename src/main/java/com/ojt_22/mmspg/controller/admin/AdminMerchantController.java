@@ -16,14 +16,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.MerchantPendingDto;
+import com.ojt_22.mmspg.dto.MerchantProfileResponseDto;
 import com.ojt_22.mmspg.dto.MerchantRegistrationRequest;
 import com.ojt_22.mmspg.entity.Merchant;
 import com.ojt_22.mmspg.enums.MerchantStatus;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.service.MerchantService;
 
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/admin/merchants")
@@ -64,47 +68,80 @@ public class AdminMerchantController {
     }
     
     
- // ၁။ Edit Merchant Details အတွက်
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
-    public ResponseEntity<?> updateMerchantDetails(
-            @PathVariable UUID id, 
-            @RequestBody MerchantPendingDto updateDto) {
-            
-        // Database ထဲမှ သက်ဆိုင်ရာ Merchant ကို ရှာမည်
-        Merchant merchant = merchantRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Merchant not found"));
-        
-        // 🔴 Data အသစ်ပါလာမှသာ (null မဟုတ်မှသာ) Database ကို အစားထိုးရန် ကာကွယ်ထားခြင်း
-        if (updateDto.getBusinessName() != null && !updateDto.getBusinessName().trim().isEmpty()) {
-            merchant.setBusinessName(updateDto.getBusinessName());
+// // ၁။ Edit Merchant Details အတွက်
+//    @PutMapping("/{id}")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
+//    public ResponseEntity<?> updateMerchantDetails(
+//            @PathVariable UUID id, 
+//            @RequestBody MerchantPendingDto updateDto) {
+//            
+//        try {
+//            String businessName = updateDto.getBusinessName();
+//            String merchantCode = updateDto.getMerchantCode();
+//            
+//            // 🔴 Repository အစား Service ကို လှမ်းခေါ်လိုက်ပါသည် (Notification အလုပ်လုပ်သွားပါမည်)
+//            merchantService.updateMerchant(id, businessName, merchantCode);
+//            
+//            return ResponseEntity.ok(Map.of("message", "Merchant updated successfully"));
+//        } catch (IllegalArgumentException e) {
+//            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+//        }
+//    }
+//    
+//    // ၂။ Suspend / Reactivate Status အတွက်
+//    @PutMapping("/{id}/status")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
+//    public ResponseEntity<?> updateMerchantStatus(
+//            @PathVariable UUID id, 
+//            @RequestParam String status,
+//            @RequestBody(required = false) Map<String, String> requestBody) { // Frontend မှ reason ပါလာမည်
+//            
+//        try {
+//            // Frontend က ပို့လိုက်တဲ့ Reason ကို ယူမည် (မပါရင် Default စာသားထည့်မည်)
+//            String reason = requestBody != null && requestBody.containsKey("reason") 
+//                            ? requestBody.get("reason") 
+//                            : "No reason provided";
+//
+//            // 🔴 Repository အစား Service ကို လှမ်းခေါ်လိုက်ပါသည် (Notification အလုပ်လုပ်သွားပါမည်)
+//            merchantService.updateMerchantStatus(id, status, reason);
+//            
+//            return ResponseEntity.ok(Map.of("message", "Merchant status updated successfully"));
+//        } catch (IllegalArgumentException | IllegalStateException e) {
+//            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+//        }
+//    }
+
+    @GetMapping("/{id}/profile")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT', 'AUDITOR')")
+    @Operation(summary = "Get Merchant Profile", description = "Retrieves full profile details of a merchant by ID.")
+    public ResponseEntity<?> getMerchantProfile(@PathVariable UUID id) {
+        try {
+            MerchantProfileResponseDto profile = merchantService.getMerchantProfile(id);
+            return ResponseEntity.ok(profile);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
-        
-        if (updateDto.getMerchantCode() != null && !updateDto.getMerchantCode().trim().isEmpty()) {
-            merchant.setMerchantCode(updateDto.getMerchantCode()); 
-        }
-        
-        // Database သို့ Save လုပ်မည်
-        merchantRepository.save(merchant);
-        
-        return ResponseEntity.ok(Map.of("message", "Merchant updated successfully"));
     }
-    
-    
- // ၂။ Suspend Status
-    @PutMapping("/{id}/status")
+
+    @PostMapping(value = "/{id}/profile-picture", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
-    public ResponseEntity<?> updateMerchantStatus(
-            @PathVariable UUID id, 
-            @RequestParam String status) {
-            
-        Merchant merchant = merchantRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Merchant not found"));
-        
-        merchant.setStatus(MerchantStatus.valueOf(status.toUpperCase()));
-        merchantRepository.save(merchant);
-        
-        return ResponseEntity.ok(Map.of("message", "Merchant status updated successfully"));
+    @Operation(summary = "Upload Merchant Profile Picture", description = "Uploads profile picture and updates profile image URL.")
+    public ResponseEntity<?> uploadMerchantProfilePicture(
+            @PathVariable UUID id,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            String filePath = merchantService.uploadMerchantProfilePicture(id, file);
+            return ResponseEntity.ok(Map.of(
+                    "message", "Profile picture uploaded successfully",
+                    "profileImageUrl", filePath
+            ));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
-    
 }
