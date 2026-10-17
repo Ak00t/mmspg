@@ -18,6 +18,7 @@ public class WebhookConfigResponse {
     private UUID webhookId;
     private UUID merchantId;
     private String callbackUrl;
+    private String returnUrl;
     private String rawSecretKey; // ဖန်တီးချိန်တွင်သာ Plain Secret ပြန်ပေးမည်
     private Boolean eventPaymentCompleted;
     private Boolean eventPaymentFailed;

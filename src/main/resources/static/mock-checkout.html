@@ -257,7 +257,8 @@
             <div id="resultIcon" style="font-size: 48px; margin-bottom: 12px;">🎉</div>
             <h2 id="resultTitle" style="font-size: 18px; color: #0f172a; margin-bottom: 8px;">Payment Completed!</h2>
             <p id="resultMessage" style="font-size: 14px; color: #64748b; margin-bottom: 16px; word-break: break-all;"></p>
-            <button class="btn btn-secondary" onclick="window.close()">Close Window</button>
+            <div id="redirectSection"></div>
+            <button id="closeBtn" class="btn btn-secondary" onclick="window.close()">Close Window</button>
         </div>
     </div>
 
@@ -275,6 +276,9 @@
     const completedView = document.getElementById('completedView');
     const errorAlert = document.getElementById('errorAlert');
     const successAlert = document.getElementById('successAlert');
+
+    let merchantReturnUrl = null;
+    let currentOrderId = null;
 
     function showError(msg) {
         errorAlert.textContent = msg;
@@ -303,6 +307,9 @@
             }
             const data = await res.json();
             
+            merchantReturnUrl = data.returnUrl;
+            currentOrderId = data.orderId;
+
             document.getElementById('merchantName').textContent = data.businessName || 'Merchant Store';
             document.getElementById('orderId').textContent = data.orderId || '-';
             document.getElementById('statusBadge').textContent = data.status || 'INITIATED';
@@ -373,6 +380,33 @@
                     Amount: <strong>${Number(data.amount).toLocaleString()} ${data.currency}</strong><br>
                     Completed At: ${data.completedAt || new Date().toISOString()}
                 `;
+
+                if (merchantReturnUrl) {
+                    let formattedUrl = merchantReturnUrl;
+                    if (formattedUrl.includes('{orderId}')) {
+                        formattedUrl = formattedUrl.replace('{orderId}', encodeURIComponent(currentOrderId || ''));
+                    }
+                    const separator = formattedUrl.includes('?') ? '&' : '?';
+                    const redirectUrl = `${formattedUrl}${separator}orderId=${encodeURIComponent(currentOrderId || '')}&transactionRef=${encodeURIComponent(data.transactionReference)}&status=SUCCESS`;
+                    let secondsLeft = 3;
+                    document.getElementById('redirectSection').innerHTML = `
+                        <div style="margin-bottom: 12px; font-size: 13px; color: #0284c7; font-weight: 500;">
+                            Redirecting to merchant store in <span id="countdown">${secondsLeft}</span> seconds...
+                        </div>
+                        <a href="${redirectUrl}" class="btn btn-primary" style="text-decoration: none; margin-bottom: 10px;">
+                            Return to Merchant Store Now
+                        </a>
+                    `;
+                    const timer = setInterval(() => {
+                        secondsLeft--;
+                        const countdownEl = document.getElementById('countdown');
+                        if (countdownEl) countdownEl.textContent = secondsLeft;
+                        if (secondsLeft <= 0) {
+                            clearInterval(timer);
+                            window.location.href = redirectUrl;
+                        }
+                    }, 1000);
+                }
             } else {
                 document.getElementById('resultIcon').textContent = '❌';
                 document.getElementById('resultTitle').textContent = 'Payment Failed';
@@ -380,6 +414,20 @@
                     Transaction Ref: <strong>${data.transactionReference || 'N/A'}</strong><br>
                     Reason: <span style="color:#dc2626">${data.failureReason || 'Declined'}</span>
                 `;
+
+                if (merchantReturnUrl) {
+                    let formattedUrl = merchantReturnUrl;
+                    if (formattedUrl.includes('{orderId}')) {
+                        formattedUrl = formattedUrl.replace('{orderId}', encodeURIComponent(currentOrderId || ''));
+                    }
+                    const separator = formattedUrl.includes('?') ? '&' : '?';
+                    const redirectUrl = `${formattedUrl}${separator}orderId=${encodeURIComponent(currentOrderId || '')}&transactionRef=${encodeURIComponent(data.transactionReference || '')}&status=FAILED`;
+                    document.getElementById('redirectSection').innerHTML = `
+                        <a href="${redirectUrl}" class="btn btn-secondary" style="text-decoration: none; margin-bottom: 10px;">
+                            Return to Merchant Store
+                        </a>
+                    `;
+                }
             }
         } catch (err) {
             clearTimeout(timeoutId);

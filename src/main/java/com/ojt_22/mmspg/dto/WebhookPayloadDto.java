@@ -12,6 +12,9 @@ import lombok.Getter;
 @Builder
 public class WebhookPayloadDto {
     private String event;
+    private String externalEventId;
+    private String transactionRef;
+    private String orderId;
     private UUID transactionId;
     private BigDecimal amount;
     private String currency;

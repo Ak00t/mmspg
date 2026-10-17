@@ -30,6 +30,9 @@ import com.ojt_22.mmspg.entity.Terminal;
 import com.ojt_22.mmspg.enums.MerchantLedgerEntryBalanceType;
 import com.ojt_22.mmspg.enums.MerchantLedgerEntryType;
 import com.ojt_22.mmspg.enums.PaymentTransactionStatus;
+import com.ojt_22.mmspg.entity.WebhookConfig;
+import com.ojt_22.mmspg.enums.WebhookConfigStatus;
+import com.ojt_22.mmspg.repository.WebhookConfigRepository;
 import com.ojt_22.mmspg.repository.MerchantBranchRepository;
 import com.ojt_22.mmspg.repository.MerchantFeeRepository;
 import com.ojt_22.mmspg.repository.MerchantLedgerRepository;
@@ -56,6 +59,7 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 	private final MerchantLedgerRepository ledgerRepository;
 
 	private final WebhookDeliveryService webhookDeliveryService;
+	private final WebhookConfigRepository webhookConfigRepository;
 
 	// Group 2 (Core Banking System) သို့ API လှမ်းခေါ်မည့် Client Class
 	private final CoreBankingClient coreBankingClient;
@@ -159,6 +163,16 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 		transaction.setPaymentToken(token);
 		transaction.setAmount(requestDto.getAmount());
 		transaction.setCurrency(requestDto.getCurrency() != null ? requestDto.getCurrency() : "MMK");
+
+		String returnUrl = requestDto.getReturnUrl();
+		if (returnUrl == null || returnUrl.isBlank()) {
+			Optional<WebhookConfig> configOpt = webhookConfigRepository
+					.findByMerchantIdAndStatus(merchant.getId(), WebhookConfigStatus.ACTIVE);
+			if (configOpt.isPresent() && configOpt.get().getReturnUrl() != null) {
+				returnUrl = configOpt.get().getReturnUrl();
+			}
+		}
+		transaction.setReturnUrl(returnUrl);
 
 		transaction.setFeeAmount(totalFee);
 		transaction.setNetAmount(netAmount);
@@ -316,6 +330,7 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 				.currency(transaction.getCurrency())
 				.status(transaction.getStatus()
 						.name())
+				.returnUrl(transaction.getReturnUrl())
 				.build();
 	}
 
