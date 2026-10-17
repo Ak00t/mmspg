@@ -382,7 +382,12 @@
                 `;
 
                 if (merchantReturnUrl) {
-                    const redirectUrl = `${merchantReturnUrl}${merchantReturnUrl.includes('?') ? '&' : '?'}orderId=${encodeURIComponent(currentOrderId || '')}&transactionRef=${encodeURIComponent(data.transactionReference)}&status=SUCCESS`;
+                    let formattedUrl = merchantReturnUrl;
+                    if (formattedUrl.includes('{orderId}')) {
+                        formattedUrl = formattedUrl.replace('{orderId}', encodeURIComponent(currentOrderId || ''));
+                    }
+                    const separator = formattedUrl.includes('?') ? '&' : '?';
+                    const redirectUrl = `${formattedUrl}${separator}orderId=${encodeURIComponent(currentOrderId || '')}&transactionRef=${encodeURIComponent(data.transactionReference)}&status=SUCCESS`;
                     let secondsLeft = 3;
                     document.getElementById('redirectSection').innerHTML = `
                         <div style="margin-bottom: 12px; font-size: 13px; color: #0284c7; font-weight: 500;">
@@ -411,7 +416,12 @@
                 `;
 
                 if (merchantReturnUrl) {
-                    const redirectUrl = `${merchantReturnUrl}${merchantReturnUrl.includes('?') ? '&' : '?'}orderId=${encodeURIComponent(currentOrderId || '')}&transactionRef=${encodeURIComponent(data.transactionReference || '')}&status=FAILED`;
+                    let formattedUrl = merchantReturnUrl;
+                    if (formattedUrl.includes('{orderId}')) {
+                        formattedUrl = formattedUrl.replace('{orderId}', encodeURIComponent(currentOrderId || ''));
+                    }
+                    const separator = formattedUrl.includes('?') ? '&' : '?';
+                    const redirectUrl = `${formattedUrl}${separator}orderId=${encodeURIComponent(currentOrderId || '')}&transactionRef=${encodeURIComponent(data.transactionReference || '')}&status=FAILED`;
                     document.getElementById('redirectSection').innerHTML = `
                         <a href="${redirectUrl}" class="btn btn-secondary" style="text-decoration: none; margin-bottom: 10px;">
                             Return to Merchant Store
