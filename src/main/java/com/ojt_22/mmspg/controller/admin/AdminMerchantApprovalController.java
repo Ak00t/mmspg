@@ -70,4 +70,45 @@ public class AdminMerchantApprovalController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+    
+    @PutMapping("/{id}")
+    @Auditable(menuName = "Merchant Management", action = "UPDATE", targetType = "MERCHANT", targetId = "#id")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
+    @Operation(summary = "Update Merchant", description = "Updates merchant business name and registration number.")
+    public ResponseEntity<?> updateMerchant(
+            @PathVariable UUID id, 
+            @RequestBody Map<String, String> requestBody) {
+        try {
+            String businessName = requestBody.get("businessName");
+            String merchantCode = requestBody.get("merchantCode");
+            
+            // Service ကို လှမ်းခေါ်မည် (ဤနေရာတွင် Notification ပါ အလုပ်လုပ်သွားပါမည်)
+            merchantService.updateMerchant(id, businessName, merchantCode);
+            
+            return ResponseEntity.ok(Map.of("message", "Merchant updated successfully."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}/status")
+    @Auditable(menuName = "Merchant Management", action = "UPDATE_STATUS", targetType = "MERCHANT", targetId = "#id")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
+    @Operation(summary = "Update Merchant Status", description = "Updates merchant status (e.g., SUSPENDED, ACTIVE) with a reason.")
+    public ResponseEntity<?> updateMerchantStatus(
+            @PathVariable UUID id, 
+            @RequestParam String status, 
+            @RequestBody(required = false) Map<String, String> requestBody) {
+        try {
+            String reason = requestBody != null ? requestBody.get("reason") : "No reason provided";
+            
+            // Service ကို လှမ်းခေါ်မည် (ဤနေရာတွင် Notification ပါ အလုပ်လုပ်သွားပါမည်)
+            merchantService.updateMerchantStatus(id, status, reason);
+            
+            return ResponseEntity.ok(Map.of("message", "Merchant status updated to " + status + " successfully."));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }
+

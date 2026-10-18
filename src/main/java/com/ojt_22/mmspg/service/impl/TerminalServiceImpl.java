@@ -18,6 +18,7 @@ import com.ojt_22.mmspg.enums.TerminalType;
 import com.ojt_22.mmspg.repository.BranchRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.repository.TerminalRepository;
+import com.ojt_22.mmspg.service.NotificationService;
 import com.ojt_22.mmspg.service.TerminalService;
 
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class TerminalServiceImpl implements TerminalService {
 	private final TerminalRepository terminalRepository;
 	private final MerchantRepository merchantRepository;
 	private final BranchRepository branchRepository;
+	private final NotificationService notificationService;
 	@Override
 	@Transactional
 	public TerminalResponseDto provisionTerminal(TerminalRequestDto request) {
@@ -65,6 +67,20 @@ public class TerminalServiceImpl implements TerminalService {
 //		terminal.setUpdatedAt(LocalDateTime.now());
 
 		Terminal savedTerminal = terminalRepository.save(terminal);
+
+		notificationService.sendNotificationToCurrentStaff(
+				"Terminal Provisioned",
+				"You provisioned terminal \"" + savedTerminal.getTerminalCode() + "\" (" + savedTerminal.getTerminalType() + ") for merchant \"" + merchant.getBusinessName() + "\".",
+				"TERMINAL"
+		);
+
+		// Broadcast to all other staff/admins
+		notificationService.sendNotificationToAllStaff(
+				"Terminal Provisioned",
+				"Terminal \"" + savedTerminal.getTerminalCode() + "\" (" + savedTerminal.getTerminalType() + ") has been provisioned for merchant \"" + merchant.getBusinessName() + "\".",
+				"TERMINAL"
+		);
+
 		return mapToResponseDto(savedTerminal);
 	}
 
@@ -91,6 +107,19 @@ public class TerminalServiceImpl implements TerminalService {
 		terminal.setStatus(TerminalStatus.valueOf(upperStatus));
 		terminal.setUpdatedAt(LocalDateTime.now());
 		terminalRepository.save(terminal);
+
+		notificationService.sendNotificationToCurrentStaff(
+				"Terminal Status Changed",
+				"You updated terminal \"" + terminal.getTerminalCode() + "\" status to " + upperStatus + ".",
+				"TERMINAL"
+		);
+
+		// Broadcast to other staff/admins
+		notificationService.sendNotificationToAllStaff(
+				"Terminal Status Changed",
+				"Terminal \"" + terminal.getTerminalCode() + "\" status was updated to " + upperStatus + ".",
+				"TERMINAL"
+		);
 	}
 
 	
@@ -121,6 +150,11 @@ public class TerminalServiceImpl implements TerminalService {
 		// ၄။ Database သို့ Save လုပ်မည်
 		Terminal updatedTerminal = terminalRepository.save(terminal);
 		
+		notificationService.sendNotificationToCurrentStaff(
+				"Terminal Updated",
+				"Details for terminal \"" + updatedTerminal.getTerminalCode() + "\" have been successfully updated.",
+				"TERMINAL"
+		);
 		// ၅။ DTO သို့ ပြောင်း၍ ပြန်ပေးမည်
 		return mapToResponseDto(updatedTerminal);
 	}
