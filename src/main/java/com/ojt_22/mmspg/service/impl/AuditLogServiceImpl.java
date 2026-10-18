@@ -16,25 +16,31 @@ import lombok.RequiredArgsConstructor;
 @Service
 @Transactional
 @RequiredArgsConstructor
-
 public class AuditLogServiceImpl implements AuditLogService {
 
 	private final AuditLogRepository auditLogRepository;
 
+	@Override
 	public void logActivity(AuditLogCreateRequest requestDto, HttpServletRequest request) {
 		String ipAddress = (request != null) ? request.getRemoteAddr() : "127.0.0.1";
+		String targetType = (requestDto.getTargetType() != null && !requestDto.getTargetType().isBlank())
+				? requestDto.getTargetType()
+				: "SYSTEM";
+		String targetId = requestDto.getTargetId();
 
 		AuditLog logEntry = AuditLog.builder()
 				.actorId(requestDto.getActorId())
-			
-				.actorType(requestDto.getActorType())
-				.roleName(requestDto.getRoleName())
+				.staffId(requestDto.getActorId())
+				.actorType(requestDto.getActorType() != null ? requestDto.getActorType() : "SYSTEM")
+				.roleName(requestDto.getRoleName() != null ? requestDto.getRoleName() : "UNKNOWN")
 				.permissionUsed(requestDto.getPermissionUsed())
-				.menuName(requestDto.getMenuName())
-				.action(requestDto.getAction())
+				.menuName(requestDto.getMenuName() != null ? requestDto.getMenuName() : "GENERAL")
+				.action(requestDto.getAction() != null ? requestDto.getAction() : "UNKNOWN")
 				.description(requestDto.getDescription())
-				.targetType(requestDto.getTargetType())
-				.targetId(requestDto.getTargetId())
+				.targetType(targetType)
+				.entityType(targetType)
+				.targetId(targetId)
+				.entityId(targetId)
 				.ipAddress(ipAddress)
 				.status(requestDto.getStatus() != null ? requestDto.getStatus() : AuditStatus.SUCCESS)
 				.sourceType(requestDto.getSourceType() != null ? requestDto.getSourceType() : SourceType.BACKEND_API)

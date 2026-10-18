@@ -7,6 +7,9 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,8 +17,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.dto.ChangePasswordRequestDto;
 import com.ojt_22.mmspg.dto.StaffLoginActivityResponseDto;
 import com.ojt_22.mmspg.dto.StaffRequestDto;
@@ -23,7 +29,6 @@ import com.ojt_22.mmspg.dto.StaffResponseDto;
 import com.ojt_22.mmspg.dto.UserProfileResponseDto;
 import com.ojt_22.mmspg.entity.StaffUser;
 import com.ojt_22.mmspg.repository.StaffUserRepository;
-import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.service.StaffLoginActivityService;
 import com.ojt_22.mmspg.service.StaffUserService;
 
@@ -31,11 +36,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 @RestController
 @RequestMapping("/api/v1/admin/staff-users")
+@CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173"})
 @RequiredArgsConstructor
 @Tag(name = "Admin Staff Management", description = "Endpoints for managing Bank Admins and Staff")
 public class AdminStaffController {
@@ -67,19 +71,38 @@ public class AdminStaffController {
     @PutMapping("/{id}/status")
     @Auditable(menuName = "Staff Management", action = "UPDATE_STATUS", targetType = "STAFF", targetId = "#id")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Toggle Staff Status", description = "Toggles a staff member's status between ACTIVE and DISABLED.")
-    public ResponseEntity<?> toggleStaffStatus(@PathVariable UUID id) {
+    @Operation(summary = "Update or Toggle Staff Status", description = "Updates a staff member's status or toggles between ACTIVE and DISABLED.")
+    public ResponseEntity<?> toggleStaffStatus(
+            @PathVariable UUID id,
+            @RequestParam(required = false) String status) {
         try {
-            staffUserService.toggleStaffStatus(id);
-            return ResponseEntity.ok(Map.of("message", "Staff status toggled successfully."));
+            if (status != null && !status.isBlank()) {
+                staffUserService.updateStaffStatus(id, status);
+                return ResponseEntity.ok(Map.of("message", "Staff status updated to " + status + " successfully."));
+            } else {
+                staffUserService.toggleStaffStatus(id);
+                return ResponseEntity.ok(Map.of("message", "Staff status toggled successfully."));
+            }
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
-    
-   
+
+    @PutMapping("/{id}/reactivate")
+    @Auditable(menuName = "Staff Management", action = "REACTIVATE", targetType = "STAFF", targetId = "#id")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Reactivate Staff User", description = "Reactivates a staff member back to ACTIVE.")
+    public ResponseEntity<?> reactivateStaffUser(@PathVariable UUID id) {
+        try {
+            staffUserService.reactivateStaff(id);
+            return ResponseEntity.ok(Map.of("message", "Staff member reactivated successfully."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PutMapping("/{id}")
-    @Auditable(menuName = "Staff Management", action = "UPDATE", targetType = "STAFF")
+    @Auditable(menuName = "Staff Management", action = "UPDATE", targetType = "STAFF", targetId = "#id")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update Staff User", description = "Updates a staff member's details.")
     public ResponseEntity<?> updateStaffUser(
@@ -98,11 +121,8 @@ public class AdminStaffController {
         }
     }
 
-    // =====================================================================
-    // 🔴 ဤသည်မှာ သင့် Controller တွင် လိုအပ်နေသော Delete လမ်းကြောင်းဖြစ်ပါသည်
-    // =====================================================================
     @DeleteMapping("/{id}")
-    @Auditable(menuName = "Staff Management", action = "DELETE", targetType = "STAFF")
+    @Auditable(menuName = "Staff Management", action = "DELETE", targetType = "STAFF", targetId = "#id")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete Staff User", description = "Deletes a staff member permanently.")
     public ResponseEntity<?> deleteStaffUser(@PathVariable UUID id) {
@@ -134,18 +154,15 @@ public class AdminStaffController {
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Upload My Profile Picture", description = "Uploads a profile picture for the logged-in staff.")
     public ResponseEntity<?> uploadMyProfilePicture(
-            @org.springframework.web.bind.annotation.RequestParam("file") org.springframework.web.multipart.MultipartFile file,
+            @RequestParam("file") MultipartFile file,
             Authentication authentication) {
         try {
-            // အသင့်ရေးထားပြီးဖြစ်သော method ကိုသုံး၍ ID ကို ဆွဲထုတ်ခြင်း
             UUID staffId = extractLoggedInStaffId(authentication);
-            
-            // Service ကို လှမ်းခေါ်၍ ပုံသိမ်းခြင်း
             String imageUrl = staffUserService.uploadProfilePicture(staffId, file);
             
             return ResponseEntity.ok(Map.of(
                     "message", "Profile picture uploaded successfully",
-                    "imageUrl", "http://127.0.0.1:8004" + imageUrl
+                    "imageUrl", imageUrl
             ));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -154,8 +171,6 @@ public class AdminStaffController {
                     .body(Map.of("error", e.getMessage()));
         }
     }
-    
-    
 
     @PutMapping("/profile/password")
     @PreAuthorize("isAuthenticated()")

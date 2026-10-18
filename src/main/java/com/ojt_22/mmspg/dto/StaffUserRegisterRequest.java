@@ -8,10 +8,9 @@ import lombok.Data;
 
 @Data
 public class StaffUserRegisterRequest {
-//
-//    @NotBlank(message = "Username is required")
-//    @Size(min = 4, max = 100, message = "Username must be between 4 and 100 characters")
-//    private String username;
+
+	@Size(min = 3, max = 100, message = "Username must be between 3 and 100 characters")
+	private String username;
 
 	@NotBlank(message = "Password is required")
 	@Size(min = 6, message = "Password must be at least 6 characters")
@@ -27,6 +26,6 @@ public class StaffUserRegisterRequest {
 	private String email;
 
 	@NotBlank(message = "Role is required")
-	@Pattern(regexp = "^(ADMIN|STAFF)$", message = "Role must be ADMIN or STAFF")
+	@Pattern(regexp = "^(ADMIN|AUDITOR|SUPPORT|STAFF)$", message = "Role must be ADMIN, AUDITOR, SUPPORT, or STAFF")
 	private String role;
 }

@@ -19,6 +19,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -28,6 +30,8 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class StaffUser {
 
 	@Id
@@ -36,8 +40,8 @@ public class StaffUser {
 	private UUID id;
 
 	@Column(name = "username", unique = true, nullable = false)
-    private String username;
-	
+	private String username;
+
 	@Column(name = "password_hash", nullable = false, length = 255)
 	private String passwordHash;
 
@@ -46,16 +50,16 @@ public class StaffUser {
 
 	@Column(length = 150, unique = true)
 	private String email;
-	
+
 	@Column(name = "profile_image_url", length = 500)
-    private String profileImageUrl;
+	private String profileImageUrl;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, columnDefinition = "enum('ADMIN','AUDITOR','STAFF')")
+	@Column(nullable = false, columnDefinition = "enum('ADMIN','AUDITOR','SUPPORT','STAFF')")
 	private StaffUserRole role;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false, columnDefinition = "enum('ACTIVE','DISABLED')")
+	@Column(nullable = false, columnDefinition = "enum('ACTIVE','DISABLED','INACTIVE')")
 	private StaffUserStatus status;
 
 	@Column(name = "last_login_at")

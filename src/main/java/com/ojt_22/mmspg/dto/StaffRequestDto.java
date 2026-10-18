@@ -16,6 +16,6 @@ public class StaffRequestDto {
     @NotBlank(message = "Password is required")
     private String password;
 
-    @NotBlank(message = "Role is required (ADMIN, AUDITOR, SUPPORT)")
+    @NotBlank(message = "Role is required (ADMIN, AUDITOR, SUPPORT, STAFF)")
     private String role;
 }

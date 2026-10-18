@@ -6,6 +6,7 @@ import java.util.UUID;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -14,9 +15,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.dto.MerchantPendingDto;
 import com.ojt_22.mmspg.dto.MerchantRejectRequest;
-import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.service.MerchantService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/admin/merchants")
+@CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173"})
 @RequiredArgsConstructor
 @Tag(name = "Admin Merchant Approvals", description = "Endpoints for approving or rejecting merchant registrations")
 public class AdminMerchantApprovalController {
@@ -70,6 +72,19 @@ public class AdminMerchantApprovalController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+    @PutMapping("/{id}/reactivate")
+    @Auditable(menuName = "Merchant Management", action = "REACTIVATE", targetType = "MERCHANT", targetId = "#id")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
+    @Operation(summary = "Reactivate Merchant", description = "Reactivates a suspended merchant back to ACTIVE.")
+    public ResponseEntity<?> reactivateMerchant(@PathVariable UUID id) {
+        try {
+            merchantService.reactivateMerchant(id);
+            return ResponseEntity.ok(Map.of("message", "Merchant reactivated successfully."));
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
     
     @PutMapping("/{id}")
     @Auditable(menuName = "Merchant Management", action = "UPDATE", targetType = "MERCHANT", targetId = "#id")
@@ -81,8 +96,10 @@ public class AdminMerchantApprovalController {
         try {
             String businessName = requestBody.get("businessName");
             String merchantCode = requestBody.get("merchantCode");
+            if (merchantCode == null || merchantCode.trim().isEmpty()) {
+                merchantCode = requestBody.get("registrationNumber");
+            }
             
-            // Service ကို လှမ်းခေါ်မည် (ဤနေရာတွင် Notification ပါ အလုပ်လုပ်သွားပါမည်)
             merchantService.updateMerchant(id, businessName, merchantCode);
             
             return ResponseEntity.ok(Map.of("message", "Merchant updated successfully."));
@@ -97,18 +114,28 @@ public class AdminMerchantApprovalController {
     @Operation(summary = "Update Merchant Status", description = "Updates merchant status (e.g., SUSPENDED, ACTIVE) with a reason.")
     public ResponseEntity<?> updateMerchantStatus(
             @PathVariable UUID id, 
-            @RequestParam String status, 
+            @RequestParam(required = false) String status, 
             @RequestBody(required = false) Map<String, String> requestBody) {
         try {
-            String reason = requestBody != null ? requestBody.get("reason") : "No reason provided";
+            String newStatus = status;
+            String reason = "No reason provided";
+            if (requestBody != null) {
+                if (newStatus == null || newStatus.isBlank()) {
+                    newStatus = requestBody.get("status");
+                }
+                if (requestBody.containsKey("reason") && requestBody.get("reason") != null) {
+                    reason = requestBody.get("reason");
+                }
+            }
+            if (newStatus == null || newStatus.isBlank()) {
+                throw new IllegalArgumentException("Status is required (e.g., ACTIVE, SUSPENDED, CLOSED)");
+            }
             
-            // Service ကို လှမ်းခေါ်မည် (ဤနေရာတွင် Notification ပါ အလုပ်လုပ်သွားပါမည်)
-            merchantService.updateMerchantStatus(id, status, reason);
+            merchantService.updateMerchantStatus(id, newStatus, reason);
             
-            return ResponseEntity.ok(Map.of("message", "Merchant status updated to " + status + " successfully."));
+            return ResponseEntity.ok(Map.of("message", "Merchant status updated to " + newStatus + " successfully."));
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 }
-

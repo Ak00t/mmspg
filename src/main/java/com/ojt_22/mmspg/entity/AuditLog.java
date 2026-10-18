@@ -16,6 +16,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,9 +26,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "audit_logs", indexes = { @Index(name = "idx_audit_actor", columnList = "actor_id, created_at"),
+@Table(name = "audit_logs", indexes = { 
+		@Index(name = "idx_audit_actor", columnList = "actor_id, created_at"),
 		@Index(name = "idx_audit_menu_action", columnList = "menu_name, action"),
-		@Index(name = "idx_audit_status", columnList = "status") })
+		@Index(name = "idx_audit_status", columnList = "status") 
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -41,7 +45,9 @@ public class AuditLog {
 
 	@Column(name = "actor_id", columnDefinition = "BINARY(16)", updatable = false)
 	private UUID actorId;
-	
+
+	@Column(name = "staff_id", columnDefinition = "BINARY(16)", updatable = false)
+	private UUID staffId;
 
 	@Column(name = "actor_type", length = 50, nullable = false, updatable = false)
 	private String actorType;
@@ -64,8 +70,14 @@ public class AuditLog {
 	@Column(name = "target_type", length = 50, updatable = false)
 	private String targetType;
 
+	@Column(name = "entity_type", length = 50, updatable = false)
+	private String entityType;
+
 	@Column(name = "target_id", length = 100, updatable = false)
 	private String targetId;
+
+	@Column(name = "entity_id", length = 100, updatable = false)
+	private String entityId;
 
 	@Column(name = "ip_address", length = 45, updatable = false)
 	private String ipAddress;
@@ -84,4 +96,50 @@ public class AuditLog {
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
+	@PrePersist
+	@PreUpdate
+	public void syncFields() {
+		if (this.staffId == null && this.actorId != null) {
+			this.staffId = this.actorId;
+		}
+		if (this.actorId == null && this.staffId != null) {
+			this.actorId = this.staffId;
+		}
+		if (this.entityType == null && this.targetType != null) {
+			this.entityType = this.targetType;
+		}
+		if (this.targetType == null && this.entityType != null) {
+			this.targetType = this.entityType;
+		}
+		if (this.entityId == null && this.targetId != null) {
+			this.entityId = this.targetId;
+		}
+		if (this.targetId == null && this.entityId != null) {
+			this.targetId = this.entityId;
+		}
+	}
+
+	public UUID getStaffId() {
+		return staffId != null ? staffId : actorId;
+	}
+
+	public UUID getActorId() {
+		return actorId != null ? actorId : staffId;
+	}
+
+	public String getEntityType() {
+		return entityType != null ? entityType : targetType;
+	}
+
+	public String getTargetType() {
+		return targetType != null ? targetType : entityType;
+	}
+
+	public String getEntityId() {
+		return entityId != null ? entityId : targetId;
+	}
+
+	public String getTargetId() {
+		return targetId != null ? targetId : entityId;
+	}
 }

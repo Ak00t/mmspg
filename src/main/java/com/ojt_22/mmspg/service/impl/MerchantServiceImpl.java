@@ -1,25 +1,27 @@
 package com.ojt_22.mmspg.service.impl;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.ojt_22.mmspg.dto.MerchantPendingDto;
 import com.ojt_22.mmspg.dto.MerchantProfileResponseDto;
 import com.ojt_22.mmspg.dto.MerchantRegistrationRequest;
+import com.ojt_22.mmspg.dto.MerchantResponseDto;
 import com.ojt_22.mmspg.entity.MccCode;
 import com.ojt_22.mmspg.entity.Merchant;
 import com.ojt_22.mmspg.enums.MerchantStatus;
@@ -57,6 +59,7 @@ public class MerchantServiceImpl implements MerchantService {
 		Merchant merchant = new Merchant();
 		merchant.setMerchantCode(request.getMerchantCode());
 		merchant.setBusinessName(request.getBusinessName());
+		merchant.setBusinessRegistrationNo(request.getMerchantCode());
 		merchant.setEmail(request.getEmail());
 		merchant.setMccCode(mccCode);
 		merchant.setSettlementAccountNo(request.getSettlementAccountNo());
@@ -70,7 +73,6 @@ public class MerchantServiceImpl implements MerchantService {
 		// Default status
 		merchant.setStatus(MerchantStatus.PENDING);
 
-		// updatedAt must be set manually if there's no @UpdateTimestamp
 		Merchant savedMerchant = merchantRepository.save(merchant);
 
 		// Trigger notification on success
@@ -87,8 +89,7 @@ public class MerchantServiceImpl implements MerchantService {
 	@Transactional(readOnly = true)
 	public Page<MerchantPendingDto> getPendingMerchants(int page, int size) {
 		org.springframework.data.domain.Pageable pageable = PageRequest.of(page, size,
-				org.springframework.data.domain.Sort.by("createdAt")
-						.descending());
+				Sort.by("createdAt").descending());
 		return merchantRepository.findByStatus(MerchantStatus.PENDING, pageable)
 				.map(merchant -> {
 					MerchantPendingDto dto = new MerchantPendingDto();
@@ -96,18 +97,16 @@ public class MerchantServiceImpl implements MerchantService {
 					dto.setMerchantCode(merchant.getMerchantCode());
 					dto.setBusinessName(merchant.getBusinessName());
 					dto.setEmail(merchant.getEmail());
-					dto.setBusinessType(merchant.getMccCode() != null ? merchant.getMccCode()
-							.getMccName() : "N/A");
+					dto.setBusinessType(merchant.getMccCode() != null ? merchant.getMccCode().getMccName() : "N/A");
 					dto.setCreatedAt(merchant.getCreatedAt());
-					dto.setStatus(merchant.getStatus()
-							.name());
+					dto.setStatus(merchant.getStatus() != null ? merchant.getStatus().name() : "PENDING");
 					return dto;
 				});
 	}
 
 	@Override
 	@Transactional
-	public void approveMerchant(java.util.UUID merchantId) {
+	public void approveMerchant(UUID merchantId) {
 		Merchant merchant = merchantRepository.findById(merchantId)
 				.orElseThrow(() -> new IllegalArgumentException("Merchant not found with ID: " + merchantId));
 
@@ -135,39 +134,9 @@ public class MerchantServiceImpl implements MerchantService {
 		);
 	}
 
-	
-	@Override
-	@Transactional(readOnly = true)
-	public java.util.List<com.ojt_22.mmspg.dto.MerchantResponseDto> getAllMerchants() {
-		java.util.List<Merchant> merchants = merchantRepository.findAll();
-
-		return merchants.stream().map(merchant -> {
-			com.ojt_22.mmspg.dto.MerchantResponseDto dto = new com.ojt_22.mmspg.dto.MerchantResponseDto();
-			
-			dto.setMerchantId(merchant.getId());
-			dto.setMerchantCode(merchant.getMerchantCode());
-			// ⚠️ သင့် Entity တွင် businessName ဟုပေးထားသဖြင့် React လိုချင်သော merchantName ထဲသို့ ထည့်ပေးပါသည်
-			dto.setMerchantName(merchant.getBusinessName()); 
-			dto.setEmail(merchant.getEmail());
-			dto.setCreatedAt(merchant.getCreatedAt());
-			
-			// ⚠️ သင့် Entity တွင် riskLevel မရှိသေးပါက လောလောဆယ် "LOW" ဟု ပုံသေထားပေးပါမည်
-			dto.setRiskLevel("LOW"); 
-			
-			dto.setStatus(merchant.getStatus() != null ? merchant.getStatus().name() : "PENDING");
-			
-			return dto;
-		}).collect(java.util.stream.Collectors.toList());
-	}
-	
-	
-	
-	
-	
-	
 	@Override
 	@Transactional
-	public void rejectMerchant(java.util.UUID merchantId, String reason) {
+	public void rejectMerchant(UUID merchantId, String reason) {
 		Merchant merchant = merchantRepository.findById(merchantId)
 				.orElseThrow(() -> new IllegalArgumentException("Merchant not found with ID: " + merchantId));
 
@@ -195,8 +164,51 @@ public class MerchantServiceImpl implements MerchantService {
 	}
 
 	@Override
+	@Transactional
+	public void reactivateMerchant(UUID merchantId) {
+		Merchant merchant = merchantRepository.findById(merchantId)
+				.orElseThrow(() -> new IllegalArgumentException("Merchant not found with ID: " + merchantId));
+
+		merchant.setStatus(MerchantStatus.ACTIVE);
+		merchant.setUpdatedAt(LocalDateTime.now());
+		merchantRepository.save(merchant);
+
+		// Trigger notification to the currently logged-in Admin
+		notificationService.sendNotificationToCurrentStaff(
+				"Merchant Reactivated",
+				"You reactivated merchant \"" + merchant.getBusinessName() + "\" (Code: " + merchant.getMerchantCode() + ").",
+				"MERCHANT"
+		);
+
+		// Broadcast notification to other staff/admins
+		notificationService.sendNotificationToAllStaff(
+				"Merchant Reactivated",
+				"Merchant \"" + merchant.getBusinessName() + "\" (Code: " + merchant.getMerchantCode() + ") has been reactivated successfully.",
+				"MERCHANT"
+		);
+	}
+
+	@Override
 	@Transactional(readOnly = true)
-	public MerchantProfileResponseDto getMerchantProfile(java.util.UUID merchantId) {
+	public List<MerchantResponseDto> getAllMerchants() {
+		List<Merchant> merchants = merchantRepository.findAll();
+
+		return merchants.stream().map(merchant -> {
+			MerchantResponseDto dto = new MerchantResponseDto();
+			dto.setMerchantId(merchant.getId());
+			dto.setMerchantCode(merchant.getMerchantCode());
+			dto.setMerchantName(merchant.getBusinessName()); 
+			dto.setEmail(merchant.getEmail());
+			dto.setCreatedAt(merchant.getCreatedAt());
+			dto.setRiskLevel("LOW"); 
+			dto.setStatus(merchant.getStatus() != null ? merchant.getStatus().name() : "PENDING");
+			return dto;
+		}).collect(Collectors.toList());
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public MerchantProfileResponseDto getMerchantProfile(UUID merchantId) {
 		Merchant merchant = merchantRepository.findById(merchantId)
 				.orElseThrow(() -> new IllegalArgumentException("Merchant not found with ID: " + merchantId));
 
@@ -219,7 +231,7 @@ public class MerchantServiceImpl implements MerchantService {
 
 	@Override
 	@Transactional
-	public String uploadMerchantProfilePicture(java.util.UUID merchantId, MultipartFile file) {
+	public String uploadMerchantProfilePicture(UUID merchantId, MultipartFile file) {
 		if (file == null || file.isEmpty()) {
 			throw new IllegalArgumentException("Profile image file cannot be empty");
 		}
@@ -261,8 +273,13 @@ public class MerchantServiceImpl implements MerchantService {
 		Merchant merchant = merchantRepository.findById(merchantId)
 				.orElseThrow(() -> new IllegalArgumentException("Merchant not found with ID: " + merchantId));
 
-		merchant.setBusinessName(businessName);
-		merchant.setMerchantCode(merchantCode);
+		if (businessName != null && !businessName.trim().isEmpty()) {
+			merchant.setBusinessName(businessName);
+		}
+		if (merchantCode != null && !merchantCode.trim().isEmpty()) {
+			merchant.setMerchantCode(merchantCode);
+			merchant.setBusinessRegistrationNo(merchantCode);
+		}
 		merchant.setUpdatedAt(LocalDateTime.now());
 		
 		merchantRepository.save(merchant);
@@ -290,14 +307,18 @@ public class MerchantServiceImpl implements MerchantService {
 		merchant.setUpdatedAt(LocalDateTime.now());
 		merchantRepository.save(merchant);
 
-		// Trigger Notification on Status Change (Suspend)
+		// Trigger Notification on Status Change
 		notificationService.sendNotificationToCurrentStaff(
 				"Merchant Status Updated",
 				"Merchant \"" + merchant.getBusinessName() + "\" status was changed to " + status + ". Reason: " + reason,
 				"MERCHANT"
 		);
+
+		// Broadcast to all other staff/auditors
+		notificationService.sendNotificationToAllStaff(
+				"Merchant Status Updated",
+				"Merchant \"" + merchant.getBusinessName() + "\" (Code: " + merchant.getMerchantCode() + ") status was updated to " + status + ".",
+				"MERCHANT"
+		);
 	}
-
-	
-
 }
