@@ -12,4 +12,5 @@ public class PaymentCheckoutInfoDto {
     private BigDecimal amount;
     private String currency;
     private String status;
+    private String returnUrl;
 }

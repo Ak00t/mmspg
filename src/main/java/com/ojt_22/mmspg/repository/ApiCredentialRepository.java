@@ -8,11 +8,12 @@ import org.springframework.stereotype.Repository;
 
 import com.ojt_22.mmspg.entity.ApiCredential;
 
+import com.ojt_22.mmspg.enums.ApiCredentialStatus;
+
 @Repository
 public interface ApiCredentialRepository extends JpaRepository<ApiCredential, UUID> {
 
-   
-    Optional<ApiCredential> findByClientIdAndStatus(String clientId, String status);
+    Optional<ApiCredential> findByClientIdAndStatus(String clientId, ApiCredentialStatus status);
 
    
     boolean existsByClientId(String clientId);

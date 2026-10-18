@@ -8,9 +8,18 @@ import lombok.Setter;
 
 @Getter @Setter
 public class SalesLedgerReportRow {
+    private String merchantBusinessName, merchantEmail, merchantPhone;
     private String ledgerId, transactionReference, orderId, entryType, balanceType, description;
     private String transactionStatus, settlementReference;
     private BigDecimal amount;
     private LocalDateTime createdAt;
     private LocalDate settlementDate;
+
+    public String getFormattedCreatedAt() {
+        return createdAt == null ? "" : createdAt.format(java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss"));
+    }
+
+    public String getFormattedSettlementDate() {
+        return settlementDate == null ? "" : settlementDate.format(java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+    }
 }

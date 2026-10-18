@@ -21,6 +21,11 @@ import com.ojt_22.mmspg.dto.PaymentInitiateResponseDto;
 import com.ojt_22.mmspg.dto.PaymentStatusResponseDto;
 import com.ojt_22.mmspg.dto.PaymentTransactionSummaryDto;
 import com.ojt_22.mmspg.service.PaymentTransactionService;
+import com.ojt_22.mmspg.security.AuthenticatedMerchantService;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -34,6 +39,7 @@ import lombok.RequiredArgsConstructor;
 public class PaymentTransactionApiController {
 
     private final PaymentTransactionService transactionService;
+    private final AuthenticatedMerchantService authenticatedMerchantService;
 
     @PostMapping("/initiate")
     @Auditable(menuName = "Payments", action = "INITIATE", targetType = "PAYMENT_TRANSACTION", targetId = "#result?.body?.transactionReference")
@@ -46,14 +52,32 @@ public class PaymentTransactionApiController {
             )
             @NotBlank(message = "Idempotency-Key header must not be blank")
             @RequestHeader(value = "Idempotency-Key", required = true) String idempotencyKey,
-            @Valid @RequestBody PaymentInitiateRequestDto requestDto) {
+            @Valid @RequestBody PaymentInitiateRequestDto requestDto,
+            Authentication authentication) {
         
+        if (authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_API_CLIENT".equals(a.getAuthority()))) {
+            UUID authMerchantId = UUID.fromString(authentication.getName());
+            if (requestDto.getMerchantId() != null && !authMerchantId.equals(requestDto.getMerchantId())) {
+                throw new IllegalArgumentException("Merchant ID does not match authenticated API client");
+            }
+            requestDto.setMerchantId(authMerchantId);
+        } else {
+            UUID authMerchantId = authenticatedMerchantService.resolveMerchantId();
+            if (requestDto.getMerchantId() != null && !authMerchantId.equals(requestDto.getMerchantId())) {
+                throw new IllegalArgumentException("Merchant ID does not match authenticated merchant");
+            }
+            requestDto.setMerchantId(authMerchantId);
+        }
+
         return ResponseEntity.ok(transactionService.initiateTransaction(requestDto, idempotencyKey));
     }
     
     @PostMapping("/authorize")
     @Auditable(menuName = "Payments", action = "AUTHORIZE", targetType = "PAYMENT_TRANSACTION", targetId = "#result?.body?.transactionReference")
-    public ResponseEntity<PaymentAuthorizeResponseDto> authorizeTransaction(@Valid @RequestBody PaymentAuthorizeRequestDto requestDto) {
+    public ResponseEntity<PaymentAuthorizeResponseDto> authorizeTransaction(
+    		@Valid @RequestBody PaymentAuthorizeRequestDto requestDto) {
+    	
         return ResponseEntity.ok(transactionService.authorizeTransaction(requestDto));
     }
 
@@ -63,7 +87,10 @@ public class PaymentTransactionApiController {
     }
 
     @GetMapping("/merchant/{merchantId}")
-    public ResponseEntity<List<PaymentTransactionSummaryDto>> getMerchantTransactions(@PathVariable UUID merchantId) {
+    public ResponseEntity<List<PaymentTransactionSummaryDto>> getMerchantTransactions(
+            @PathVariable UUID merchantId,
+            Authentication authentication) {
+        authenticatedMerchantService.assertMerchantAccess(merchantId);
         return ResponseEntity.ok(transactionService.getMerchantTransactions(merchantId));
     }
 
