@@ -41,6 +41,9 @@ public class WebhookConfig {
 	@Column(name = "callback_url", nullable = false, length = 500)
 	private String callbackUrl;
 
+	@Column(name = "return_url", length = 500)
+	private String returnUrl;
+
 	@Column(name = "secret_key_hash", length = 255)
 	private String secretKeyHash;
 

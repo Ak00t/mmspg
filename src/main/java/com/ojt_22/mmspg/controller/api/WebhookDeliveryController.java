@@ -11,19 +11,23 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import com.ojt_22.mmspg.dto.WebhookDeliveryDto;
 import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.service.WebhookDeliveryService;
+import com.ojt_22.mmspg.security.AuthenticatedMerchantService;
 
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/webhook-deliveries")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('MERCHANT')")
 public class WebhookDeliveryController {
 
     private final WebhookDeliveryService webhookDeliveryService;
+    private final AuthenticatedMerchantService authenticatedMerchantService;
 
     // Merchant ID အလိုက် ပို့ဆောင်မှုမှတ်တမ်းများ ကြည့်ရှုခြင်း[cite: 14]
     @GetMapping("/merchant/{merchantId}")
@@ -32,6 +36,7 @@ public class WebhookDeliveryController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size
     ) {
+        authenticatedMerchantService.assertMerchantAccess(merchantId);
         return ResponseEntity.ok(webhookDeliveryService.getDeliveriesByMerchant(merchantId, PageRequest.of(page, size)));
     }
 

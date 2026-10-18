@@ -20,9 +20,12 @@ public class CreateWebhookRequest {
     private UUID merchantId;
 
     @NotBlank(message = "Callback URL must not be blank.")
-    @URL(protocol = "https", message = "Callback URL must be a valid HTTPS URL.")
+    @URL(message = "Callback URL must be a valid URL.")
     @Size(max = 500, message = "Callback URL must not exceed 500 characters.")
     private String callbackUrl;
+
+    @Size(max = 500, message = "Return URL must not exceed 500 characters.")
+    private String returnUrl;
 
     @NotNull(message = "eventPaymentCompleted setting is required.")
     private Boolean eventPaymentCompleted;

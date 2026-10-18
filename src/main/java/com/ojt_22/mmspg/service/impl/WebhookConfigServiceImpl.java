@@ -24,6 +24,7 @@ import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.repository.StaffUserRepository;
 import com.ojt_22.mmspg.repository.WebhookConfigRepository;
 import com.ojt_22.mmspg.service.WebhookConfigService;
+import com.ojt_22.mmspg.security.AuthenticatedMerchantService;
 import com.ojt_22.mmspg.utils.CredentialUtils;
 
 import jakarta.validation.Valid;
@@ -38,13 +39,18 @@ public class WebhookConfigServiceImpl implements WebhookConfigService {
     private final MerchantRepository merchantRepository;
     private final StaffUserRepository staffUserRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthenticatedMerchantService authenticatedMerchantService;
 
     @Override
     @Transactional
     public WebhookConfigResponse createWebhook(@Valid CreateWebhookRequest request) {
         // @Valid ကြောင့် request ထဲရှိ Not-Null fields များ မပြည့်စုံပါက ဤနေရာသို့ မရောက်မီ အလိုအလျောက် Exception တက်ပါမည်
 
-        Merchant merchant = merchantRepository.findById(request.getMerchantId())
+		UUID authenticatedMerchantId = authenticatedMerchantService.resolveMerchantId();
+		if (request.getMerchantId() != null && !authenticatedMerchantId.equals(request.getMerchantId())) {
+			throw new IllegalArgumentException("Merchant ID does not match authenticated merchant");
+		}
+        Merchant merchant = merchantRepository.findById(authenticatedMerchantId)
                 .orElseThrow(() -> new IllegalArgumentException("Merchant not found: " + request.getMerchantId()));
 
         // created_by အတွက် Staff User ကို ရှာဖွေရယူခြင်း[cite: 12]
@@ -59,6 +65,7 @@ public class WebhookConfigServiceImpl implements WebhookConfigService {
         config.setMerchant(merchant);
         config.setCreatedBy(createdByStaff);
         config.setCallbackUrl(request.getCallbackUrl());
+        config.setReturnUrl(request.getReturnUrl());
         config.setSecretKeyHash(passwordEncoder.encode(rawSecretKey));
         config.setEventPaymentCompleted(request.getEventPaymentCompleted());
         config.setEventPaymentFailed(request.getEventPaymentFailed());
@@ -72,6 +79,7 @@ public class WebhookConfigServiceImpl implements WebhookConfigService {
                 .webhookId(saved.getId())
                 .merchantId(saved.getMerchant().getId())
                 .callbackUrl(saved.getCallbackUrl())
+                .returnUrl(saved.getReturnUrl())
                 .rawSecretKey(rawSecretKey)
                 .eventPaymentCompleted(saved.getEventPaymentCompleted())
                 .eventPaymentFailed(saved.getEventPaymentFailed())
@@ -88,8 +96,10 @@ public class WebhookConfigServiceImpl implements WebhookConfigService {
     public WebhookConfigResponse updateWebhook(UUID webhookId, UpdateWebhookRequest request) {
         WebhookConfig config = webhookConfigRepository.findById(webhookId)
                 .orElseThrow(() -> new IllegalArgumentException("Webhook config not found: " + webhookId));
+		authenticatedMerchantService.assertMerchantAccess(config.getMerchant().getId());
 
         if (request.getCallbackUrl() != null) config.setCallbackUrl(request.getCallbackUrl());
+        if (request.getReturnUrl() != null) config.setReturnUrl(request.getReturnUrl());
         if (request.getEventPaymentCompleted() != null) config.setEventPaymentCompleted(request.getEventPaymentCompleted());
         if (request.getEventPaymentFailed() != null) config.setEventPaymentFailed(request.getEventPaymentFailed());
         if (request.getMaxRetry() != null) config.setMaxRetry(request.getMaxRetry());
@@ -105,6 +115,7 @@ public class WebhookConfigServiceImpl implements WebhookConfigService {
                 .webhookId(updated.getId())
                 .merchantId(updated.getMerchant().getId())
                 .callbackUrl(updated.getCallbackUrl())
+                .returnUrl(updated.getReturnUrl())
                 .rawSecretKey("********")
                 .eventPaymentCompleted(updated.getEventPaymentCompleted())
                 .eventPaymentFailed(updated.getEventPaymentFailed())
@@ -121,6 +132,7 @@ public class WebhookConfigServiceImpl implements WebhookConfigService {
     public void deleteWebhook(UUID webhookId) {
         WebhookConfig config = webhookConfigRepository.findById(webhookId)
                 .orElseThrow(() -> new IllegalArgumentException("Webhook config not found: " + webhookId));
+		authenticatedMerchantService.assertMerchantAccess(config.getMerchant().getId());
 
         config.setStatus(WebhookConfigStatus.INACTIVE);
         webhookConfigRepository.save(config);
@@ -130,6 +142,7 @@ public class WebhookConfigServiceImpl implements WebhookConfigService {
     public String testWebhook(UUID webhookId) {
         WebhookConfig config = webhookConfigRepository.findById(webhookId)
                 .orElseThrow(() -> new IllegalArgumentException("Webhook config not found: " + webhookId));
+		authenticatedMerchantService.assertMerchantAccess(config.getMerchant().getId());
 
         String testPayload = "{\"event\": \"TEST_PING\", \"timestamp\": \"" + LocalDateTime.now() + "\"}";
 

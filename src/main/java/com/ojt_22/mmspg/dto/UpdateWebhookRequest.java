@@ -7,6 +7,7 @@ import lombok.Setter;
 @Setter
 public class UpdateWebhookRequest {
     private String callbackUrl;
+    private String returnUrl;
     private Boolean eventPaymentCompleted;
     private Boolean eventPaymentFailed;
     private Integer maxRetry;

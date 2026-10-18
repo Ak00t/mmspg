@@ -61,7 +61,7 @@ public class ApiLoggingFilter extends OncePerRequestFilter {
 
             // ၇။ Client ID ပါလာပါက Database တွင် သွားရှာပြီး သက်ဆိုင်ရာ Merchant ကို ဆွဲထုတ်ခြင်း
             if (clientId != null && !clientId.isEmpty()) {
-                credential = apiCredentialRepository.findByClientIdAndStatus(clientId, "ACTIVE").orElse(null);
+                credential = apiCredentialRepository.findByClientIdAndStatus(clientId, com.ojt_22.mmspg.enums.ApiCredentialStatus.ACTIVE).orElse(null);
                 if (credential != null) {
                     merchant = credential.getMerchant();
                 }
