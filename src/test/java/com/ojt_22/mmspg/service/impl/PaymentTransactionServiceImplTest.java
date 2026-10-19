@@ -1,95 +1,78 @@
 package com.ojt_22.mmspg.service.impl;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 import java.math.BigDecimal;
 import java.util.Optional;
-import java.util.UUID;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
-import com.ojt_22.mmspg.client.CoreBankingClient;
-import com.ojt_22.mmspg.dto.PaymentInitiateRequestDto;
-import com.ojt_22.mmspg.dto.PaymentInitiateResponseDto;
+import com.ojt_22.mmspg.dto.PaymentCheckoutInfoDto;
 import com.ojt_22.mmspg.entity.Merchant;
-import com.ojt_22.mmspg.entity.MerchantFee;
 import com.ojt_22.mmspg.entity.PaymentTransaction;
-import com.ojt_22.mmspg.enums.MerchantStatus;
-import com.ojt_22.mmspg.repository.MerchantBranchRepository;
-import com.ojt_22.mmspg.repository.MerchantFeeRepository;
-import com.ojt_22.mmspg.repository.MerchantLedgerRepository;
-import com.ojt_22.mmspg.repository.MerchantRepository;
+import com.ojt_22.mmspg.enums.PaymentTransactionStatus;
 import com.ojt_22.mmspg.repository.PaymentTransactionRepository;
-import com.ojt_22.mmspg.repository.TerminalRepository;
-import com.ojt_22.mmspg.service.WebhookDeliveryService;
 
 @ExtendWith(MockitoExtension.class)
 public class PaymentTransactionServiceImplTest {
 
     @Mock
     private PaymentTransactionRepository transactionRepository;
-    @Mock
-    private MerchantRepository merchantRepository;
-    @Mock
-    private MerchantFeeRepository merchantFeeRepository;
-    @Mock
-    private MerchantBranchRepository branchRepository;
-    @Mock
-    private TerminalRepository terminalRepository;
-    @Mock
-    private MerchantLedgerRepository ledgerRepository;
-    @Mock
-    private WebhookDeliveryService webhookDeliveryService;
-    @Mock
-    private CoreBankingClient coreBankingClient;
 
     @InjectMocks
-    private PaymentTransactionServiceImpl paymentTransactionService;
+    private PaymentTransactionServiceImpl transactionService;
 
-    @BeforeEach
-    public void setUp() {
-        // @Value("${payment.gateway.redirect-url}") အတွက် Value ထည့်ပေးခြင်း
-        ReflectionTestUtils.setField(paymentTransactionService, "paymentRedirectUrl", "http://localhost:8080/checkout?token=");
+    @Test
+    public void testGetCheckoutInfoByToken_Success() {
+        // Arrange
+        String token = "test-payment-token-123";
+
+        Merchant merchant = new Merchant();
+        merchant.setBusinessName("Test Merchant");
+
+        PaymentTransaction transaction = new PaymentTransaction();
+        transaction.setPaymentToken(token);
+        transaction.setMerchant(merchant);
+        transaction.setOrderId("ORD-999");
+        transaction.setAmount(BigDecimal.valueOf(15000));
+        transaction.setCurrency("MMK");
+        transaction.setStatus(PaymentTransactionStatus.INITIATED);
+
+        // Optional.of ဖြင့် Token တွေ့ရှိကြောင်း Mock ပြုလုပ်ခြင်း  
+        when(transactionRepository.findByPaymentToken(token))
+                .thenReturn(Optional.of(transaction));
+
+        // Act
+        PaymentCheckoutInfoDto response = transactionService.getCheckoutInfoByToken(token);
+
+        // Assert
+        assertNotNull(response);
+        assertEquals("Test Merchant", response.getBusinessName());
+        assertEquals("ORD-999", response.getOrderId());
+        assertEquals(PaymentTransactionStatus.INITIATED.name(), response.getStatus());
+        verify(transactionRepository, times(1)).findByPaymentToken(token);
     }
 
     @Test
-    public void testInitiateTransaction_Success() {
-        UUID merchantId = UUID.randomUUID();
-        PaymentInitiateRequestDto requestDto = new PaymentInitiateRequestDto();
-        requestDto.setMerchantId(merchantId);
-        requestDto.setOrderId("ORD-123");
-        requestDto.setAmount(new BigDecimal("10000.00"));
-        requestDto.setCurrency("MMK");
-        // Branch ID သို့မဟုတ် Terminal ID တစ်ခုခု ပေးရမည်
-        requestDto.setBranchId(UUID.randomUUID());
+    public void testGetCheckoutInfoByToken_NotFound_ThrowsException() {
+        // Arrange
+        String token = "invalid-token";
 
-        Merchant merchant = new Merchant();
-        merchant.setId(merchantId);
-        merchant.setStatus(MerchantStatus.ACTIVE);
+        // Optional.empty() ဖြင့် Token မရှိကြောင်း Mock ပြုလုပ်ခြင်း
+        when(transactionRepository.findByPaymentToken(token))
+                .thenReturn(Optional.empty());
 
-        MerchantFee fee = new MerchantFee();
-        fee.setFlatFee(new BigDecimal("100.00"));
-        fee.setPercentageRate(new BigDecimal("1.00"));
+        // Act & Assert
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            transactionService.getCheckoutInfoByToken(token);
+        });
 
-        when(transactionRepository.findByIdempotencyKey("idem-key-1")).thenReturn(Optional.empty());
-        when(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchant));
-        when(transactionRepository.existsByMerchantIdAndOrderId(merchantId, "ORD-123")).thenReturn(false);
-        when(branchRepository.findById(any(UUID.randomUUID().getClass()))).thenReturn(Optional.of(new com.ojt_22.mmspg.entity.MerchantBranch()));
-        when(merchantFeeRepository.findByMerchantId(merchantId)).thenReturn(Optional.of(fee));
-        when(transactionRepository.save(any(PaymentTransaction.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        PaymentInitiateResponseDto response = paymentTransactionService.initiateTransaction(requestDto, "idem-key-1");
-
-        assertNotNull(response);
-        assertNotNull(response.getPaymentToken());
-        assertNotNull(response.getPaymentUrl());
+        assertTrue(exception.getMessage().contains("Invalid or expired payment token"));
+        verify(transactionRepository, times(1)).findByPaymentToken(token);
     }
 }

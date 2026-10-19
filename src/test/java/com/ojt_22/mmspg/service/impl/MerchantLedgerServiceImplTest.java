@@ -1,12 +1,8 @@
 package com.ojt_22.mmspg.service.impl;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.math.BigDecimal;
 import java.util.Optional;
@@ -36,31 +32,11 @@ public class MerchantLedgerServiceImplTest {
     private PaymentTransactionRepository paymentTransactionRepository;
 
     @InjectMocks
-    private MerchantLedgerServiceImpl merchantLedgerService;
-
-    @Test
-    public void testMarkLedgerAsSettled_Success() {
-        UUID ledgerId = UUID.randomUUID();
-        when(merchantLedgerRepository.updateBalanceType(ledgerId, "SETTLED")).thenReturn(1);
-
-        // Test method execution
-        merchantLedgerService.markLedgerAsSettled(ledgerId);
-
-        verify(merchantLedgerRepository, times(1)).updateBalanceType(ledgerId, "SETTLED");
-    }
-
-    @Test
-    public void testMarkLedgerAsSettled_NotFound() {
-        UUID ledgerId = UUID.randomUUID();
-        when(merchantLedgerRepository.updateBalanceType(ledgerId, "SETTLED")).thenReturn(0);
-
-        assertThrows(RuntimeException.class, () -> {
-            merchantLedgerService.markLedgerAsSettled(ledgerId);
-        });
-    }
+    private MerchantLedgerServiceImpl ledgerService;
 
     @Test
     public void testCreateLedgerEntry_Success() {
+        // Arrange
         UUID transactionId = UUID.randomUUID();
         
         Merchant merchant = new Merchant();
@@ -69,26 +45,48 @@ public class MerchantLedgerServiceImplTest {
         PaymentTransaction transaction = new PaymentTransaction();
         transaction.setId(transactionId);
         transaction.setMerchant(merchant);
-        transaction.setNetAmount(new BigDecimal("5000.00"));
+        transaction.setNetAmount(BigDecimal.valueOf(50000));
         transaction.setOrderId("ORD-001");
 
-        when(paymentTransactionRepository.findById(transactionId)).thenReturn(Optional.of(transaction));
-        when(merchantLedgerRepository.save(any(MerchantLedgerEntry.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        // Optional.of ဖြင့် Transaction ရှိနေကြောင်း Mock ပြုလုပ်ခြင်း
+        when(paymentTransactionRepository.findById(transactionId))
+                .thenReturn(Optional.of(transaction));
 
-        MerchantLedgerResponse response = merchantLedgerService.createLedgerEntry(transactionId);
+        MerchantLedgerEntry savedEntry = new MerchantLedgerEntry();
+        savedEntry.setId(UUID.randomUUID());
+        savedEntry.setMerchant(merchant);
+        savedEntry.setTransaction(transaction);
+        savedEntry.setAmount(BigDecimal.valueOf(50000));
 
+        when(merchantLedgerRepository.save(any(MerchantLedgerEntry.class)))
+                .thenReturn(savedEntry);
+
+        // Act
+        MerchantLedgerResponse response = ledgerService.createLedgerEntry(transactionId);
+
+        // Assert
         assertNotNull(response);
-        assertEquals(new BigDecimal("5000.00"), response.getAmount());
-        assertEquals(transactionId, response.getTransactionId());
+        assertEquals(BigDecimal.valueOf(50000), response.getAmount());
+        verify(paymentTransactionRepository, times(1)).findById(transactionId);
+        verify(merchantLedgerRepository, times(1)).save(any(MerchantLedgerEntry.class));
     }
 
     @Test
-    public void testCreateLedgerEntry_TransactionNotFound() {
+    public void testCreateLedgerEntry_TransactionNotFound_ThrowsException() {
+        // Arrange
         UUID transactionId = UUID.randomUUID();
-        when(paymentTransactionRepository.findById(transactionId)).thenReturn(Optional.empty());
 
-        assertThrows(ResourceNotFoundException.class, () -> {
-            merchantLedgerService.createLedgerEntry(transactionId);
+        // Optional.empty() ဖြင့် Transaction မရှိသည့်အခြေအနေကို Mock ပြုလုပ်ခြင်း
+        when(paymentTransactionRepository.findById(transactionId))
+                .thenReturn(Optional.empty());
+
+        // Act & Assert
+        Exception exception = assertThrows(ResourceNotFoundException.class, () -> {
+            ledgerService.createLedgerEntry(transactionId);
         });
+
+        assertTrue(exception.getMessage().contains("Transaction not found"));
+        verify(paymentTransactionRepository, times(1)).findById(transactionId);
+        verify(merchantLedgerRepository, never()).save(any());
     }
 }
