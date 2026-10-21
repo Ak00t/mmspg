@@ -132,6 +132,7 @@ public class StaffUserServiceImpl implements StaffUserService {
 				.name());
 		dto.setStatus(user.getStatus()
 				.name());
+		dto.setCreatedAt(user.getCreatedAt());
 		return dto;
 	}
 	
