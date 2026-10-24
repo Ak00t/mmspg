@@ -40,9 +40,6 @@ public class PaymentTransactionApiController {
 
     private final PaymentTransactionService transactionService;
     private final AuthenticatedMerchantService authenticatedMerchantService;
-    
-    @Value("${internal.corebanking.secret-key}")
-    private String expectedSecretKey;
 
     @PostMapping("/initiate")
     @Auditable(menuName = "Payments", action = "INITIATE", targetType = "PAYMENT_TRANSACTION", targetId = "#result?.body?.transactionReference")
@@ -79,13 +76,8 @@ public class PaymentTransactionApiController {
     @PostMapping("/authorize")
     @Auditable(menuName = "Payments", action = "AUTHORIZE", targetType = "PAYMENT_TRANSACTION", targetId = "#result?.body?.transactionReference")
     public ResponseEntity<PaymentAuthorizeResponseDto> authorizeTransaction(
-    		@RequestHeader(value = "X-Internal-Service-Key", required = true) String apiKey,
     		@Valid @RequestBody PaymentAuthorizeRequestDto requestDto) {
     	
-    	// Key တူမတူ စစ်ဆေးခြင်း (Group 1 မှ မှန်ကန်သော Key ပါလာမှသာ လက်ခံမည်)
-        if (!expectedSecretKey.equals(apiKey)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
         return ResponseEntity.ok(transactionService.authorizeTransaction(requestDto));
     }
 

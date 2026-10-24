@@ -35,9 +35,9 @@ public class StaffUser {
 	@Column(name = "staff_id", columnDefinition = "BINARY(16)")
 	private UUID id;
 
-//	@Column(nullable = false, length = 100, unique = true)
-//	private String username;
-
+	@Column(name = "username", unique = true, nullable = false)
+    private String username;
+	
 	@Column(name = "password_hash", nullable = false, length = 255)
 	private String passwordHash;
 
@@ -46,6 +46,9 @@ public class StaffUser {
 
 	@Column(length = 150, unique = true)
 	private String email;
+	
+	@Column(name = "profile_image_url", length = 500)
+    private String profileImageUrl;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, columnDefinition = "enum('ADMIN','AUDITOR','STAFF')")

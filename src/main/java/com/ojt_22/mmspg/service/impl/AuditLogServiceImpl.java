@@ -26,6 +26,7 @@ public class AuditLogServiceImpl implements AuditLogService {
 
 		AuditLog logEntry = AuditLog.builder()
 				.actorId(requestDto.getActorId())
+			
 				.actorType(requestDto.getActorType())
 				.roleName(requestDto.getRoleName())
 				.permissionUsed(requestDto.getPermissionUsed())

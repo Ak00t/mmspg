@@ -12,19 +12,21 @@ import lombok.Setter;
 @Getter
 @Setter
 public class PaymentInitiateRequestDto {
-    private UUID merchantId;
-	
-    private UUID branchId;
-    
-    private UUID terminalId;
-    
-    @NotBlank(message = "Order ID must not be blank")
-    private String orderId;
-    
-    @NotNull
-    @DecimalMin("0.01")
-    private BigDecimal amount;
-    
-    @NotBlank
-    private String currency;
+	private UUID merchantId;
+
+	private UUID branchId;
+
+	private UUID terminalId;
+
+	@NotBlank(message = "Order ID must not be blank")
+	private String orderId;
+
+	@NotNull
+	@DecimalMin("0.01")
+	private BigDecimal amount;
+
+	@NotBlank
+	private String currency;
+
+	private String returnUrl = "http://localhost:5173/orders";
 }

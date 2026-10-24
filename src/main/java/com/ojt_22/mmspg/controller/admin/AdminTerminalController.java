@@ -89,6 +89,20 @@ public class AdminTerminalController {
         }
     }
 
+    
+    @PutMapping("/{id}/reactivate")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Reactivate Terminal", description = "Reactivates a suspended terminal and sets its status back to ONLINE.")
+    public ResponseEntity<?> reactivateTerminal(@PathVariable UUID id) {
+        try {
+            // Service တွင်ရှိပြီးသား updateTerminalStatus ကိုသုံး၍ ONLINE သို့ ပြန်ပြောင်းမည်
+            terminalService.updateTerminalStatus(id, "ONLINE");
+            return ResponseEntity.ok(Map.of("message", "Terminal reactivated successfully to ONLINE"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+    
     @PutMapping("/{id}/suspend")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Suspend Terminal", description = "Suspends a terminal and sets its status to SUSPENDED.")

@@ -65,6 +65,7 @@ public class WebhookConfigServiceImpl implements WebhookConfigService {
         config.setMerchant(merchant);
         config.setCreatedBy(createdByStaff);
         config.setCallbackUrl(request.getCallbackUrl());
+        config.setReturnUrl(request.getReturnUrl());
         config.setSecretKeyHash(passwordEncoder.encode(rawSecretKey));
         config.setEventPaymentCompleted(request.getEventPaymentCompleted());
         config.setEventPaymentFailed(request.getEventPaymentFailed());
@@ -78,6 +79,7 @@ public class WebhookConfigServiceImpl implements WebhookConfigService {
                 .webhookId(saved.getId())
                 .merchantId(saved.getMerchant().getId())
                 .callbackUrl(saved.getCallbackUrl())
+                .returnUrl(saved.getReturnUrl())
                 .rawSecretKey(rawSecretKey)
                 .eventPaymentCompleted(saved.getEventPaymentCompleted())
                 .eventPaymentFailed(saved.getEventPaymentFailed())
@@ -97,6 +99,7 @@ public class WebhookConfigServiceImpl implements WebhookConfigService {
 		authenticatedMerchantService.assertMerchantAccess(config.getMerchant().getId());
 
         if (request.getCallbackUrl() != null) config.setCallbackUrl(request.getCallbackUrl());
+        if (request.getReturnUrl() != null) config.setReturnUrl(request.getReturnUrl());
         if (request.getEventPaymentCompleted() != null) config.setEventPaymentCompleted(request.getEventPaymentCompleted());
         if (request.getEventPaymentFailed() != null) config.setEventPaymentFailed(request.getEventPaymentFailed());
         if (request.getMaxRetry() != null) config.setMaxRetry(request.getMaxRetry());
@@ -112,6 +115,7 @@ public class WebhookConfigServiceImpl implements WebhookConfigService {
                 .webhookId(updated.getId())
                 .merchantId(updated.getMerchant().getId())
                 .callbackUrl(updated.getCallbackUrl())
+                .returnUrl(updated.getReturnUrl())
                 .rawSecretKey("********")
                 .eventPaymentCompleted(updated.getEventPaymentCompleted())
                 .eventPaymentFailed(updated.getEventPaymentFailed())

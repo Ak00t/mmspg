@@ -38,15 +38,17 @@ public class MerchantReportController {
 	public ResponseEntity<ByteArrayResource> salesLedger(
 			@RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy") LocalDate startDate,
 			@RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy") LocalDate endDate,
-			@RequestParam(defaultValue = "csv") String format) {
-		return file(reports.salesLedger(startDate, endDate, format));
+			@RequestParam(defaultValue = "csv") String format,
+			@RequestParam(required = false) String status) {
+		return file(reports.salesLedger(startDate, endDate, format, status));
 	}
 
 	@GetMapping("/settlements/export")
 	public ResponseEntity<ByteArrayResource> settlements(
 			@RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy") LocalDate startDate,
 			@RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy") LocalDate endDate,
-			@RequestParam(defaultValue = "csv") String format) {
-		return file(reports.settlements(startDate, endDate, format));
+			@RequestParam(defaultValue = "csv") String format,
+			@RequestParam(required = false) String status) {
+		return file(reports.settlements(startDate, endDate, format, status));
 	}
 }

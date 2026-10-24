@@ -30,6 +30,9 @@ import com.ojt_22.mmspg.entity.Terminal;
 import com.ojt_22.mmspg.enums.MerchantLedgerEntryBalanceType;
 import com.ojt_22.mmspg.enums.MerchantLedgerEntryType;
 import com.ojt_22.mmspg.enums.PaymentTransactionStatus;
+import com.ojt_22.mmspg.entity.WebhookConfig;
+import com.ojt_22.mmspg.enums.WebhookConfigStatus;
+import com.ojt_22.mmspg.repository.WebhookConfigRepository;
 import com.ojt_22.mmspg.repository.MerchantBranchRepository;
 import com.ojt_22.mmspg.repository.MerchantFeeRepository;
 import com.ojt_22.mmspg.repository.MerchantLedgerRepository;
@@ -56,6 +59,7 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 	private final MerchantLedgerRepository ledgerRepository;
 
 	private final WebhookDeliveryService webhookDeliveryService;
+	private final WebhookConfigRepository webhookConfigRepository;
 
 	// Group 2 (Core Banking System) သို့ API လှမ်းခေါ်မည့် Client Class
 	private final CoreBankingClient coreBankingClient;
@@ -89,8 +93,21 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 		// 🔴 [ဖြည့်ရန် ၁.၂] Merchant Active ဖြစ်မဖြစ် validate လုပ်ရန် ထည့်ပါ
 		validateMerchant(merchant);
 
-		// 🔴 [ဖြည့်ရန် ၁.၃] Order ID ထပ်နေခြင်း ရှိမရှိ စစ်ဆေးရန် ထည့်ပါ
-		checkDuplicatePayment(requestDto.getMerchantId(), requestDto.getOrderId());
+		// Order ID Duplicate & Active Session စစ်ဆေးခြင်း
+		Optional<PaymentTransaction> existingInitiatedTxn = checkOrderDuplicateAndGetActive(
+				requestDto.getMerchantId(), requestDto.getOrderId());
+		if (existingInitiatedTxn.isPresent()) {
+			PaymentTransaction txn = existingInitiatedTxn.get();
+			return PaymentInitiateResponseDto.builder()
+					.transactionReference(txn.getTransactionReference())
+					.paymentToken(txn.getPaymentToken())
+					.amount(txn.getAmount())
+					.currency(txn.getCurrency())
+					.status(txn.getStatus()
+							.name())
+					.paymentUrl(paymentRedirectUrl + txn.getPaymentToken())
+					.build();
+		}
 		
 		// ၁။ နှစ်ခုလုံး null ဖြစ်နေပါက (တစ်လှည့်မှ မပါလာပါက) Exception တက်စေရန် စစ်ဆေးခြင်း
 		if (requestDto.getBranchId() == null && requestDto.getTerminalId() == null) {
@@ -146,6 +163,16 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 		transaction.setPaymentToken(token);
 		transaction.setAmount(requestDto.getAmount());
 		transaction.setCurrency(requestDto.getCurrency() != null ? requestDto.getCurrency() : "MMK");
+
+		String returnUrl = requestDto.getReturnUrl();
+		if (returnUrl == null || returnUrl.isBlank()) {
+			Optional<WebhookConfig> configOpt = webhookConfigRepository
+					.findByMerchantIdAndStatus(merchant.getId(), WebhookConfigStatus.ACTIVE);
+			if (configOpt.isPresent() && configOpt.get().getReturnUrl() != null) {
+				returnUrl = configOpt.get().getReturnUrl();
+			}
+		}
+		transaction.setReturnUrl(returnUrl);
 
 		transaction.setFeeAmount(totalFee);
 		transaction.setNetAmount(netAmount);
@@ -303,6 +330,7 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 				.currency(transaction.getCurrency())
 				.status(transaction.getStatus()
 						.name())
+				.returnUrl(transaction.getReturnUrl())
 				.build();
 	}
 
@@ -317,11 +345,15 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 		}
 	}
 
-	private void checkDuplicatePayment(UUID merchantId, String orderId) {
-		boolean isDuplicate = transactionRepository.existsByMerchantIdAndOrderId(merchantId, orderId);
-		if (isDuplicate) {
-			throw new RuntimeException("Duplicate transaction: Order ID '" + orderId + "' has already been initiated.");
+	private Optional<PaymentTransaction> checkOrderDuplicateAndGetActive(UUID merchantId, String orderId) {
+		// ၁။ COMPLETED ဖြစ်ပြီးသား Order ID ဖြစ်ပါက ထပ်မံပေးချေခွင့် မပြုပါ (Double payment ကာကွယ်ရန်)
+		if (transactionRepository.existsByMerchantIdAndOrderIdAndStatus(merchantId, orderId, PaymentTransactionStatus.COMPLETED)) {
+			throw new RuntimeException("Duplicate transaction: Order ID '" + orderId + "' has already been completed.");
 		}
+
+		// ၂။ INITIATED ဖြစ်နေဆဲ (User မပြီးပြတ်သေးဘဲ ပြန်လာပြီး ထပ်နှိပ်ပါက) လက်ရှိ Session အဟောင်းကို ပြန်ပေးရန်
+		return transactionRepository.findFirstByMerchantIdAndOrderIdAndStatusOrderByCreatedAtDesc(
+				merchantId, orderId, PaymentTransactionStatus.INITIATED);
 	}
 
 }

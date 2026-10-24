@@ -12,6 +12,7 @@ import com.ojt_22.mmspg.entity.MccCode;
 import com.ojt_22.mmspg.enums.MccCodeStatus;
 import com.ojt_22.mmspg.repository.MccCodeRepository;
 import com.ojt_22.mmspg.service.MccService;
+import com.ojt_22.mmspg.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 public class MccServiceImpl implements MccService {
 
 	private final MccCodeRepository mccCodeRepository;
-
+	private final NotificationService notificationService;
 	@Override
 	@Transactional(readOnly = true)
 	public List<MccCodeResponseDto> getAllMccCodes() {
@@ -40,6 +41,12 @@ public class MccServiceImpl implements MccService {
 		mcc.setStatus(MccCodeStatus.ACTIVE);
 
 		MccCode saved = mccCodeRepository.save(mcc);
+		
+		notificationService.sendNotificationToCurrentStaff(
+				"MCC Added",
+				"MCC code \"" + saved.getMccCode() + " - " + saved.getMccName() + "\" has been successfully created.",
+				"SYSTEM"
+		);
 		return mapToResponseDto(saved);
 	}
 
