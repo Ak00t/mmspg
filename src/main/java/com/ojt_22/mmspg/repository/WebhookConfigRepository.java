@@ -16,5 +16,7 @@ public interface WebhookConfigRepository extends JpaRepository<WebhookConfig, UU
 	
 	Optional<WebhookConfig> findByMerchantIdAndStatus(UUID merchantId, WebhookConfigStatus status);
 
+	Optional<WebhookConfig> findFirstByMerchantIdOrderByCreatedAtDesc(UUID merchantId);
+
 	boolean existsByMerchantIdAndStatus(UUID merchantId, String status);
 }

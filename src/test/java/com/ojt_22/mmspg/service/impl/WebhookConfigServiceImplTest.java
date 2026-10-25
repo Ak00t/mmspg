@@ -2,6 +2,7 @@ package com.ojt_22.mmspg.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -32,11 +33,9 @@ import com.ojt_22.mmspg.dto.CreateWebhookRequest;
 import com.ojt_22.mmspg.dto.UpdateWebhookRequest;
 import com.ojt_22.mmspg.dto.WebhookConfigResponse;
 import com.ojt_22.mmspg.entity.Merchant;
-import com.ojt_22.mmspg.entity.StaffUser;
 import com.ojt_22.mmspg.entity.WebhookConfig;
 import com.ojt_22.mmspg.enums.WebhookConfigStatus;
 import com.ojt_22.mmspg.repository.MerchantRepository;
-import com.ojt_22.mmspg.repository.StaffUserRepository;
 import com.ojt_22.mmspg.repository.WebhookConfigRepository;
 import com.ojt_22.mmspg.security.AuthenticatedMerchantService;
 import com.sun.net.httpserver.HttpServer;
@@ -44,14 +43,10 @@ import com.sun.net.httpserver.HttpServer;
 @ExtendWith(MockitoExtension.class)
 class WebhookConfigServiceImplTest {
 
-	private static final UUID DEFAULT_STAFF_ID = UUID.fromString("11111111-2222-3333-4444-555555555555");
-
 	@Mock
 	private WebhookConfigRepository webhookConfigRepository;
 	@Mock
 	private MerchantRepository merchantRepository;
-	@Mock
-	private StaffUserRepository staffUserRepository;
 	@Mock
 	private PasswordEncoder passwordEncoder;
 	@Mock
@@ -64,7 +59,7 @@ class WebhookConfigServiceImplTest {
 
 	@BeforeEach
 	void setUp() {
-		service = new WebhookConfigServiceImpl(webhookConfigRepository, merchantRepository, staffUserRepository,
+		service = new WebhookConfigServiceImpl(webhookConfigRepository, merchantRepository,
 				passwordEncoder, authenticatedMerchantService);
 		merchantId = UUID.randomUUID();
 		merchant = new Merchant();
@@ -121,7 +116,6 @@ class WebhookConfigServiceImplTest {
 	void createWebhook_Success_SavesActiveConfigAndReturnsRawSecret() {
 		when(authenticatedMerchantService.resolveMerchantId()).thenReturn(merchantId);
 		when(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchant));
-		when(staffUserRepository.findById(DEFAULT_STAFF_ID)).thenReturn(Optional.of(new StaffUser()));
 		when(passwordEncoder.encode(anyString())).thenReturn("hashed-secret");
 		when(webhookConfigRepository.save(any(WebhookConfig.class))).thenAnswer(inv -> {
 			WebhookConfig c = inv.getArgument(0);
@@ -152,7 +146,6 @@ class WebhookConfigServiceImplTest {
 	void createWebhook_NullRequestMerchantId_UsesAuthenticatedMerchant() {
 		when(authenticatedMerchantService.resolveMerchantId()).thenReturn(merchantId);
 		when(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchant));
-		when(staffUserRepository.findById(DEFAULT_STAFF_ID)).thenReturn(Optional.of(new StaffUser()));
 		when(passwordEncoder.encode(anyString())).thenReturn("hashed");
 		when(webhookConfigRepository.save(any(WebhookConfig.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -181,35 +174,6 @@ class WebhookConfigServiceImplTest {
 				() -> service.createWebhook(createRequest(merchantId)));
 
 		assertTrue(ex.getMessage().startsWith("Merchant not found"));
-		verify(webhookConfigRepository, never()).save(any());
-	}
-
-	@Test
-	void createWebhook_DefaultStaffMissing_FallsBackToFirstStaff() {
-		StaffUser fallback = new StaffUser();
-		when(authenticatedMerchantService.resolveMerchantId()).thenReturn(merchantId);
-		when(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchant));
-		when(staffUserRepository.findById(DEFAULT_STAFF_ID)).thenReturn(Optional.empty());
-		when(staffUserRepository.findAll()).thenReturn(List.of(fallback));
-		when(passwordEncoder.encode(anyString())).thenReturn("hashed");
-		when(webhookConfigRepository.save(any(WebhookConfig.class))).thenAnswer(inv -> inv.getArgument(0));
-
-		service.createWebhook(createRequest(merchantId));
-
-		ArgumentCaptor<WebhookConfig> captor = ArgumentCaptor.forClass(WebhookConfig.class);
-		verify(webhookConfigRepository).save(captor.capture());
-		assertEquals(fallback, captor.getValue().getCreatedBy());
-	}
-
-	@Test
-	void createWebhook_NoStaffAtAll_ThrowsIllegalState() {
-		when(authenticatedMerchantService.resolveMerchantId()).thenReturn(merchantId);
-		when(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchant));
-		when(staffUserRepository.findById(DEFAULT_STAFF_ID)).thenReturn(Optional.empty());
-		when(staffUserRepository.findAll()).thenReturn(List.of());
-
-		assertThrows(IllegalStateException.class, () -> service.createWebhook(createRequest(merchantId)));
-
 		verify(webhookConfigRepository, never()).save(any());
 	}
 
@@ -397,5 +361,50 @@ class WebhookConfigServiceImplTest {
 		String result = service.testWebhook(config.getId());
 
 		assertTrue(result.startsWith("Test Webhook failed to connect"));
+	}
+
+	// ---------- getMerchantWebhook ----------
+
+	@Test
+	void getMerchantWebhook_ReturnsActiveConfigWithMaskedSecret() {
+		when(authenticatedMerchantService.resolveMerchantId()).thenReturn(merchantId);
+		WebhookConfig config = config(merchantId);
+		when(webhookConfigRepository.findFirstByMerchantIdOrderByCreatedAtDesc(merchantId))
+				.thenReturn(Optional.of(config));
+
+		WebhookConfigResponse response = service.getMerchantWebhook();
+
+		assertNotNull(response);
+		assertEquals(config.getId(), response.getWebhookId());
+		assertEquals(merchantId, response.getMerchantId());
+		assertNull(response.getRawSecretKey());
+	}
+
+	@Test
+	void getMerchantWebhook_NoConfigFound_ReturnsNull() {
+		when(authenticatedMerchantService.resolveMerchantId()).thenReturn(merchantId);
+		when(webhookConfigRepository.findFirstByMerchantIdOrderByCreatedAtDesc(merchantId))
+				.thenReturn(Optional.empty());
+
+		WebhookConfigResponse response = service.getMerchantWebhook();
+
+		assertNull(response);
+	}
+
+	// ---------- regenerateWebhookSecret ----------
+
+	@Test
+	void regenerateWebhookSecret_Success_ReturnsNewSecret() {
+		WebhookConfig config = config(merchantId);
+		when(webhookConfigRepository.findById(config.getId())).thenReturn(Optional.of(config));
+		when(passwordEncoder.encode(anyString())).thenReturn("new-hash");
+		when(webhookConfigRepository.save(any(WebhookConfig.class))).thenAnswer(inv -> inv.getArgument(0));
+
+		WebhookConfigResponse response = service.regenerateWebhookSecret(config.getId());
+
+		assertNotNull(response);
+		assertTrue(response.getRawSecretKey().startsWith("whsec_"));
+		assertEquals("new-hash", config.getSecretKeyHash());
+		verify(authenticatedMerchantService).assertMerchantAccess(merchantId);
 	}
 }

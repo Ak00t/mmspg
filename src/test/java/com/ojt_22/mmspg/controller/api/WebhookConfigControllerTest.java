@@ -114,4 +114,27 @@ class WebhookConfigControllerTest {
 
 		assertThrows(IllegalArgumentException.class, () -> controller.testWebhook(id));
 	}
+
+	@Test
+	void getMyWebhook_Returns200WithBody() {
+		WebhookConfigResponse expected = WebhookConfigResponse.builder().webhookId(UUID.randomUUID()).build();
+		when(webhookConfigService.getMerchantWebhook()).thenReturn(expected);
+
+		ResponseEntity<WebhookConfigResponse> result = controller.getMyWebhook();
+
+		assertEquals(HttpStatus.OK, result.getStatusCode());
+		assertSame(expected, result.getBody());
+	}
+
+	@Test
+	void regenerateSecret_Returns200WithNewSecret() {
+		UUID id = UUID.randomUUID();
+		WebhookConfigResponse expected = WebhookConfigResponse.builder().webhookId(id).rawSecretKey("whsec_123").build();
+		when(webhookConfigService.regenerateWebhookSecret(id)).thenReturn(expected);
+
+		ResponseEntity<WebhookConfigResponse> result = controller.regenerateSecret(id);
+
+		assertEquals(HttpStatus.OK, result.getStatusCode());
+		assertSame(expected, result.getBody());
+	}
 }
