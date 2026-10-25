@@ -28,5 +28,5 @@ public class PaymentInitiateRequestDto {
 	@NotBlank
 	private String currency;
 
-	private String returnUrl = "http://localhost:5173/orders";
+	private String returnUrl;
 }
