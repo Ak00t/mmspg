@@ -28,4 +28,14 @@ public interface WebhookConfigService {
      * Webhook Callback URL ကို စမ်းသပ် Ping ပို့ခြင်း
      */
     String testWebhook(UUID webhookId);
+
+    /**
+     * လက်ရှိ Merchant ၏ Webhook Configuration ရယူခြင်း
+     */
+    WebhookConfigResponse getMerchantWebhook();
+
+    /**
+     * Webhook Secret Key အသစ် ပြန်ထုတ်ပေးခြင်း (Regenerate Secret)
+     */
+    WebhookConfigResponse regenerateWebhookSecret(UUID webhookId);
 }

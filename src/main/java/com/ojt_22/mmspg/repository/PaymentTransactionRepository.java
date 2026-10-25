@@ -49,6 +49,8 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
    
     List<PaymentTransaction> findByMerchantId(UUID merchantId);
     
+    List<PaymentTransaction> findTop10ByMerchantIdOrderByCreatedAtDesc(UUID merchantId);
+
     // 4. Merchant တစ်ခုတည်းအောက်တွင် Order ID ထပ်မထပ် စစ်ရန်
     boolean existsByMerchantIdAndOrderId(UUID merchantId, String orderId);
 

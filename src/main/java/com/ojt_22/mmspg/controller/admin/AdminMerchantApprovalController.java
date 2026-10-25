@@ -53,6 +53,7 @@ public class AdminMerchantApprovalController {
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
+        
     }
 
     @PutMapping("/{id}/reject")

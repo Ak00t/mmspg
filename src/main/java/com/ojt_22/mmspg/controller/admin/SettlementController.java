@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.dto.DailySettlementResponse;
 import com.ojt_22.mmspg.dto.SettlementResponse;
 import com.ojt_22.mmspg.service.SettlementService;
@@ -26,6 +27,7 @@ public class SettlementController {
     }
 
     @PostMapping("/{transactionId}")
+    @Auditable(menuName = "Settlement", action = "PROCESS", targetType = "PAYMENT_TRANSACTION", targetId = "#transactionId")
     public ResponseEntity<SettlementResponse> processSettlement(
             @PathVariable UUID transactionId) {
 

@@ -89,4 +89,30 @@ public class MerchantLedgerServiceImplTest {
         verify(paymentTransactionRepository, times(1)).findById(transactionId);
         verify(merchantLedgerRepository, never()).save(any());
     }
+    
+    @Test
+    public void testMarkLedgerAsSettled_Success() {
+        // Arrange
+        UUID ledgerId = UUID.randomUUID();
+        when(merchantLedgerRepository.updateBalanceType(ledgerId, "SETTLED")).thenReturn(1);
+
+        // Act & Assert
+        assertDoesNotThrow(() -> ledgerService.markLedgerAsSettled(ledgerId));
+        verify(merchantLedgerRepository, times(1)).updateBalanceType(ledgerId, "SETTLED");
+    }
+
+    @Test
+    public void testMarkLedgerAsSettled_NotFound_ThrowsException() {
+        // Arrange
+        UUID ledgerId = UUID.randomUUID();
+        when(merchantLedgerRepository.updateBalanceType(ledgerId, "SETTLED")).thenReturn(0);
+
+        // Act & Assert
+        Exception exception = assertThrows(RuntimeException.class, () -> {
+            ledgerService.markLedgerAsSettled(ledgerId);
+        });
+
+        assertTrue(exception.getMessage().contains("Ledger entry not found with ID"));
+        verify(merchantLedgerRepository, times(1)).updateBalanceType(ledgerId, "SETTLED");
+    }
 }
