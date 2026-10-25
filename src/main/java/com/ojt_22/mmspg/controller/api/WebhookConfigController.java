@@ -30,11 +30,24 @@ public class WebhookConfigController {
 
     private final WebhookConfigService webhookConfigService;
 
+    @org.springframework.web.bind.annotation.GetMapping
+    public ResponseEntity<WebhookConfigResponse> getMyWebhook() {
+        WebhookConfigResponse response = webhookConfigService.getMerchantWebhook();
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping
     @Auditable(menuName = "Webhook Configuration", action = "CREATE", targetType = "WEBHOOK_CONFIG", targetId = "#result?.body?.webhookId")
     public ResponseEntity<WebhookConfigResponse> createWebhook(@RequestBody CreateWebhookRequest request) {
         WebhookConfigResponse response = webhookConfigService.createWebhook(request);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
+    }
+
+    @PostMapping("/{webhookId}/regenerate-secret")
+    @Auditable(menuName = "Webhook Configuration", action = "REGENERATE_SECRET", targetType = "WEBHOOK_CONFIG", targetId = "#webhookId")
+    public ResponseEntity<WebhookConfigResponse> regenerateSecret(@PathVariable UUID webhookId) {
+        WebhookConfigResponse response = webhookConfigService.regenerateWebhookSecret(webhookId);
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/{webhookId}")

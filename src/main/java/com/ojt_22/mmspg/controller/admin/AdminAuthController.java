@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.dto.AdminAuthResponse;
 import com.ojt_22.mmspg.dto.AdminLoginRequest;
 import com.ojt_22.mmspg.entity.StaffUser;
@@ -44,6 +45,7 @@ public class AdminAuthController {
     // 🔴 Admin နှင့် Staff အားလုံးအတွက် လမ်းကြောင်းတစ်ခုတည်း (Unified Login)
     // ========================================================
     @PostMapping("/login")
+    @Auditable(menuName = "Admin Authentication", action = "LOGIN", description = "Admin/Staff portal login")
     @Operation(summary = "Login to Portal", description = "Allows both Admin and Staff to login with correct password.")
     public ResponseEntity<AdminAuthResponse> login(@Valid @RequestBody AdminLoginRequest loginRequest) {
 

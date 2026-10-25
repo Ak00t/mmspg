@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.dto.MerchantPendingDto;
 import com.ojt_22.mmspg.dto.MerchantRegistrationRequest;
 import com.ojt_22.mmspg.entity.Merchant;
@@ -42,6 +43,7 @@ public class AdminMerchantController {
     
     
     @PostMapping("/register")
+    @Auditable(menuName = "Merchant Management", action = "REGISTER", targetType = "MERCHANT", targetId = "#result?.body?.get('merchantId')")
     // 🔴 ဤနေရာကို ပြင်ဆင်လိုက်ပါသည် (ADMIN သို့မဟုတ် STAFF နှစ်ခုလုံးကို ခွင့်ပြုပါမည်)
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')") 
     public ResponseEntity<?> registerMerchant(@Valid @RequestBody MerchantRegistrationRequest request) {
@@ -66,6 +68,7 @@ public class AdminMerchantController {
     
  // ၁။ Edit Merchant Details အတွက်
     @PutMapping("/{id}")
+    @Auditable(menuName = "Merchant Management", action = "UPDATE", targetType = "MERCHANT", targetId = "#id")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
     public ResponseEntity<?> updateMerchantDetails(
             @PathVariable UUID id, 

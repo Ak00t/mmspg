@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.dto.ForgotPasswordRequest;
 import com.ojt_22.mmspg.dto.ResetPasswordRequest;
 import com.ojt_22.mmspg.service.PasswordResetService;
@@ -34,6 +35,7 @@ public class PasswordResetController {
     }
 
     @PostMapping("/reset-password")
+    @Auditable(menuName = "Authentication", action = "RESET_PASSWORD", description = "Password reset with token")
     @Operation(summary = "Reset Password", description = "Resets the password using a valid token.")
     public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         try {
