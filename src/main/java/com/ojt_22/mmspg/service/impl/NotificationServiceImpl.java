@@ -147,6 +147,26 @@ public class NotificationServiceImpl implements NotificationService {
 		notificationRepository.saveAll(unreadList);
 	}
 
+	@Override
+	@Transactional
+	public void deleteNotification(UUID id) {
+		if (notificationRepository.existsById(id)) {
+			notificationRepository.deleteById(id);
+			log.info("Deleted notification with id: {}", id);
+		}
+	}
+
+	@Override
+	@Transactional
+	public void clearAllNotificationsForCurrentStaff(String userIdentifier) {
+		UUID staffId = resolveStaffId(userIdentifier);
+		List<Notification> all = notificationRepository.findTop20ByStaffIdOrderByCreatedAtDesc(staffId);
+		if (!all.isEmpty()) {
+			notificationRepository.deleteAll(all);
+			log.info("Cleared {} notifications for staff: {}", all.size(), staffId);
+		}
+	}
+
 	private UUID resolveStaffId(String userIdentifier) {
 		return staffUserRepository.findByEmail(userIdentifier)
 				.map(StaffUser::getId)

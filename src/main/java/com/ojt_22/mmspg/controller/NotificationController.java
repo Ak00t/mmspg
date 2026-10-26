@@ -8,6 +8,7 @@ import java.util.UUID;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -64,5 +65,39 @@ public class NotificationController {
 		} catch (IllegalArgumentException e) {
 			return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
 		}
+	}
+
+	@DeleteMapping("/{id}")
+	@Operation(summary = "Delete notification", description = "Deletes a notification by its UUID.")
+	public ResponseEntity<?> deleteNotification(@PathVariable("id") UUID id) {
+		try {
+			notificationService.deleteNotification(id);
+			return ResponseEntity.ok(Map.of("message", "Notification deleted successfully"));
+		} catch (Exception e) {
+			return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+		}
+	}
+
+	@DeleteMapping("/clear-all")
+	@Operation(summary = "Clear all notifications", description = "Clears all notifications for the authenticated staff user.")
+	public ResponseEntity<?> clearAllNotifications(Authentication authentication) {
+		if (authentication == null || authentication.getName() == null) {
+			return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+		}
+		notificationService.clearAllNotificationsForCurrentStaff(authentication.getName());
+		return ResponseEntity.ok(Map.of("message", "All notifications cleared successfully"));
+	}
+
+	@PutMapping("/read-all")
+	@Operation(summary = "Mark all notifications as read", description = "Marks all unread notifications as read for current user.")
+	public ResponseEntity<?> markAllAsRead(Authentication authentication) {
+		if (authentication == null || authentication.getName() == null) {
+			return ResponseEntity.status(401).body(Map.of("error", "Unauthorized"));
+		}
+		UUID currentStaffId = notificationService.getCurrentStaffId();
+		if (currentStaffId != null) {
+			notificationService.markAllAsReadForStaff(currentStaffId);
+		}
+		return ResponseEntity.ok(Map.of("message", "All notifications marked as read"));
 	}
 }
