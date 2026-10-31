@@ -21,6 +21,7 @@ import com.ojt_22.mmspg.repository.BranchRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.repository.StaffUserRepository;
 import com.ojt_22.mmspg.service.BranchService;
+import com.ojt_22.mmspg.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,6 +32,8 @@ public class BranchServiceImpl implements BranchService {
 	private final BranchRepository branchRepository;
 	private final MerchantRepository merchantRepository;
 	private final StaffUserRepository staffUserRepository;
+
+	private final NotificationService notificationService;
 
 	@Override
 	@Transactional
@@ -64,6 +67,10 @@ public class BranchServiceImpl implements BranchService {
 //		branch.setUpdatedAt(LocalDateTime.now());
 
 		MerchantBranch savedBranch = branchRepository.save(branch);
+
+		notificationService.sendNotificationToCurrentStaff("New Branch Added", "Branch \"" + savedBranch.getBranchName()
+				+ "\" (Code: " + savedBranch.getBranchCode() + ") has been successfully created.", "BRANCH");
+
 		return mapToResponseDto(savedBranch);
 	}
 
@@ -83,47 +90,56 @@ public class BranchServiceImpl implements BranchService {
 	}
 
 	@Override
-    @Transactional
-    public BranchResponseDto updateBranch(UUID branchId, BranchRequestDto request) {
-        MerchantBranch branch = branchRepository.findById(branchId)
-                .orElseThrow(() -> new IllegalArgumentException("Branch not found with ID: " + branchId));
+	@Transactional
+	public BranchResponseDto updateBranch(UUID branchId, BranchRequestDto request) {
+		MerchantBranch branch = branchRepository.findById(branchId)
+				.orElseThrow(() -> new IllegalArgumentException("Branch not found with ID: " + branchId));
 
-        // 🔴 ၁။ Merchant ID ပါလာမှသာ (null မဟုတ်မှသာ) စစ်ဆေးပြီး အစားထိုးမည်
-        if (request.getMerchantId() != null && !branch.getMerchant().getId().equals(request.getMerchantId())) {
-            Merchant merchant = merchantRepository.findById(request.getMerchantId())
-                    .orElseThrow(() -> new IllegalArgumentException(
-                            "Merchant not found with ID: " + request.getMerchantId()));
-            branch.setMerchant(merchant);
-        }
+		// 🔴 ၁။ Merchant ID ပါလာမှသာ (null မဟုတ်မှသာ) စစ်ဆေးပြီး အစားထိုးမည်
+		if (request.getMerchantId() != null && !branch.getMerchant()
+				.getId()
+				.equals(request.getMerchantId())) {
+			Merchant merchant = merchantRepository.findById(request.getMerchantId())
+					.orElseThrow(() -> new IllegalArgumentException(
+							"Merchant not found with ID: " + request.getMerchantId()));
+			branch.setMerchant(merchant);
+		}
 
-        // 🔴 ၂။ Branch Code ပါလာမှသာ (null မဟုတ်မှသာ) စစ်ဆေးပြီး အစားထိုးမည်
-        if (request.getBranchCode() != null && !branch.getBranchCode().equals(request.getBranchCode())) {
-            UUID merchantIdToCheck = request.getMerchantId() != null ? request.getMerchantId() : branch.getMerchant().getId();
-            if (branchRepository.existsByBranchCodeAndMerchantId(request.getBranchCode(), merchantIdToCheck)) {
-                throw new IllegalArgumentException("Branch code already exists for this merchant.");
-            }
-            branch.setBranchCode(request.getBranchCode());
-        }
+		// 🔴 ၂။ Branch Code ပါလာမှသာ (null မဟုတ်မှသာ) စစ်ဆေးပြီး အစားထိုးမည်
+		if (request.getBranchCode() != null && !branch.getBranchCode()
+				.equals(request.getBranchCode())) {
+			UUID merchantIdToCheck = request.getMerchantId() != null ? request.getMerchantId()
+					: branch.getMerchant()
+							.getId();
+			if (branchRepository.existsByBranchCodeAndMerchantId(request.getBranchCode(), merchantIdToCheck)) {
+				throw new IllegalArgumentException("Branch code already exists for this merchant.");
+			}
+			branch.setBranchCode(request.getBranchCode());
+		}
 
-        // 🔴 ၃။ အခြား Data များ ပါလာမှသာ (null မဟုတ်မှသာ) အစားထိုးမည်
-        if (request.getBranchName() != null) {
-            branch.setBranchName(request.getBranchName());
-        }
-        if (request.getCity() != null) {
-            branch.setCity(request.getCity());
-        }
-        if (request.getAddress() != null) {
-            branch.setAddress(request.getAddress());
-        }
-        if (request.getPhone() != null) {
-            branch.setPhone(request.getPhone());
-        }
-        
-        branch.setUpdatedAt(java.time.LocalDateTime.now());
+		// 🔴 ၃။ အခြား Data များ ပါလာမှသာ (null မဟုတ်မှသာ) အစားထိုးမည်
+		if (request.getBranchName() != null) {
+			branch.setBranchName(request.getBranchName());
+		}
+		if (request.getCity() != null) {
+			branch.setCity(request.getCity());
+		}
+		if (request.getAddress() != null) {
+			branch.setAddress(request.getAddress());
+		}
+		if (request.getPhone() != null) {
+			branch.setPhone(request.getPhone());
+		}
 
-        MerchantBranch updatedBranch = branchRepository.save(branch);
-        return mapToResponseDto(updatedBranch);
-    }
+		branch.setUpdatedAt(java.time.LocalDateTime.now());
+
+		MerchantBranch updatedBranch = branchRepository.save(branch);
+
+		notificationService.sendNotificationToCurrentStaff("Branch Updated", "Details for branch \""
+				+ updatedBranch.getBranchName() + "\" (Code: " + updatedBranch.getBranchCode() + ") have been updated.",
+				"BRANCH");
+		return mapToResponseDto(updatedBranch);
+	}
 
 	@Override
 	@Transactional
@@ -131,14 +147,19 @@ public class BranchServiceImpl implements BranchService {
 		MerchantBranch branch = branchRepository.findById(branchId)
 				.orElseThrow(() -> new IllegalArgumentException("Branch not found with ID: " + branchId));
 
-		if ("ACTIVE".equals(branch.getStatus())) {
+		if (MerchantBranchStatus.ACTIVE.equals(branch.getStatus())) {
 			branch.setStatus(MerchantBranchStatus.INACTIVE);
 		} else {
 			branch.setStatus(MerchantBranchStatus.ACTIVE);
 		}
 
 		branch.setUpdatedAt(LocalDateTime.now());
-		branchRepository.save(branch);
+		MerchantBranch savedBranch = branchRepository.save(branch);
+
+		// Trigger notification on status toggle
+		notificationService.sendNotificationToCurrentStaff("Branch Status Changed",
+				"Branch \"" + savedBranch.getBranchName() + "\" status was changed to " + savedBranch.getStatus() + ".",
+				"BRANCH");
 	}
 
 	private BranchResponseDto mapToResponseDto(MerchantBranch branch) {

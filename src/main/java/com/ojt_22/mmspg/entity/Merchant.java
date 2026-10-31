@@ -55,6 +55,9 @@ public class Merchant {
 
 	@Column(length = 150, unique = true)
 	private String email;
+	
+	@Column(name = "profile_image_url", length = 500)
+    private String profileImageUrl;
 
 	@Column(length = 30)
 	private String phone;
