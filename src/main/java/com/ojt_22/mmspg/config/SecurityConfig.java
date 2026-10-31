@@ -1,11 +1,7 @@
 package com.ojt_22.mmspg.config;
 
 import java.util.Arrays;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import org.springframework.security.config.Customizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -42,7 +38,8 @@ public class SecurityConfig {
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOrigins(Arrays.asList("http://127.0.0.1:5173", "http://localhost:5173"));
+		configuration.setAllowedOrigins(
+				Arrays.asList("http://127.0.0.1:5173", "http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5174"));
 		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
 		configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept",
 				"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", "X-Client-ID",
@@ -59,18 +56,10 @@ public class SecurityConfig {
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
 		http.cors(Customizer.withDefaults())
-		        .csrf(AbstractHttpConfigurer::disable)
-				.authorizeHttpRequests(authorize -> authorize.requestMatchers("/")
-						.permitAll() // remove it after test
-						.requestMatchers("/api/v1/admin/staff/**").permitAll()
-						.requestMatchers("/api/v1/admin/terminals/**").permitAll()
-						.requestMatchers("/api/v1/admin/mcc/**").permitAll()
-						.requestMatchers("/api/v1/admin/branches/**").permitAll()
-						.requestMatchers("/api/v1/admin/merchants/**").permitAll()
-						.requestMatchers("/api/v1/merchant-portal/auth/**")
+				.csrf(AbstractHttpConfigurer::disable)
+				.authorizeHttpRequests(authorize -> authorize.requestMatchers("/api/v1/merchant-portal/auth/**")
 						.permitAll()
-						.requestMatchers("/api/v1/login", 
-								"/api/v1/merchant-portal/auth/login")
+						.requestMatchers("/api/v1/login", "/api/v1/merchant-portal/auth/login")
 						.permitAll()
 						.requestMatchers("/error")
 						.permitAll()
@@ -86,6 +75,9 @@ public class SecurityConfig {
 						// Payment endpoints (Merchant API key or portal users)
 						.requestMatchers("/api/v1/payments/**")
 						.hasAnyRole("API_CLIENT", "ADMIN", "STAFF", "MERCHANT")
+						// Admin endpoints (Only ADMIN, SUPPORT, AUDITOR)
+						.requestMatchers("/api/v1/admin/**")
+						.hasAnyRole("ADMIN", "SUPPORT", "AUDITOR")
 						.anyRequest()
 						.authenticated())
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
