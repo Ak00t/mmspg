@@ -1,6 +1,7 @@
 package com.ojt_22.mmspg.controller.admin;
 
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -95,7 +96,25 @@ public class AdminAuthController {
     // ========================================================
     @PostMapping("/logout")
     @Operation(summary = "Logout User", description = "Logs out the current user.")
-    public ResponseEntity<?> logout() {
+    public ResponseEntity<?> logout(Authentication authentication) {
+        if (authentication != null && authentication.isAuthenticated()) {
+            try {
+                String principalName = authentication.getName();
+                UUID staffId;
+                try {
+                    staffId = UUID.fromString(principalName);
+                } catch (IllegalArgumentException e) {
+                    staffId = staffUserRepository.findByEmail(principalName)
+                            .map(com.ojt_22.mmspg.entity.StaffUser::getId)
+                            .orElse(null);
+                }
+                if (staffId != null) {
+                    staffLoginActivityService.recordLogoutActivity(staffId);
+                }
+            } catch (Exception ignored) {
+                // Do not block logout even if activity recording fails
+            }
+        }
         return ResponseEntity.ok(Map.of("message", "Logged out successfully. Please clear your token in client."));
     }
-}
+}

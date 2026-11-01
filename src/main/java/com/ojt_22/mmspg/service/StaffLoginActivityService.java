@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,40 +29,51 @@ public class StaffLoginActivityService {
         String device = parseDevice(userAgent);
         String browser = parseBrowser(userAgent);
         String location = resolveLocation(ipAddress);
-        String finalStatus = status != null ? status : "SUCCESS";
+        String finalStatus = status != null ? status : "ACTIVE";
 
-        java.util.List<StaffLoginActivity> existingActivities = loginActivityRepository
-                .findByStaffIdAndDeviceAndBrowser(staffId, device, browser);
-
-        StaffLoginActivity activity;
-        if (!existingActivities.isEmpty()) {
-            // ရှိပြီးသားထဲမှ ပထမဆုံး එකကို ယူ၍ အချိန် Update လုပ်ခြင်း
-            activity = existingActivities.get(0);
-            activity.setLoginTime(LocalDateTime.now());
-            activity.setIpAddress(ipAddress);
-            activity.setStatus(finalStatus);
-            
-            // အကယ်၍ အခြားထပ်နေသည်များ ရှိပါက ရှင်းလင်းလိုလျှင် ဖျက်ပစ်နိုင်သည်
-        } else {
-            // မရှိသေးမှသာ အသစ်ဆောက်ခြင်း
-            activity = StaffLoginActivity.builder()
-                    .staffId(staffId)
-                    .ipAddress(ipAddress)
-                    .device(device)
-                    .browser(browser)
-                    .location(location)
-                    .status(finalStatus)
-                    .loginTime(LocalDateTime.now())
-                    .build();
+        // Close ALL previous ACTIVE sessions before creating a new one
+        // This ensures only ONE active session exists per user at any time
+        List<StaffLoginActivity> oldActiveSessions =
+                loginActivityRepository.findByStaffIdAndStatus(staffId, "ACTIVE");
+        if (!oldActiveSessions.isEmpty()) {
+            oldActiveSessions.forEach(s -> {
+                s.setStatus("LOGGED_OUT");
+                s.setLogoutTime(LocalDateTime.now());
+            });
+            loginActivityRepository.saveAll(oldActiveSessions);
         }
+
+        // Create exactly ONE new ACTIVE session for this login
+        StaffLoginActivity activity = StaffLoginActivity.builder()
+                .staffId(staffId)
+                .ipAddress(ipAddress)
+                .device(device)
+                .browser(browser)
+                .location(location)
+                .status(finalStatus)
+                .loginTime(LocalDateTime.now())
+                .build();
 
         return loginActivityRepository.save(activity);
     }
 
+    @Transactional
+    public void recordLogoutActivity(UUID staffId) {
+        // Find the most recent ACTIVE session for this user and mark it as logged out
+        loginActivityRepository
+                .findFirstByStaffIdAndStatusOrderByLoginTimeDesc(staffId, "ACTIVE")
+                .ifPresent(session -> {
+                    session.setStatus("LOGGED_OUT");
+                    session.setLogoutTime(LocalDateTime.now());
+                    loginActivityRepository.save(session);
+                });
+    }
+
+
     @Transactional(readOnly = true)
     public List<StaffLoginActivityResponseDto> getRecentActivities(UUID staffId) {
-        return loginActivityRepository.findTop4ByStaffIdOrderByLoginTimeDesc(staffId)
-                .stream()
+        // Return only the single most recent session (current login)
+        return loginActivityRepository.findFirstByStaffIdOrderByLoginTimeDesc(staffId)
                 .map(activity -> StaffLoginActivityResponseDto.builder()
                         .id(activity.getId())
                         .timestamp(activity.getLoginTime() != null ? activity.getLoginTime().format(FORMATTER) : "")
@@ -73,7 +83,8 @@ public class StaffLoginActivityService {
                         .location(activity.getLocation())
                         .status(activity.getStatus())
                         .build())
-                .collect(Collectors.toList());
+                .map(List::of)
+                .orElse(List.of());
     }
 
     private String extractClientIp(HttpServletRequest request) {

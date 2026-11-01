@@ -157,7 +157,7 @@ public class AdminStaffController {
     
     
 
-    @PutMapping("/profile/password")
+    @PostMapping("/change-password")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Change Staff Password", description = "Updates password for currently logged-in staff user.")
     public ResponseEntity<?> changeStaffPassword(

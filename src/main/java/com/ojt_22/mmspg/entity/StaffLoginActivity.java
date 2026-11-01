@@ -49,4 +49,7 @@ public class StaffLoginActivity {
 
     @Column(name = "login_time", nullable = false)
     private LocalDateTime loginTime;
+
+    @Column(name = "logout_time")
+    private LocalDateTime logoutTime;
 }
