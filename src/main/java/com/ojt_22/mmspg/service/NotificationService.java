@@ -67,4 +67,14 @@ public interface NotificationService {
 	 * Marks all unread notifications as read for the specified staff ID.
 	 */
 	void markAllAsReadForStaff(UUID staffId);
+
+	/**
+	 * Deletes a notification by its UUID.
+	 */
+	void deleteNotification(UUID id);
+
+	/**
+	 * Deletes all notifications for the specified staff member.
+	 */
+	void clearAllNotificationsForCurrentStaff(String userIdentifier);
 }
