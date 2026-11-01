@@ -71,24 +71,36 @@ public class NotificationServiceImpl implements NotificationService {
 	@Override
 	@Transactional
 	public void sendNotificationToAllStaff(String title, String message, String type) {
+		// ၁။ လုပ်ဆောင်ချက်ကို ပြုလုပ်ခဲ့သော admin ၏ ID ကို ယူရန်
+		UUID currentStaffId = getCurrentStaffId();
+
 		List<StaffUser> activeStaff = staffUserRepository.findAll().stream()
 				.filter(staff -> staff.getStatus() == StaffUserStatus.ACTIVE)
 				.toList();
 
 		for (StaffUser staff : activeStaff) {
-			sendNotification(staff.getId(), title, message, type);
+			// ၂။ လုပ်ဆောင်ခဲ့သောသူ မဟုတ်မှသာ (ID မတူမှသာ) Notification ပို့ရန်
+			if (currentStaffId == null || !staff.getId().equals(currentStaffId)) {
+				sendNotification(staff.getId(), title, message, type);
+			}
 		}
 	}
 
 	@Override
 	@Transactional
 	public void sendNotificationToRole(StaffUserRole role, String title, String message, String type) {
+		// ၁။ လုပ်ဆောင်ချက်ကို ပြုလုပ်ခဲ့သော admin ၏ ID ကို ယူရန်
+		UUID currentStaffId = getCurrentStaffId();
+
 		List<StaffUser> targetStaff = staffUserRepository.findAll().stream()
 				.filter(staff -> staff.getStatus() == StaffUserStatus.ACTIVE && staff.getRole() == role)
 				.toList();
 
 		for (StaffUser staff : targetStaff) {
-			sendNotification(staff.getId(), title, message, type);
+			// ၂။ လုပ်ဆောင်ခဲ့သောသူ မဟုတ်မှသာ (ID မတူမှသာ) Notification ပို့ရန်
+			if (currentStaffId == null || !staff.getId().equals(currentStaffId)) {
+				sendNotification(staff.getId(), title, message, type);
+			}
 		}
 	}
 
@@ -145,6 +157,26 @@ public class NotificationServiceImpl implements NotificationService {
 			notification.setIsRead(true);
 		}
 		notificationRepository.saveAll(unreadList);
+	}
+
+	@Override
+	@Transactional
+	public void deleteNotification(UUID id) {
+		if (notificationRepository.existsById(id)) {
+			notificationRepository.deleteById(id);
+			log.info("Deleted notification with id: {}", id);
+		}
+	}
+
+	@Override
+	@Transactional
+	public void clearAllNotificationsForCurrentStaff(String userIdentifier) {
+		UUID staffId = resolveStaffId(userIdentifier);
+		List<Notification> all = notificationRepository.findTop20ByStaffIdOrderByCreatedAtDesc(staffId);
+		if (!all.isEmpty()) {
+			notificationRepository.deleteAll(all);
+			log.info("Cleared {} notifications for staff: {}", all.size(), staffId);
+		}
 	}
 
 	private UUID resolveStaffId(String userIdentifier) {

@@ -1,5 +1,6 @@
 package com.ojt_22.mmspg.controller.admin;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
@@ -9,26 +10,27 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.dto.MerchantPendingDto;
 import com.ojt_22.mmspg.dto.MerchantProfileResponseDto;
 import com.ojt_22.mmspg.dto.MerchantRegistrationRequest;
 import com.ojt_22.mmspg.entity.Merchant;
-import com.ojt_22.mmspg.enums.MerchantStatus;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.service.MerchantService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/admin/merchants")
 @RequiredArgsConstructor
@@ -44,72 +46,33 @@ public class AdminMerchantController {
         return ResponseEntity.ok(merchants);
     }
     
-    
     @PostMapping("/register")
+    @Auditable(menuName = "Merchant Management", action = "REGISTER", targetType = "MERCHANT", targetId = "#result?.body?.get('merchantId')")
     // 🔴 ဤနေရာကို ပြင်ဆင်လိုက်ပါသည် (ADMIN သို့မဟုတ် STAFF နှစ်ခုလုံးကို ခွင့်ပြုပါမည်)
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')") 
     public ResponseEntity<?> registerMerchant(@Valid @RequestBody MerchantRegistrationRequest request) {
         try {
             Merchant savedMerchant = merchantService.registerMerchant(request);
             
-            return ResponseEntity.status(HttpStatus.CREATED).body(
-                    Map.of(
-                            "message", "Merchant registered successfully",
-                            "merchantId", savedMerchant.getId(),
-                            "merchantCode", savedMerchant.getMerchantCode(),
-                            "status", savedMerchant.getStatus()
-                    )
-            );
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Merchant registered successfully");
+            response.put("merchantId", savedMerchant.getId() != null ? savedMerchant.getId().toString() : "");
+            response.put("merchantCode", savedMerchant.getMerchantCode());
+            response.put("status", savedMerchant.getStatus() != null ? savedMerchant.getStatus().name() : "PENDING");
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IllegalArgumentException e) {
+            log.warn("Merchant registration validation failure: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(
                     Map.of("error", e.getMessage())
             );
+        } catch (Exception e) {
+            log.error("Merchant registration server error: ", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
+                    Map.of("error", e.getMessage() != null ? e.getMessage() : "Failed to register merchant")
+            );
         }
     }
-    
-    
-// // ၁။ Edit Merchant Details အတွက်
-//    @PutMapping("/{id}")
-//    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
-//    public ResponseEntity<?> updateMerchantDetails(
-//            @PathVariable UUID id, 
-//            @RequestBody MerchantPendingDto updateDto) {
-//            
-//        try {
-//            String businessName = updateDto.getBusinessName();
-//            String merchantCode = updateDto.getMerchantCode();
-//            
-//            // 🔴 Repository အစား Service ကို လှမ်းခေါ်လိုက်ပါသည် (Notification အလုပ်လုပ်သွားပါမည်)
-//            merchantService.updateMerchant(id, businessName, merchantCode);
-//            
-//            return ResponseEntity.ok(Map.of("message", "Merchant updated successfully"));
-//        } catch (IllegalArgumentException e) {
-//            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-//        }
-//    }
-//    
-//    // ၂။ Suspend / Reactivate Status အတွက်
-//    @PutMapping("/{id}/status")
-//    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
-//    public ResponseEntity<?> updateMerchantStatus(
-//            @PathVariable UUID id, 
-//            @RequestParam String status,
-//            @RequestBody(required = false) Map<String, String> requestBody) { // Frontend မှ reason ပါလာမည်
-//            
-//        try {
-//            // Frontend က ပို့လိုက်တဲ့ Reason ကို ယူမည် (မပါရင် Default စာသားထည့်မည်)
-//            String reason = requestBody != null && requestBody.containsKey("reason") 
-//                            ? requestBody.get("reason") 
-//                            : "No reason provided";
-//
-//            // 🔴 Repository အစား Service ကို လှမ်းခေါ်လိုက်ပါသည် (Notification အလုပ်လုပ်သွားပါမည်)
-//            merchantService.updateMerchantStatus(id, status, reason);
-//            
-//            return ResponseEntity.ok(Map.of("message", "Merchant status updated successfully"));
-//        } catch (IllegalArgumentException | IllegalStateException e) {
-//            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-//        }
-//    }
 
     @GetMapping("/{id}/profile")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT', 'AUDITOR')")

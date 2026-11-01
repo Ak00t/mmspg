@@ -36,8 +36,7 @@ public class AdminMccController {
     private final MccService mccService;
 
     @GetMapping
-    // 🔴 ဤနေရာကို ADMIN သို့မဟုတ် STAFF နှစ်ခုလုံး ဝင်ခွင့်ရအောင် ပြင်ဆင်ထားပါသည်
-    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT', 'AUDITOR')")
     @Operation(summary = "List all MCC codes", description = "Retrieves a list of all MCC codes and their descriptions.")
     public ResponseEntity<List<MccCodeResponseDto>> getAllMccCodes() {
         return ResponseEntity.ok(mccService.getAllMccCodes());

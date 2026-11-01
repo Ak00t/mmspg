@@ -105,8 +105,6 @@ Thumbs.db
 /.vite
 /.next
 /.turbo
-<<<<<<< Updated upstream
-=======
 
 # Maven build output
 target/
@@ -149,8 +147,8 @@ HELP.md
 *.swo
 *~
 
-
+uploads/*
 
 
 /bin/
->>>>>>> Stashed changes
+

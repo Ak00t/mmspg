@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.dto.BranchRequestDto;
 import com.ojt_22.mmspg.dto.BranchResponseDto;
 import com.ojt_22.mmspg.service.BranchService;
@@ -37,6 +38,7 @@ public class AdminBranchController {
 
     // 🔴 ၁။ အသစ်ဖန်တီးခြင်း (AUDITOR မပါပါ)
     @PostMapping
+    @Auditable(menuName = "Branch Management", action = "CREATE", targetType = "MERCHANT_BRANCH", targetId = "#result?.body?.branchId")
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
     @Operation(summary = "Create Branch", description = "Creates a new branch for a specific merchant.")
     public ResponseEntity<?> createBranch(@Valid @RequestBody BranchRequestDto request) {
@@ -60,6 +62,7 @@ public class AdminBranchController {
 
     // 🔴 ၂။ ပြင်ဆင်ခြင်း (AUDITOR မပါပါ၊ @Valid ကို ဖြုတ်လိုက်ပါပြီ)
     @PutMapping("/{id}")
+    @Auditable(menuName = "Branch Management", action = "UPDATE", targetType = "MERCHANT_BRANCH", targetId = "#id")
     @Valid @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
     @Operation(summary = "Update Branch", description = "Updates an existing branch.")
     public ResponseEntity<?> updateBranch(

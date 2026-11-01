@@ -19,6 +19,8 @@ import com.ojt_22.mmspg.repository.MerchantLedgerRepository;
 
 import lombok.RequiredArgsConstructor;
 
+import com.ojt_22.mmspg.security.AuthenticatedMerchantService;
+
 @RestController
 @RequestMapping("/api/v1/merchant-ledgers")
 @RequiredArgsConstructor
@@ -26,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 public class MerchantLedgerApiController {
 
     private final MerchantLedgerRepository ledgerRepository;
+    private final AuthenticatedMerchantService authenticatedMerchantService;
 
     /**
      * PENDING သို့မဟုတ် SETTLED balance_type အလိုက် Ledger စာရင်းများ ရှာယူရန်
@@ -33,7 +36,14 @@ public class MerchantLedgerApiController {
      */
     @GetMapping("/by-balance-type")
     public ResponseEntity<List<MerchantLedgerEntry>> getByBalanceType(@RequestParam String balanceType) {
-        return ResponseEntity.ok(ledgerRepository.findByBalanceType(balanceType));
+        UUID merchantId = authenticatedMerchantService.resolveMerchantId();
+        com.ojt_22.mmspg.enums.MerchantLedgerEntryBalanceType type;
+        try {
+            type = com.ojt_22.mmspg.enums.MerchantLedgerEntryBalanceType.valueOf(balanceType.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            type = com.ojt_22.mmspg.enums.MerchantLedgerEntryBalanceType.PENDING;
+        }
+        return ResponseEntity.ok(ledgerRepository.findByMerchantIdAndBalanceType(merchantId, type));
     }
 
     /**
