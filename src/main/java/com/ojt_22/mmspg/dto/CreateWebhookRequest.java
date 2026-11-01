@@ -16,7 +16,6 @@ import lombok.Setter;
 @Setter
 public class CreateWebhookRequest {
 
-    @NotNull(message = "Merchant ID is required.")
     private UUID merchantId;
 
     @NotBlank(message = "Callback URL must not be blank.")

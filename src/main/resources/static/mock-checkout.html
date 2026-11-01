@@ -388,7 +388,7 @@
                     }
                     const separator = formattedUrl.includes('?') ? '&' : '?';
                     const redirectUrl = `${formattedUrl}${separator}orderId=${encodeURIComponent(currentOrderId || '')}&transactionRef=${encodeURIComponent(data.transactionReference)}&status=SUCCESS`;
-                    let secondsLeft = 3;
+                    let secondsLeft = 5;
                     document.getElementById('redirectSection').innerHTML = `
                         <div style="margin-bottom: 12px; font-size: 13px; color: #0284c7; font-weight: 500;">
                             Redirecting to merchant store in <span id="countdown">${secondsLeft}</span> seconds...

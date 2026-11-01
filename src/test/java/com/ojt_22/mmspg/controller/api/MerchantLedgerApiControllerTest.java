@@ -59,4 +59,16 @@ public class MerchantLedgerApiControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string("Ledger balance type updated successfully to SETTLED"));
     }
+    
+    @Test
+    public void testUpdateBalanceType_NotFound() throws Exception {
+        UUID ledgerId = UUID.randomUUID();
+        when(ledgerRepository.updateBalanceType(eq(ledgerId), eq("SETTLED")))
+                .thenReturn(0); // ID မရှိသောကြောင့် 0 rows updated ဖြစ်သည့် အခြေအနေ
+
+        mockMvc.perform(put("/api/v1/merchant-ledgers/{ledgerId}/balance-type", ledgerId)
+                .param("status", "SETTLED"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("Ledger entry not found with ID: " + ledgerId));
+    }
 }

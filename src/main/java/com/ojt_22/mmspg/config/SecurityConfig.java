@@ -62,6 +62,7 @@ public class SecurityConfig {
 		        .csrf(AbstractHttpConfigurer::disable)
 				.authorizeHttpRequests(authorize -> authorize.requestMatchers("/")
 						.permitAll() // remove it after test
+						.requestMatchers("/uploads/**").permitAll()
 						.requestMatchers("/api/v1/admin/staff/**").permitAll()
 						.requestMatchers("/api/v1/admin/terminals/**").permitAll()
 						.requestMatchers("/api/v1/admin/mcc/**").permitAll()

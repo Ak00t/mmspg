@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.dto.MerchantLedgerResponse;
 import com.ojt_22.mmspg.service.MerchantLedgerService;
 
@@ -26,6 +27,7 @@ public class MerchantLedgerController {
     
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{transactionId}")
+    @Auditable(menuName = "Merchant Ledger", action = "CREATE_ENTRY", targetType = "PAYMENT_TRANSACTION", targetId = "#transactionId")
     public ResponseEntity<MerchantLedgerResponse> createLedger(
             @PathVariable UUID transactionId) {
 

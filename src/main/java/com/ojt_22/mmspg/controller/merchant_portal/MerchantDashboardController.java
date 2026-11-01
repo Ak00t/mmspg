@@ -1,6 +1,7 @@
 package com.ojt_22.mmspg.controller.merchant_portal;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -11,13 +12,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ojt_22.mmspg.dto.MerchantDashboardSummaryResponse;
+import com.ojt_22.mmspg.dto.MerchantProfileResponseDto;
+import com.ojt_22.mmspg.dto.PaymentTransactionSummaryDto;
 import com.ojt_22.mmspg.service.DashboardService;
 
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-
 @RequestMapping("/api/v1/merchant/dashboard")
 public class MerchantDashboardController {
 
@@ -40,4 +42,16 @@ public class MerchantDashboardController {
 		return ResponseEntity.ok(response);
 	}
 
+	@GetMapping("/profile")
+	@PreAuthorize("hasRole('MERCHANT')")
+	public ResponseEntity<MerchantProfileResponseDto> getProfile() {
+		return ResponseEntity.ok(dashboardService.getMerchantProfile());
+	}
+
+	@GetMapping("/recent-transactions")
+	@PreAuthorize("hasRole('MERCHANT')")
+	public ResponseEntity<List<PaymentTransactionSummaryDto>> getRecentTransactions(
+			@RequestParam(defaultValue = "10") int limit) {
+		return ResponseEntity.ok(dashboardService.getRecentTransactions(limit));
+	}
 }

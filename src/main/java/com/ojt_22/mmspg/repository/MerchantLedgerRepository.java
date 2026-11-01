@@ -14,6 +14,9 @@ public interface MerchantLedgerRepository extends JpaRepository<MerchantLedgerEn
 	
 	List<MerchantLedgerEntry> findByBalanceType(String balanceType);
 
+	@Query("SELECT m FROM MerchantLedgerEntry m WHERE m.merchant.id = :merchantId AND m.balanceType = :balanceType")
+	List<MerchantLedgerEntry> findByMerchantIdAndBalanceType(@Param("merchantId") UUID merchantId, @Param("balanceType") com.ojt_22.mmspg.enums.MerchantLedgerEntryBalanceType balanceType);
+
     // 2. Specific Ledger ID အလိုက် balance_type ကို Update လုပ်ရန်
     @Modifying
     @Query("UPDATE MerchantLedgerEntry m SET m.balanceType = :status WHERE m.id = :ledgerId")

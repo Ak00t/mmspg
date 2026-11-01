@@ -17,11 +17,9 @@ import com.ojt_22.mmspg.dto.CreateWebhookRequest;
 import com.ojt_22.mmspg.dto.UpdateWebhookRequest;
 import com.ojt_22.mmspg.dto.WebhookConfigResponse;
 import com.ojt_22.mmspg.entity.Merchant;
-import com.ojt_22.mmspg.entity.StaffUser;
 import com.ojt_22.mmspg.entity.WebhookConfig;
 import com.ojt_22.mmspg.enums.WebhookConfigStatus;
 import com.ojt_22.mmspg.repository.MerchantRepository;
-import com.ojt_22.mmspg.repository.StaffUserRepository;
 import com.ojt_22.mmspg.repository.WebhookConfigRepository;
 import com.ojt_22.mmspg.service.WebhookConfigService;
 import com.ojt_22.mmspg.security.AuthenticatedMerchantService;
@@ -37,7 +35,6 @@ public class WebhookConfigServiceImpl implements WebhookConfigService {
 
     private final WebhookConfigRepository webhookConfigRepository;
     private final MerchantRepository merchantRepository;
-    private final StaffUserRepository staffUserRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticatedMerchantService authenticatedMerchantService;
 
@@ -53,17 +50,10 @@ public class WebhookConfigServiceImpl implements WebhookConfigService {
         Merchant merchant = merchantRepository.findById(authenticatedMerchantId)
                 .orElseThrow(() -> new IllegalArgumentException("Merchant not found: " + request.getMerchantId()));
 
-        // created_by အတွက် Staff User ကို ရှာဖွေရယူခြင်း[cite: 12]
-        UUID defaultStaffId = UUID.fromString("11111111-2222-3333-4444-555555555555");
-        StaffUser createdByStaff = staffUserRepository.findById(defaultStaffId)
-                .orElseGet(() -> staffUserRepository.findAll().stream().findFirst()
-                        .orElseThrow(() -> new IllegalStateException("No staff user found to assign created_by")));
-
         String rawSecretKey = CredentialUtils.generateWebhookSecret();
 
         WebhookConfig config = new WebhookConfig();
         config.setMerchant(merchant);
-        config.setCreatedBy(createdByStaff);
         config.setCallbackUrl(request.getCallbackUrl());
         config.setReturnUrl(request.getReturnUrl());
         config.setSecretKeyHash(passwordEncoder.encode(rawSecretKey));
@@ -165,5 +155,47 @@ public class WebhookConfigServiceImpl implements WebhookConfigService {
         } catch (Exception e) {
             return "Test Webhook failed to connect: " + e.getMessage();
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public WebhookConfigResponse getMerchantWebhook() {
+        UUID authenticatedMerchantId = authenticatedMerchantService.resolveMerchantId();
+        return webhookConfigRepository.findFirstByMerchantIdOrderByCreatedAtDesc(authenticatedMerchantId)
+                .map(this::mapToResponse)
+                .orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public WebhookConfigResponse regenerateWebhookSecret(UUID webhookId) {
+        WebhookConfig config = webhookConfigRepository.findById(webhookId)
+                .orElseThrow(() -> new IllegalArgumentException("Webhook config not found: " + webhookId));
+        authenticatedMerchantService.assertMerchantAccess(config.getMerchant().getId());
+
+        String newRawSecret = CredentialUtils.generateWebhookSecret();
+        config.setSecretKeyHash(passwordEncoder.encode(newRawSecret));
+        WebhookConfig saved = webhookConfigRepository.save(config);
+
+        WebhookConfigResponse response = mapToResponse(saved);
+        response.setRawSecretKey(newRawSecret);
+        return response;
+    }
+
+    private WebhookConfigResponse mapToResponse(WebhookConfig config) {
+        return WebhookConfigResponse.builder()
+                .webhookId(config.getId())
+                .merchantId(config.getMerchant().getId())
+                .callbackUrl(config.getCallbackUrl())
+                .returnUrl(config.getReturnUrl())
+                .rawSecretKey(null)
+                .eventPaymentCompleted(config.getEventPaymentCompleted())
+                .eventPaymentFailed(config.getEventPaymentFailed())
+                .maxRetry(config.getMaxRetry())
+                .description(config.getDescription())
+                .status(config.getStatus() != null ? config.getStatus().name() : null)
+                .createdAt(config.getCreatedAt())
+                .updatedAt(config.getUpdatedAt())
+                .build();
     }
 }
