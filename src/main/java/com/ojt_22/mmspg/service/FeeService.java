@@ -1,6 +1,7 @@
 package com.ojt_22.mmspg.service;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.UUID;
 
 import com.ojt_22.mmspg.dto.FeeCalculationResponse;
@@ -10,6 +11,8 @@ import com.ojt_22.mmspg.entity.MerchantFee;
 
 public interface FeeService {
 
+	public List<FeeConfigResponse> getAllFees();
+	
 	public FeeConfigResponse createFeeConfig(FeeConfigRequest request);
 
 	public FeeConfigResponse updateFeeConfig(UUID feeId, FeeConfigRequest request);
