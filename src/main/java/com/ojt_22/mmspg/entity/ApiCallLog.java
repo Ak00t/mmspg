@@ -5,7 +5,6 @@ import java.util.UUID;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 
@@ -74,15 +73,4 @@ public class ApiCallLog {
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
 
-	@UpdateTimestamp
-	@Column(name = "updated_at")
-	private LocalDateTime updatedAt;
-
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by", updatable = false)
-	private StaffUser createdBy;
-
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "updated_by")
-	private StaffUser updatedBy;
 }
