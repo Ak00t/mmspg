@@ -22,39 +22,39 @@ import lombok.extern.slf4j.Slf4j;
 public class GlobalExceptionHandler {
 
 	@ExceptionHandler(ResourceNotFoundException.class)
-	public ResponseEntity<String> handleResourceNotFound(ResourceNotFoundException ex) {
+	public ResponseEntity<Map<String, String>> handleResourceNotFound(ResourceNotFoundException ex) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
-				.body(ex.getMessage());
+				.body(Map.of("error", ex.getMessage()));
 	}
 
 	@ExceptionHandler(InvalidTransactionStatusException.class)
-	public ResponseEntity<String> handleInvalidTransactionStatus(InvalidTransactionStatusException ex) {
+	public ResponseEntity<Map<String, String>> handleInvalidTransactionStatus(InvalidTransactionStatusException ex) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-				.body(ex.getMessage());
+				.body(Map.of("error", ex.getMessage()));
 	}
 
 	@ExceptionHandler(SettlementAlreadyExistsException.class)
-	public ResponseEntity<String> handleSettlementAlreadyExists(SettlementAlreadyExistsException ex) {
+	public ResponseEntity<Map<String, String>> handleSettlementAlreadyExists(SettlementAlreadyExistsException ex) {
 		return ResponseEntity.status(HttpStatus.CONFLICT)
-				.body(ex.getMessage());
+				.body(Map.of("error", ex.getMessage()));
 	}
 
 	@ExceptionHandler(InvalidAmountException.class)
-	public ResponseEntity<String> handleInvalidAmount(InvalidAmountException ex) {
+	public ResponseEntity<Map<String, String>> handleInvalidAmount(InvalidAmountException ex) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-				.body(ex.getMessage());
+				.body(Map.of("error", ex.getMessage()));
 	}
 
 	@ExceptionHandler(InvalidFeeConfigurationException.class)
-	public ResponseEntity<String> handleInvalidFeeConfiguration(InvalidFeeConfigurationException ex) {
+	public ResponseEntity<Map<String, String>> handleInvalidFeeConfiguration(InvalidFeeConfigurationException ex) {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-				.body(ex.getMessage());
+				.body(Map.of("error", ex.getMessage()));
 	}
 
 	@ExceptionHandler(MerchantNotFoundException.class)
-	public ResponseEntity<String> handelMerchantNotFound(MerchantNotFoundException ex) {
+	public ResponseEntity<Map<String, String>> handleMerchantNotFound(MerchantNotFoundException ex) {
 		return ResponseEntity.status(HttpStatus.NOT_FOUND)
-				.body(ex.getMessage());
+				.body(Map.of("error", ex.getMessage()));
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)

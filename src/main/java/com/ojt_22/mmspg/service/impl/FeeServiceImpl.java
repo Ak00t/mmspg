@@ -2,7 +2,9 @@ package com.ojt_22.mmspg.service.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -42,122 +44,86 @@ public class FeeServiceImpl implements FeeService {
     }
 
     private void validateFeeConfig(FeeConfigRequest request) {
-
         if (request.getFeeType() == null) {
-            throw new InvalidFeeConfigurationException(
-                    "Fee type is required");
+            throw new InvalidFeeConfigurationException("Fee type is required");
         }
-
-        if (request.getFeeType() == FeeType.PERCENTAGE
-                && request.getPercentageRate() == null) {
-
-            throw new InvalidFeeConfigurationException(
-                    "Percentage rate is required for PERCENTAGE fee type");
+        if (request.getFeeType() == FeeType.PERCENTAGE && request.getPercentageRate() == null) {
+            throw new InvalidFeeConfigurationException("Percentage rate is required for PERCENTAGE fee type");
         }
-
-        if (request.getFeeType() == FeeType.PERCENTAGE
-                && request.getPercentageRate().compareTo(BigDecimal.ZERO) < 0) {
-
-            throw new InvalidFeeConfigurationException(
-                    "Percentage rate cannot be negative");
+        if (request.getFeeType() == FeeType.PERCENTAGE && request.getPercentageRate().compareTo(BigDecimal.ZERO) < 0) {
+            throw new InvalidFeeConfigurationException("Percentage rate cannot be negative");
         }
-
-        if (request.getFeeType() == FeeType.FLAT
-                && request.getFlatFee() == null) {
-
-            throw new InvalidFeeConfigurationException(
-                    "Flat fee is required for FLAT fee type");
+        if (request.getFeeType() == FeeType.FLAT && request.getFlatFee() == null) {
+            throw new InvalidFeeConfigurationException("Flat fee is required for FLAT fee type");
         }
-
-        if (request.getFeeType() == FeeType.FLAT
-                && request.getFlatFee().compareTo(BigDecimal.ZERO) < 0) {
-
-            throw new InvalidFeeConfigurationException(
-                    "Flat fee cannot be negative");
+        if (request.getFeeType() == FeeType.FLAT && request.getFlatFee().compareTo(BigDecimal.ZERO) < 0) {
+            throw new InvalidFeeConfigurationException("Flat fee cannot be negative");
         }
-
-        if (request.getFeeType() == FeeType.MIXED
-                && (request.getPercentageRate() == null
-                || request.getFlatFee() == null)) {
-
-            throw new InvalidFeeConfigurationException(
-                    "Percentage rate and flat fee are required for MIXED fee type");
+        if (request.getFeeType() == FeeType.MIXED && (request.getPercentageRate() == null || request.getFlatFee() == null)) {
+            throw new InvalidFeeConfigurationException("Percentage rate and flat fee are required for MIXED fee type");
         }
-
-        if (request.getFeeType() == FeeType.MIXED
-                && (request.getPercentageRate().compareTo(BigDecimal.ZERO) < 0
-                || request.getFlatFee().compareTo(BigDecimal.ZERO) < 0)) {
-
-            throw new InvalidFeeConfigurationException(
-                    "Percentage rate and flat fee cannot be negative");
+        if (request.getFeeType() == FeeType.MIXED && (request.getPercentageRate().compareTo(BigDecimal.ZERO) < 0 || request.getFlatFee().compareTo(BigDecimal.ZERO) < 0)) {
+            throw new InvalidFeeConfigurationException("Percentage rate and flat fee cannot be negative");
         }
-
         if (request.getMinimumFee() == null) {
-            throw new InvalidFeeConfigurationException(
-                    "Minimum fee is required");
+            throw new InvalidFeeConfigurationException("Minimum fee is required");
         }
-
         if (request.getMinimumFee().compareTo(BigDecimal.ZERO) < 0) {
-            throw new InvalidFeeConfigurationException(
-                    "Minimum fee cannot be negative");
+            throw new InvalidFeeConfigurationException("Minimum fee cannot be negative");
         }
-
         if (request.getMaximumFee() == null) {
-            throw new InvalidFeeConfigurationException(
-                    "Maximum fee is required");
+            throw new InvalidFeeConfigurationException("Maximum fee is required");
         }
-
         if (request.getMaximumFee().compareTo(BigDecimal.ZERO) < 0) {
-            throw new InvalidFeeConfigurationException(
-                    "Maximum fee cannot be negative");
+            throw new InvalidFeeConfigurationException("Maximum fee cannot be negative");
         }
-
-        if (request.getMinimumFee()
-                .compareTo(request.getMaximumFee()) > 0) {
-
-            throw new InvalidFeeConfigurationException(
-                    "Minimum fee cannot be greater than maximum fee");
+        if (request.getMinimumFee().compareTo(request.getMaximumFee()) > 0) {
+            throw new InvalidFeeConfigurationException("Minimum fee cannot be greater than maximum fee");
         }
-
         if (request.getEffectiveFrom() == null) {
-            throw new InvalidFeeConfigurationException(
-                    "Effective from is required");
+            throw new InvalidFeeConfigurationException("Effective from is required");
         }
-
-        if (request.getEffectiveTo() != null
-                && !request.getEffectiveTo()
-                        .isAfter(request.getEffectiveFrom())) {
-
-            throw new InvalidFeeConfigurationException(
-                    "Effective to must be after effective from");
+        if (request.getEffectiveTo() != null && !request.getEffectiveTo().isAfter(request.getEffectiveFrom())) {
+            throw new InvalidFeeConfigurationException("Effective to must be after effective from");
         }
+    }
+
+    @Override
+    public List<FeeConfigResponse> getAllFees() {
+        List<MerchantFee> fees = merchantFeeRepository.findAll();
+        
+        return fees.stream().map(fee -> {
+            FeeConfigResponse response = new FeeConfigResponse();
+            response.setFeeId(fee.getId());
+            response.setMerchantId(fee.getMerchant() != null ? fee.getMerchant().getId() : null);
+            response.setFeeType(fee.getFeeType());
+            response.setPercentageRate(fee.getPercentageRate());
+            response.setFlatFee(fee.getFlatFee());
+            response.setMinimumFee(fee.getMinimumFee());
+            response.setMaximumFee(fee.getMaximumFee());
+            response.setEffectiveFrom(fee.getEffectiveFrom());
+            response.setEffectiveTo(fee.getEffectiveTo());
+            response.setStatus(fee.getStatus());
+            response.setCreatedAt(fee.getCreatedAt());
+            response.setUpdatedAt(fee.getUpdatedAt());
+            return response;
+        }).collect(Collectors.toList());
     }
 
     @Override
     @Transactional
     public FeeConfigResponse createFeeConfig(FeeConfigRequest request) {
-
+        if (request.getMerchantId() == null) {
+            throw new InvalidFeeConfigurationException("Merchant ID is required");
+        }
         validateFeeConfig(request);
-
-        String email = SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getName();
-
-        StaffUser staffUser = staffUserRepository
-                .findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Staff user not found"));
-
-        Merchant merchant = merchantRepository
-                .findById(request.getMerchantId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Merchant not found"));
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        StaffUser staffUser = staffUserRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Staff user not found"));
+        Merchant merchant = merchantRepository.findById(request.getMerchantId())
+                .orElseThrow(() -> new ResourceNotFoundException("Merchant not found"));
 
         MerchantFee fee = new MerchantFee();
-
         fee.setMerchant(merchant);
         fee.setFeeType(request.getFeeType());
         fee.setPercentageRate(request.getPercentageRate());
@@ -166,37 +132,22 @@ public class FeeServiceImpl implements FeeService {
         fee.setMaximumFee(request.getMaximumFee());
         fee.setEffectiveFrom(request.getEffectiveFrom());
         fee.setEffectiveTo(request.getEffectiveTo());
-
         fee.setStatus(MerchantFeeStatus.ACTIVE);
-
         fee.setCreatedBy(staffUser);
 
-        MerchantFee savedFee =
-                merchantFeeRepository.save(fee);
+        MerchantFee savedFee = merchantFeeRepository.save(fee);
 
-        FeeConfigResponse response =
-                new FeeConfigResponse();
-
+        FeeConfigResponse response = new FeeConfigResponse();
         response.setFeeId(savedFee.getId());
-        response.setMerchantId(
-                savedFee.getMerchant().getId());
-
+        response.setMerchantId(savedFee.getMerchant().getId());
         response.setFeeType(savedFee.getFeeType());
-        response.setPercentageRate(
-                savedFee.getPercentageRate());
+        response.setPercentageRate(savedFee.getPercentageRate());
         response.setFlatFee(savedFee.getFlatFee());
-        response.setMinimumFee(
-                savedFee.getMinimumFee());
-        response.setMaximumFee(
-                savedFee.getMaximumFee());
-
-        response.setEffectiveFrom(
-                savedFee.getEffectiveFrom());
-        response.setEffectiveTo(
-                savedFee.getEffectiveTo());
-
+        response.setMinimumFee(savedFee.getMinimumFee());
+        response.setMaximumFee(savedFee.getMaximumFee());
+        response.setEffectiveFrom(savedFee.getEffectiveFrom());
+        response.setEffectiveTo(savedFee.getEffectiveTo());
         response.setStatus(savedFee.getStatus());
-
         response.setCreatedAt(savedFee.getCreatedAt());
         response.setUpdatedAt(savedFee.getUpdatedAt());
 
@@ -205,28 +156,14 @@ public class FeeServiceImpl implements FeeService {
 
     @Override
     @Transactional
-    public FeeConfigResponse updateFeeConfig(
-            UUID feeId,
-            FeeConfigRequest request) {
-
+    public FeeConfigResponse updateFeeConfig(UUID feeId, FeeConfigRequest request) {
         validateFeeConfig(request);
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        StaffUser staffUser = staffUserRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Staff user not found"));
 
-        String email = SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getName();
-
-        StaffUser staffUser = staffUserRepository
-                .findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Staff user not found"));
-
-        MerchantFee fee = merchantFeeRepository
-                .findById(feeId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Fee configuration not found"));
+        MerchantFee fee = merchantFeeRepository.findById(feeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Fee configuration not found"));
 
         fee.setFeeType(request.getFeeType());
         fee.setPercentageRate(request.getPercentageRate());
@@ -235,141 +172,73 @@ public class FeeServiceImpl implements FeeService {
         fee.setMaximumFee(request.getMaximumFee());
         fee.setEffectiveFrom(request.getEffectiveFrom());
         fee.setEffectiveTo(request.getEffectiveTo());
-
         fee.setUpdatedBy(staffUser);
 
-        MerchantFee updatedFee =
-                merchantFeeRepository.save(fee);
+        MerchantFee updatedFee = merchantFeeRepository.save(fee);
 
-        FeeConfigResponse response =
-                new FeeConfigResponse();
-
+        FeeConfigResponse response = new FeeConfigResponse();
         response.setFeeId(updatedFee.getId());
-        response.setMerchantId(
-                updatedFee.getMerchant().getId());
-
+        response.setMerchantId(updatedFee.getMerchant() != null ? updatedFee.getMerchant().getId() : null);
         response.setFeeType(updatedFee.getFeeType());
-        response.setPercentageRate(
-                updatedFee.getPercentageRate());
+        response.setPercentageRate(updatedFee.getPercentageRate());
         response.setFlatFee(updatedFee.getFlatFee());
-        response.setMinimumFee(
-                updatedFee.getMinimumFee());
-        response.setMaximumFee(
-                updatedFee.getMaximumFee());
-
-        response.setEffectiveFrom(
-                updatedFee.getEffectiveFrom());
-        response.setEffectiveTo(
-                updatedFee.getEffectiveTo());
-
+        response.setMinimumFee(updatedFee.getMinimumFee());
+        response.setMaximumFee(updatedFee.getMaximumFee());
+        response.setEffectiveFrom(updatedFee.getEffectiveFrom());
+        response.setEffectiveTo(updatedFee.getEffectiveTo());
         response.setStatus(updatedFee.getStatus());
-
-        response.setCreatedAt(
-                updatedFee.getCreatedAt());
-        response.setUpdatedAt(
-                updatedFee.getUpdatedAt());
+        response.setCreatedAt(updatedFee.getCreatedAt());
+        response.setUpdatedAt(updatedFee.getUpdatedAt());
 
         return response;
     }
 
     @Override
-    public BigDecimal calculateTransactionFee(
-            BigDecimal amount,
-            MerchantFee fee) {
-
-        if (amount == null
-                || amount.compareTo(BigDecimal.ZERO) <= 0) {
-
-            throw new InvalidAmountException(
-                    "Transaction amount must be greater than zero");
+    public BigDecimal calculateTransactionFee(BigDecimal amount, MerchantFee fee) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new InvalidAmountException("Transaction amount must be greater than zero");
         }
-
         BigDecimal calculatedFee = BigDecimal.ZERO;
-
         if (fee.getFeeType() == FeeType.PERCENTAGE) {
-
-            calculatedFee = amount
-                    .multiply(fee.getPercentageRate())
-                    .divide(new BigDecimal("100"));
-
+            calculatedFee = amount.multiply(fee.getPercentageRate()).divide(new BigDecimal("100"));
         } else if (fee.getFeeType() == FeeType.FLAT) {
-
             calculatedFee = fee.getFlatFee();
-
         } else if (fee.getFeeType() == FeeType.MIXED) {
-
-            calculatedFee = amount
-                    .multiply(fee.getPercentageRate())
-                    .divide(new BigDecimal("100"))
-                    .add(fee.getFlatFee());
+            calculatedFee = amount.multiply(fee.getPercentageRate()).divide(new BigDecimal("100")).add(fee.getFlatFee());
         }
-
-        if (fee.getMinimumFee() != null
-                && calculatedFee.compareTo(
-                        fee.getMinimumFee()) < 0) {
-
+        if (fee.getMinimumFee() != null && calculatedFee.compareTo(fee.getMinimumFee()) < 0) {
             calculatedFee = fee.getMinimumFee();
         }
-
-        if (fee.getMaximumFee() != null
-                && calculatedFee.compareTo(
-                        fee.getMaximumFee()) > 0) {
-
+        if (fee.getMaximumFee() != null && calculatedFee.compareTo(fee.getMaximumFee()) > 0) {
             calculatedFee = fee.getMaximumFee();
         }
-
         return calculatedFee;
     }
 
     @Override
-    public BigDecimal calculateNetAmount(
-            BigDecimal amount,
-            BigDecimal feeAmount) {
-
+    public BigDecimal calculateNetAmount(BigDecimal amount, BigDecimal feeAmount) {
         return amount.subtract(feeAmount);
     }
 
     @Override
-    public FeeCalculationResponse calculateFee(
-            UUID feeId,
-            BigDecimal amount) {
-
-        MerchantFee fee = merchantFeeRepository
-                .findById(feeId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Fee configuration not found"));
-
+    public FeeCalculationResponse calculateFee(UUID feeId, BigDecimal amount) {
+        MerchantFee fee = merchantFeeRepository.findById(feeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Fee configuration not found"));
         if (fee.getStatus() != MerchantFeeStatus.ACTIVE) {
-
-            throw new InvalidFeeConfigurationException(
-                    "Fee configuration is not active");
+            throw new InvalidFeeConfigurationException("Fee configuration is not active");
         }
-
         LocalDateTime now = LocalDateTime.now();
-
         if (now.isBefore(fee.getEffectiveFrom())) {
-
-            throw new InvalidFeeConfigurationException(
-                    "Fee configuration is not effective yet");
+            throw new InvalidFeeConfigurationException("Fee configuration is not effective yet");
+        }
+        if (fee.getEffectiveTo() != null && now.isAfter(fee.getEffectiveTo())) {
+            throw new InvalidFeeConfigurationException("Fee configuration has expired");
         }
 
-        if (fee.getEffectiveTo() != null
-                && now.isAfter(fee.getEffectiveTo())) {
+        BigDecimal feeAmount = calculateTransactionFee(amount, fee);
+        BigDecimal netAmount = calculateNetAmount(amount, feeAmount);
 
-            throw new InvalidFeeConfigurationException(
-                    "Fee configuration has expired");
-        }
-
-        BigDecimal feeAmount =
-                calculateTransactionFee(amount, fee);
-
-        BigDecimal netAmount =
-                calculateNetAmount(amount, feeAmount);
-
-        FeeCalculationResponse response =
-                new FeeCalculationResponse();
-
+        FeeCalculationResponse response = new FeeCalculationResponse();
         response.setAmount(amount);
         response.setFeeAmount(feeAmount);
         response.setNetAmount(netAmount);

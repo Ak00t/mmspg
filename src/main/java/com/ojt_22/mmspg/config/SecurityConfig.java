@@ -68,6 +68,7 @@ public class SecurityConfig {
 						.requestMatchers("/api/v1/admin/mcc/**").permitAll()
 						.requestMatchers("/api/v1/admin/branches/**").permitAll()
 						.requestMatchers("/api/v1/admin/merchants/**").permitAll()
+						.requestMatchers("/api/v1/admin/fees/**").permitAll()
 						.requestMatchers("/api/v1/merchant-portal/auth/**")
 						.permitAll()
 						
