@@ -30,6 +30,7 @@ import com.ojt_22.mmspg.repository.WebhookConfigRepository;
 import com.ojt_22.mmspg.repository.WebhookDeliveryRepository;
 import com.ojt_22.mmspg.service.WebhookDeliveryService;
 import com.ojt_22.mmspg.utils.ApiLogUtils;
+import com.ojt_22.mmspg.utils.CredentialUtils;
 
 import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,9 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
 
     @Value("${merchant.ecommerce.base-url:http://localhost:8080}")
     private String ecommerceBaseUrl;
+
+    @Value("${merchant.ecommerce.webhook-secret:whsec_dev_g5_callback_secret_2026}")
+    private String devWebhookSecret;
 
     @Override
     @Transactional
@@ -149,11 +153,14 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
                     .connectTimeout(Duration.ofSeconds(5))
                     .build();
 
+            String signature = CredentialUtils.generateHmacSha256(delivery.getPayload(), devWebhookSecret);
+
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(fullUrl))
                     .header("Content-Type", "application/json")
                     .header("User-Agent", "MMSPG-Webhook-Engine/1.0")
                     .header("X-Event-Type", delivery.getEventType())
+                    .header("X-Signature", signature)
                     .POST(HttpRequest.BodyPublishers.ofString(delivery.getPayload()))
                     .timeout(Duration.ofSeconds(8))
                     .build();
