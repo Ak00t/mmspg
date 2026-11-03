@@ -199,7 +199,7 @@ public class PaymentTransactionServiceImplTest {
         coreResponse.setCoreTransactionRef("CORE-REF-001");
 
         when(transactionRepository.findByPaymentToken(token)).thenReturn(Optional.of(transaction));
-        when(coreBankingClient.executeDebit(any(), any(), any(), any())).thenReturn(coreResponse);
+        when(coreBankingClient.executeDebit(any(), any(), any(), any(), any(), any(), any())).thenReturn(coreResponse);
         when(transactionRepository.save(any(PaymentTransaction.class))).thenAnswer(inv -> inv.getArgument(0));
 
         PaymentAuthorizeResponseDto response = transactionService.authorizeTransaction(requestDto);
@@ -470,7 +470,7 @@ public class PaymentTransactionServiceImplTest {
         coreResponse.setFailureReason("Account locked");
 
         when(transactionRepository.findByPaymentToken(token)).thenReturn(Optional.of(transaction));
-        when(coreBankingClient.executeDebit(any(), any(), any(), any())).thenReturn(coreResponse);
+        when(coreBankingClient.executeDebit(any(), any(), any(), any(), any(), any(), any())).thenReturn(coreResponse);
         when(transactionRepository.save(any(PaymentTransaction.class))).thenAnswer(inv -> inv.getArgument(0));
 
         PaymentAuthorizeResponseDto response = transactionService.authorizeTransaction(requestDto);

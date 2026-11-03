@@ -224,11 +224,24 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 					.build();
 		}
 
-		BigDecimal feeAmount = transaction.getFeeAmount(); // Fee Amount ရယူခြင်း2
+		BigDecimal feeAmount = transaction.getFeeAmount(); // Fee Amount ရယူခြင်း
 
-		CoreBankingResponseDto coreBankingResponse = coreBankingClient.executeDebit(requestDto.getCustomerId(),
-				transaction.getAmount(), feeAmount, // <-- Fee Amount ပါ ထည့်သွင်းပေးလိုက်ပါသည်
-				transaction.getTransactionReference());
+		String sourceAccountNumber = (requestDto.getSourceAccountNumber() != null && !requestDto.getSourceAccountNumber().isBlank())
+				? requestDto.getSourceAccountNumber()
+				: requestDto.getCustomerId();
+
+		String merchantAccountNumber = transaction.getMerchant() != null
+				? transaction.getMerchant().getSettlementAccountNo()
+				: null;
+
+		CoreBankingResponseDto coreBankingResponse = coreBankingClient.executeDebit(
+				sourceAccountNumber,
+				merchantAccountNumber,
+				transaction.getAmount(),
+				feeAmount,
+				transaction.getOrderId(),
+				transaction.getTransactionReference(),
+				"Payment for Order " + transaction.getOrderId());
 
 		// 4. Core Banking မှ Fail ဖြစ်လာပါက Transaction ကို FAILED ပြောင်း၍ သိမ်းခြင်း
 		if (!coreBankingResponse.isSuccess()) {
@@ -322,10 +335,15 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 			throw new RuntimeException("This transaction has already been processed or is invalid");
 		}
 
+		String businessName = transaction.getMerchant() != null ? transaction.getMerchant().getBusinessName() : null;
+		String merchantAccountNo = transaction.getMerchant() != null ? transaction.getMerchant().getSettlementAccountNo() : null;
+
 		return PaymentCheckoutInfoDto.builder()
-				.businessName(transaction.getMerchant()
-						.getBusinessName())
+				.businessName(businessName)
+				.merchantName(businessName)
+				.merchantAccountNumber(merchantAccountNo)
 				.orderId(transaction.getOrderId())
+				.description("Payment for Order " + transaction.getOrderId())
 				.amount(transaction.getAmount())
 				.currency(transaction.getCurrency())
 				.status(transaction.getStatus()

@@ -16,9 +16,15 @@ public class PaymentAuthorizeRequestDto {
     private String paymentToken;
 
     private String customerId;
+
+    private String sourceAccountNumber;
     
     @NotBlank(message = "Status is required")
     private String status;
     
     private String failureReason;
+
+    private String errorCode;
+
+    private String errorMessage;
 }

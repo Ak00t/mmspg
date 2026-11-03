@@ -8,7 +8,10 @@ import lombok.Getter;
 @Builder
 public class PaymentCheckoutInfoDto {
     private String businessName;
+    private String merchantName;
+    private String merchantAccountNumber;
     private String orderId;
+    private String description;
     private BigDecimal amount;
     private String currency;
     private String status;
