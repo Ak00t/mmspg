@@ -24,10 +24,10 @@ import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.service.FeeService;
 
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-// သင်၏ frontend ဘက်မှ လှမ်းခေါ်မည့် လမ်းကြောင်းနှင့် ကိုက်ညီအောင် သေချာစစ်ဆေးပါ (ဥပမာ - /api/v1/admin/fees)
 @RequestMapping("/api/v1/admin/fees") 
 @CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173"})
 @RequiredArgsConstructor
@@ -35,19 +35,17 @@ public class FeeController {
 
 	private final FeeService feeService;
 
-    // 🟢 AdminFeeController မှ ကူးယူပေါင်းထည့်ထားသော အပိုင်း
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "List all Merchant Fee rules")
     public ResponseEntity<List<FeeConfigResponse>> getAllFees() {
-        // အကယ်၍ feeService ထဲတွင် ဤ method မရှိသေးပါက သွားရောက်ရေးသားပေးရန် လိုအပ်ပါမည်
         return ResponseEntity.ok(feeService.getAllFees()); 
     }
 
 	@PostMapping
 	@Auditable(menuName = "Fee Configuration", action = "CREATE", targetType = "FEE_CONFIG", targetId = "#result?.body?.feeId")
     @PreAuthorize("hasRole('ADMIN')")
-	public ResponseEntity<FeeConfigResponse> createFeeConfig(@RequestBody FeeConfigRequest request) {
+	public ResponseEntity<FeeConfigResponse> createFeeConfig(@Valid @RequestBody FeeConfigRequest request) {
 		FeeConfigResponse response = feeService.createFeeConfig(request);
 		return ResponseEntity.status(HttpStatus.CREATED).body(response);
 	}
@@ -56,7 +54,7 @@ public class FeeController {
 	@Auditable(menuName = "Fee Configuration", action = "UPDATE", targetType = "FEE_CONFIG", targetId = "#feeId")
     @PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<FeeConfigResponse> updateFeeConfig(@PathVariable UUID feeId,
-			@RequestBody FeeConfigRequest request) {
+			@Valid @RequestBody FeeConfigRequest request) {
 		FeeConfigResponse response = feeService.updateFeeConfig(feeId, request);
 		return ResponseEntity.ok(response);
 	}

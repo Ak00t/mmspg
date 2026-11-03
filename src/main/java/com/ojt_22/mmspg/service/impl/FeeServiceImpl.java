@@ -88,9 +88,6 @@ public class FeeServiceImpl implements FeeService {
         }
     }
 
-    // ==========================================================
-    // 🟢 အသစ်ထည့်သွင်းထားသော METHOD (getAllFees)
-    // ==========================================================
     @Override
     public List<FeeConfigResponse> getAllFees() {
         List<MerchantFee> fees = merchantFeeRepository.findAll();
@@ -98,7 +95,7 @@ public class FeeServiceImpl implements FeeService {
         return fees.stream().map(fee -> {
             FeeConfigResponse response = new FeeConfigResponse();
             response.setFeeId(fee.getId());
-            response.setMerchantId(fee.getMerchant().getId());
+            response.setMerchantId(fee.getMerchant() != null ? fee.getMerchant().getId() : null);
             response.setFeeType(fee.getFeeType());
             response.setPercentageRate(fee.getPercentageRate());
             response.setFlatFee(fee.getFlatFee());
@@ -116,6 +113,9 @@ public class FeeServiceImpl implements FeeService {
     @Override
     @Transactional
     public FeeConfigResponse createFeeConfig(FeeConfigRequest request) {
+        if (request.getMerchantId() == null) {
+            throw new InvalidFeeConfigurationException("Merchant ID is required");
+        }
         validateFeeConfig(request);
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         StaffUser staffUser = staffUserRepository.findByEmail(email)
@@ -178,7 +178,7 @@ public class FeeServiceImpl implements FeeService {
 
         FeeConfigResponse response = new FeeConfigResponse();
         response.setFeeId(updatedFee.getId());
-        response.setMerchantId(updatedFee.getMerchant().getId());
+        response.setMerchantId(updatedFee.getMerchant() != null ? updatedFee.getMerchant().getId() : null);
         response.setFeeType(updatedFee.getFeeType());
         response.setPercentageRate(updatedFee.getPercentageRate());
         response.setFlatFee(updatedFee.getFlatFee());
