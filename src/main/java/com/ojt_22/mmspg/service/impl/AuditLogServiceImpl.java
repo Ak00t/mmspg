@@ -90,11 +90,20 @@ public class AuditLogServiceImpl implements AuditLogService {
 	}
 
 	private AuditLogResponseDto mapToDto(AuditLog entity) {
+		String roleName = entity.getRoleName();
+		if (roleName == null || "UNKNOWN".equalsIgnoreCase(roleName)) {
+			roleName = "SYSTEM";
+		}
+		String actorType = entity.getActorType();
+		if (actorType == null || "UNKNOWN".equalsIgnoreCase(actorType)) {
+			actorType = "SYSTEM";
+		}
+
 		return AuditLogResponseDto.builder()
 				.auditId(entity.getAuditId())
 				.actorId(entity.getActorId())
-				.actorType(entity.getActorType())
-				.roleName(entity.getRoleName())
+				.actorType(actorType)
+				.roleName(roleName)
 				.permissionUsed(entity.getPermissionUsed())
 				.menuName(entity.getMenuName())
 				.action(entity.getAction())

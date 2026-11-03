@@ -66,7 +66,7 @@ public class AuditLogAspect {
 
 			UUID actorId = null;
 			String actorType = "SYSTEM";
-			String roleName = "UNKNOWN";
+			String roleName = "SYSTEM";
 
 			Authentication auth = SecurityContextHolder.getContext()
 					.getAuthentication();
@@ -78,7 +78,7 @@ public class AuditLogAspect {
 						.map(a -> a.getAuthority()
 								.replace("ROLE_", ""))
 						.findFirst()
-						.orElse("UNKNOWN");
+						.orElse("SYSTEM");
 
 				if ("API_CLIENT".equals(roleName)) {
 					actorType = "MERCHANT";

@@ -31,6 +31,7 @@ import com.ojt_22.mmspg.repository.WebhookDeliveryRepository;
 import com.ojt_22.mmspg.service.WebhookDeliveryService;
 import com.ojt_22.mmspg.utils.ApiLogUtils;
 
+import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,6 +43,9 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
     private final WebhookDeliveryRepository webhookDeliveryRepository;
     private final WebhookConfigRepository webhookConfigRepository;
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+
+    @Value("${merchant.ecommerce.base-url:http://localhost:8080}")
+    private String ecommerceBaseUrl;
 
     @Override
     @Transactional
@@ -138,12 +142,15 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
         delivery.setSentAt(LocalDateTime.now());
 
         try {
+            String fullUrl = resolveCallbackUrl(config.getCallbackUrl());
+            log.info("Dispatching webhook event [{}] to URL: {}", delivery.getEventType(), fullUrl);
+
             HttpClient client = HttpClient.newBuilder()
                     .connectTimeout(Duration.ofSeconds(5))
                     .build();
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(config.getCallbackUrl()))
+                    .uri(URI.create(fullUrl))
                     .header("Content-Type", "application/json")
                     .header("User-Agent", "MMSPG-Webhook-Engine/1.0")
                     .header("X-Event-Type", delivery.getEventType())
@@ -224,5 +231,24 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
         for (WebhookDelivery delivery : pendingRetries) {
             executeDelivery(delivery.getId());
         }
+    }
+
+    private String resolveCallbackUrl(String callbackUrl) {
+        if (callbackUrl == null || callbackUrl.isBlank()) {
+            return callbackUrl;
+        }
+        String trimmed = callbackUrl.trim();
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+            return trimmed;
+        }
+        String base = (ecommerceBaseUrl != null && !ecommerceBaseUrl.isBlank())
+                ? ecommerceBaseUrl.trim()
+                : "http://localhost:8080";
+        if (base.endsWith("/") && trimmed.startsWith("/")) {
+            return base + trimmed.substring(1);
+        } else if (!base.endsWith("/") && !trimmed.startsWith("/")) {
+            return base + "/" + trimmed;
+        }
+        return base + trimmed;
     }
 }
