@@ -48,14 +48,8 @@ public class CoreBankingClient {
 	@Value("${core.banking.hmac-secret:gateway_super_secret_key_hmac_256_xyz}")
 	private String hmacSecret;
 
-	public CoreBankingResponseDto executeDebit(
-			String sourceAccountNumber,
-			String merchantAccountNumber,
-			BigDecimal amount,
-			BigDecimal feeAmount,
-			String orderId,
-			String transactionReference,
-			String description) {
+	public CoreBankingResponseDto executeDebit(String sourceAccountNumber, String merchantAccountNumber,
+			BigDecimal amount, BigDecimal feeAmount, String orderId, String transactionReference, String description) {
 
 		EcommercePaymentRequestDto request = EcommercePaymentRequestDto.builder()
 				.sourceAccountNumber(sourceAccountNumber)
@@ -69,7 +63,8 @@ public class CoreBankingClient {
 
 		try {
 			String rawJsonBody = objectMapper.writeValueAsString(request);
-			String timestamp = String.valueOf(Instant.now().getEpochSecond());
+			String timestamp = String.valueOf(Instant.now()
+					.getEpochSecond());
 
 			// Canonical format: <HTTP_METHOD>\n<REQUEST_URI>\n<X-TIMESTAMP>\n<RAW_BODY>
 			// URI is /api/v1/payments/ecommerce/checkout
@@ -89,16 +84,16 @@ public class CoreBankingClient {
 			log.info("Sending ecommerce payment checkout to Core Banking: URL={}, orderId={}, idempotencyKey={}",
 					coreBankingCheckoutUrl, orderId, transactionReference);
 
-			ResponseEntity<String> response = restTemplate.exchange(
-					coreBankingCheckoutUrl,
-					HttpMethod.POST,
-					entity,
+			ResponseEntity<String> response = restTemplate.exchange(coreBankingCheckoutUrl, HttpMethod.POST, entity,
 					String.class);
 
-			if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+			if (response.getStatusCode()
+					.is2xxSuccessful() && response.getBody() != null) {
 				JsonNode root = objectMapper.readTree(response.getBody());
-				String txnRef = root.has("transactionRef") ? root.get("transactionRef").asText() : transactionReference;
-				String status = root.has("status") ? root.get("status").asText() : "SUCCESS";
+				String txnRef = root.has("transactionRef") ? root.get("transactionRef")
+						.asText() : transactionReference;
+				String status = root.has("status") ? root.get("status")
+						.asText() : "SUCCESS";
 
 				if ("SUCCESS".equalsIgnoreCase(status) || "COMPLETED".equalsIgnoreCase(status)) {
 					return CoreBankingResponseDto.builder()
@@ -106,7 +101,8 @@ public class CoreBankingClient {
 							.coreTransactionRef(txnRef)
 							.build();
 				} else {
-					String msg = root.has("message") ? root.get("message").asText() : "Core Banking transaction status: " + status;
+					String msg = root.has("message") ? root.get("message")
+							.asText() : "Core Banking transaction status: " + status;
 					return CoreBankingResponseDto.builder()
 							.success(false)
 							.failureReason(msg)
@@ -151,6 +147,7 @@ public class CoreBankingClient {
 		SecretKeySpec secretKeySpec = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), HMAC_ALGORITHM);
 		mac.init(secretKeySpec);
 		byte[] hmacBytes = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
-		return HexFormat.of().formatHex(hmacBytes);
+		return HexFormat.of()
+				.formatHex(hmacBytes);
 	}
 }
