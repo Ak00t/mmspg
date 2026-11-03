@@ -55,6 +55,7 @@ public class CoreBankingClient {
 				.sourceAccountNumber(sourceAccountNumber)
 				.merchantAccountNumber(merchantAccountNumber)
 				.amount(amount)
+				.serviceFee(feeAmount != null ? feeAmount : BigDecimal.ZERO)
 				.currency("MMK")
 				.orderId(orderId != null ? orderId : transactionReference)
 				.idempotencyKey(transactionReference)

@@ -116,10 +116,35 @@ public class AuditLogAspect {
 							.isEmpty() ? null : auditable.targetType())
 					.targetId(resolveTargetId(auditable, joinPoint, result))
 					.status(status)
-					.sourceType(SourceType.BACKEND_API)
+					.sourceType(resolveSourceType(request, auth))
 					.build();
 			auditLogService.logActivity(auditRequest, request);
 		}
+	}
+
+	private SourceType resolveSourceType(HttpServletRequest request, Authentication auth) {
+		if (request == null) {
+			return SourceType.BACKEND_API;
+		}
+
+		String clientType = request.getHeader("X-Client-Type");
+		if ("FRONTEND_UI".equalsIgnoreCase(clientType)) {
+			return SourceType.FRONTEND_UI;
+		}
+
+		if (auth != null && auth.getAuthorities().stream()
+				.anyMatch(a -> "ROLE_API_CLIENT".equals(a.getAuthority()))) {
+			return SourceType.BACKEND_API;
+		}
+
+		String uri = request.getRequestURI();
+		if (uri != null && (uri.startsWith("/api/v1/admin/")
+				|| uri.startsWith("/api/v1/merchant-portal/")
+				|| uri.startsWith("/api/v1/auth/"))) {
+			return SourceType.FRONTEND_UI;
+		}
+
+		return SourceType.BACKEND_API;
 	}
 
 	/**

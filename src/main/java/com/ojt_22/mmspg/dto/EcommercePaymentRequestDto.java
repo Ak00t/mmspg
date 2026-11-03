@@ -16,6 +16,7 @@ public class EcommercePaymentRequestDto {
     private String sourceAccountNumber;
     private String merchantAccountNumber;
     private BigDecimal amount;
+    private BigDecimal serviceFee;
     @Builder.Default
     private String currency = "MMK";
     private String orderId;
