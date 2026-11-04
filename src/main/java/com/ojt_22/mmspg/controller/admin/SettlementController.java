@@ -2,8 +2,10 @@ package com.ojt_22.mmspg.controller.admin;
 
 import java.math.BigDecimal;
 import java.util.UUID;
+import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,10 +16,10 @@ import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.dto.DailySettlementResponse;
 import com.ojt_22.mmspg.dto.SettlementResponse;
 import com.ojt_22.mmspg.service.SettlementService;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/settlements")
+@PreAuthorize("hasRole('ADMIN')")
 public class SettlementController {
 
     private final SettlementService settlementService;

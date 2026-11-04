@@ -36,6 +36,7 @@ public class AdminTerminalController {
 
     private final TerminalService terminalService;
 
+    // Terminal အသစ်ဖန်တီးခြင်း (ADMIN သာ ပြုလုပ်ခွင့်ရှိသည် - SUPPORT မပါပါ)
     @PostMapping("/provision")
     @Auditable(menuName = "Terminal Management", action = "PROVISION", targetType = "TERMINAL", targetId = "#result?.body?.terminalId")
     @PreAuthorize("hasRole('ADMIN')")
@@ -49,17 +50,19 @@ public class AdminTerminalController {
         }
     }
 
+    // Terminal စာရင်းကြည့်ခြင်း (ADMIN, SUPPORT, AUDITOR အားလုံး ကြည့်ရှုခွင့်ရှိသည်)
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT', 'AUDITOR')")
     @Operation(summary = "Get All Terminals", description = "Retrieves a list of all terminals with merchant and branch names.")
     public ResponseEntity<List<TerminalResponseDto>> getAllTerminals() {
         return ResponseEntity.ok(terminalService.getAllTerminals());
     }
 
+    // Terminal Status ပြောင်းလဲခြင်း (ADMIN နှင့် SUPPORT ပြင်ဆင်ခွင့်ရှိသည်)
     @PutMapping("/{id}/status")
     @Auditable(menuName = "Terminal Management", action = "UPDATE_STATUS", targetType = "TERMINAL", targetId = "#id")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Update Terminal Status", description = "Updates a terminal's status to ONLINE, OFFLINE, or SUSPENDED.")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
+    @Operation(summary = "Update Terminal Status", description = "Updates a terminal's status to ONLINE, OFFLINE, SUSPENDED, MAINTENANCE, or INACTIVE.")
     public ResponseEntity<?> updateTerminalStatus(
             @PathVariable UUID id, 
             @RequestParam String status) {
@@ -70,10 +73,8 @@ public class AdminTerminalController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
-    
-    
-    
-    
+
+    // Terminal အချက်အလက်များ ပြင်ဆင်ခြင်း (ADMIN သာ ပြင်ဆင်ခွင့်ရှိသည် - SUPPORT မပါပါ)
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Edit Terminal", description = "Updates terminal name and type.")
@@ -81,7 +82,6 @@ public class AdminTerminalController {
             @PathVariable UUID id, 
             @RequestBody TerminalRequestDto request) {
         try {
-            // မှတ်ချက်: TerminalService တွင် editTerminal (သို့မဟုတ် updateTerminal) ကို ရေးသားပေးရန် လိုအပ်ပါသည်
             TerminalResponseDto response = terminalService.updateTerminal(id, request);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
@@ -89,31 +89,31 @@ public class AdminTerminalController {
         }
     }
 
-    
-    @PutMapping("/{id}/reactivate")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Reactivate Terminal", description = "Reactivates a suspended terminal and sets its status back to ONLINE.")
+    // Terminal ပြန်လည်အသုံးပြုခြင်း / Cancel Ban (ADMIN နှင့် SUPPORT ခွင့်ပြုပါသည်)
+    @PutMapping(value = {"/{id}/reactivate", "/{id}/cancel-ban"})
+    @Auditable(menuName = "Terminal Management", action = "CANCEL_BAN", targetType = "TERMINAL", targetId = "#id")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
+    @Operation(summary = "Cancel Ban / Reactivate Terminal", description = "Cancels ban for a suspended terminal and sets its status back to ONLINE.")
     public ResponseEntity<?> reactivateTerminal(@PathVariable UUID id) {
         try {
-            // Service တွင်ရှိပြီးသား updateTerminalStatus ကိုသုံး၍ ONLINE သို့ ပြန်ပြောင်းမည်
             terminalService.updateTerminalStatus(id, "ONLINE");
-            return ResponseEntity.ok(Map.of("message", "Terminal reactivated successfully to ONLINE"));
+            return ResponseEntity.ok(Map.of("message", "Terminal ban cancelled successfully, status set to ONLINE"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
-    
-    @PutMapping("/{id}/suspend")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Suspend Terminal", description = "Suspends a terminal and sets its status to SUSPENDED.")
+
+    // Terminal ဆိုင်းငံ့ခြင်း / Ban (ADMIN နှင့် SUPPORT ခွင့်ပြုပါသည်)
+    @PutMapping(value = {"/{id}/suspend", "/{id}/ban"})
+    @Auditable(menuName = "Terminal Management", action = "BAN", targetType = "TERMINAL", targetId = "#id")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
+    @Operation(summary = "Ban / Suspend Terminal", description = "Bans a terminal and sets its status to SUSPENDED.")
     public ResponseEntity<?> suspendTerminal(
             @PathVariable UUID id, 
-            @RequestBody Map<String, String> requestBody) {
+            @RequestBody(required = false) Map<String, String> requestBody) {
         try {
-            String reason = requestBody.get("reason");
             terminalService.updateTerminalStatus(id, "SUSPENDED");
-            // အကယ်၍ reason ကို Database တွင် သိမ်းလိုပါက Service ၌ suspendTerminal(id, reason) ဟု ရေး၍ ခေါ်နိုင်ပါသည်
-            return ResponseEntity.ok(Map.of("message", "Terminal suspended successfully"));
+            return ResponseEntity.ok(Map.of("message", "Terminal banned successfully, status set to SUSPENDED"));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

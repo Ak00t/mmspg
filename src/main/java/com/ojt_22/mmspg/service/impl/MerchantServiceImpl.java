@@ -173,7 +173,7 @@ public class MerchantServiceImpl implements MerchantService {
 	@Override
 	@Transactional(readOnly = true)
 	public java.util.List<com.ojt_22.mmspg.dto.MerchantResponseDto> getAllMerchants() {
-		java.util.List<Merchant> merchants = merchantRepository.findAll();
+		java.util.List<Merchant> merchants = merchantRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"));
 
 		return merchants.stream()
 				.map(merchant -> {

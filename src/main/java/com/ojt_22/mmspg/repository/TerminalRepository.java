@@ -14,7 +14,7 @@ import com.ojt_22.mmspg.enums.TerminalStatus;
 public interface TerminalRepository extends JpaRepository<Terminal, UUID> {
 	long countByStatus(TerminalStatus status);
 
-	@Query("SELECT t FROM Terminal t JOIN FETCH t.branch b JOIN FETCH b.merchant m ")
+	@Query("SELECT t FROM Terminal t JOIN FETCH t.branch b JOIN FETCH b.merchant m ORDER BY t.createdAt DESC")
 	List<Terminal> findAllWithDetails();
 
 	boolean existsByTerminalCode(String terminalCode);
