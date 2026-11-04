@@ -10,12 +10,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,6 +47,12 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
     private final WebhookDeliveryRepository webhookDeliveryRepository;
     private final WebhookConfigRepository webhookConfigRepository;
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
+
+    @Value("${merchant.ecommerce.webhook-secret:whsec_dev_g5_callback_secret_2026}")
+    private String defaultWebhookSecret = "whsec_dev_g5_callback_secret_2026";
+
+    @Value("${merchant.ecommerce.base-url:http://localhost:8080}")
+    private String ecommerceBaseUrl = "http://localhost:8080";
 
     @Override
     @Transactional
@@ -142,11 +153,19 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
                     .connectTimeout(Duration.ofSeconds(5))
                     .build();
 
+            String rawCallbackUrl = config.getCallbackUrl() != null ? config.getCallbackUrl().trim() : "";
+            String targetUrl = rawCallbackUrl.startsWith("http://") || rawCallbackUrl.startsWith("https://")
+                    ? rawCallbackUrl
+                    : ecommerceBaseUrl + (rawCallbackUrl.startsWith("/") ? "" : "/") + rawCallbackUrl;
+
+            String signature = calculateHmacSha256(delivery.getPayload(), defaultWebhookSecret);
+
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(config.getCallbackUrl()))
+                    .uri(URI.create(targetUrl))
                     .header("Content-Type", "application/json")
                     .header("User-Agent", "MMSPG-Webhook-Engine/1.0")
                     .header("X-Event-Type", delivery.getEventType())
+                    .header("X-Signature", signature)
                     .POST(HttpRequest.BodyPublishers.ofString(delivery.getPayload()))
                     .timeout(Duration.ofSeconds(8))
                     .build();
@@ -223,6 +242,30 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
 
         for (WebhookDelivery delivery : pendingRetries) {
             executeDelivery(delivery.getId());
+        }
+    }
+
+    private String calculateHmacSha256(String payload, String secret) {
+        if (payload == null || secret == null) {
+            return "";
+        }
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKeySpec = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+            mac.init(secretKeySpec);
+            byte[] rawHmac = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : rawHmac) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            log.error("Failed to generate HMAC-SHA256 signature for webhook", e);
+            throw new IllegalStateException("Failed to calculate webhook signature", e);
         }
     }
 }
