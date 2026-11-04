@@ -79,9 +79,9 @@ public class BranchServiceImpl implements BranchService {
 	public List<BranchResponseDto> getAllBranches(UUID merchantId) {
 		List<MerchantBranch> branches;
 		if (merchantId != null) {
-			branches = branchRepository.findByMerchantId(merchantId);
+			branches = branchRepository.findByMerchantIdOrderByCreatedAtDesc(merchantId);
 		} else {
-			branches = branchRepository.findAll();
+			branches = branchRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"));
 		}
 
 		return branches.stream()

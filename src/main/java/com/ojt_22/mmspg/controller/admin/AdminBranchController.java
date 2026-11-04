@@ -36,10 +36,10 @@ public class AdminBranchController {
 
     private final BranchService branchService;
 
-    // 🔴 ၁။ အသစ်ဖန်တီးခြင်း (AUDITOR မပါပါ)
+    // အသစ်ဖန်တီးခြင်း (ADMIN သာ ပြုလုပ်ခွင့်ရှိသည် - SUPPORT မပါပါ)
     @PostMapping
     @Auditable(menuName = "Branch Management", action = "CREATE", targetType = "MERCHANT_BRANCH", targetId = "#result?.body?.branchId")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Create Branch", description = "Creates a new branch for a specific merchant.")
     public ResponseEntity<?> createBranch(@Valid @RequestBody BranchRequestDto request) {
         try {
@@ -50,7 +50,7 @@ public class AdminBranchController {
         }
     }
 
-    // စာရင်းကြည့်ခြင်း (အားလုံး ကြည့်ခွင့်ရှိသည်)
+    // စာရင်းကြည့်ခြင်း (ADMIN, SUPPORT, AUDITOR အားလုံး ကြည့်ရှုခွင့်ရှိသည်)
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT', 'AUDITOR')")
     @Operation(summary = "Get All Branches", description = "Retrieves all branches. Optionally filters by merchantId.")
@@ -60,14 +60,14 @@ public class AdminBranchController {
         return ResponseEntity.ok(branches);
     }
 
-    // 🔴 ၂။ ပြင်ဆင်ခြင်း (AUDITOR မပါပါ၊ @Valid ကို ဖြုတ်လိုက်ပါပြီ)
+    // ပြင်ဆင်ခြင်း (ADMIN သာ ပြင်ဆင်ခွင့်ရှိသည် - SUPPORT မပါပါ)
     @PutMapping("/{id}")
     @Auditable(menuName = "Branch Management", action = "UPDATE", targetType = "MERCHANT_BRANCH", targetId = "#id")
-    @Valid @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update Branch", description = "Updates an existing branch.")
     public ResponseEntity<?> updateBranch(
             @PathVariable UUID id, 
-            @RequestBody BranchRequestDto request) { // <-- @Valid ကို ဖယ်ရှားလိုက်ပါသည်
+            @RequestBody BranchRequestDto request) {
         try {
             BranchResponseDto response = branchService.updateBranch(id, request);
             return ResponseEntity.ok(response);
@@ -76,9 +76,9 @@ public class AdminBranchController {
         }
     }
 
-    // 🔴 ၃။ Status ပြောင်းခြင်း (AUDITOR မပါပါ)
+    // Status ပြောင်းခြင်း (ADMIN သာ ပြောင်းလဲခွင့်ရှိသည် - SUPPORT မပါပါ)
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Toggle Branch Status", description = "Toggles branch status between ACTIVE and INACTIVE.")
     public ResponseEntity<?> toggleBranchStatus(@PathVariable UUID id) {
         try {

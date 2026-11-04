@@ -32,7 +32,7 @@ public class AdminMerchantApprovalController {
     private final MerchantService merchantService;
 
     @GetMapping("/pending")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT', 'AUDITOR')")
     @Operation(summary = "Get Pending Merchants", description = "Retrieves a paginated list of merchants with PENDING status.")
     public ResponseEntity<Page<MerchantPendingDto>> getPendingMerchants(
             @RequestParam(defaultValue = "0") int page,
@@ -112,4 +112,3 @@ public class AdminMerchantApprovalController {
         }
     }
 }
-

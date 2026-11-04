@@ -111,9 +111,19 @@ public class TerminalServiceImpl implements TerminalService {
 		Terminal terminal = terminalRepository.findById(terminalId)
 				.orElseThrow(() -> new IllegalArgumentException("Terminal not found with ID: " + terminalId));
 
-		String upperStatus = status.toUpperCase();
+		String upperStatus = status != null ? status.trim().toUpperCase() : "";
+		if (upperStatus.equals("MAINTENANCE") || upperStatus.equals("INACTIVE")) {
+			upperStatus = "OFFLINE";
+		}
+		if (upperStatus.equals("BAN") || upperStatus.equals("BANNED")) {
+			upperStatus = "SUSPENDED";
+		}
+		if (upperStatus.equals("CANCEL_BAN") || upperStatus.equals("CANCELBAN") || upperStatus.equals("UNBAN") || upperStatus.equals("ACTIVE")) {
+			upperStatus = "ONLINE";
+		}
+
 		if (!upperStatus.equals("ONLINE") && !upperStatus.equals("OFFLINE") && !upperStatus.equals("SUSPENDED")) {
-			throw new IllegalArgumentException("Invalid status. Must be ONLINE, OFFLINE, or SUSPENDED.");
+			throw new IllegalArgumentException("Invalid status. Must be ONLINE, OFFLINE, SUSPENDED, MAINTENANCE, or INACTIVE.");
 		}
 
 		terminal.setStatus(TerminalStatus.valueOf(upperStatus));
