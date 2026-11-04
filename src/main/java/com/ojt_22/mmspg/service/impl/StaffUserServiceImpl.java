@@ -54,7 +54,7 @@ public class StaffUserServiceImpl implements StaffUserService {
 
 	@Override
 	public List<StaffUser> getAllStaff() {
-		return staffUserRepository.findAll();
+		return staffUserRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"));
 	}
 
 	@Override

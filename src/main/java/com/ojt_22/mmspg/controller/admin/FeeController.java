@@ -36,7 +36,7 @@ public class FeeController {
 	private final FeeService feeService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT', 'AUDITOR')")
     @Operation(summary = "List all Merchant Fee rules")
     public ResponseEntity<List<FeeConfigResponse>> getAllFees() {
         return ResponseEntity.ok(feeService.getAllFees()); 

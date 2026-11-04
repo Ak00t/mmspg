@@ -9,5 +9,6 @@ import com.ojt_22.mmspg.entity.MerchantBranch;
 @Repository
 public interface BranchRepository extends JpaRepository<MerchantBranch, UUID> {
     List<MerchantBranch> findByMerchantId(UUID merchantId);
+    List<MerchantBranch> findByMerchantIdOrderByCreatedAtDesc(UUID merchantId);
     boolean existsByBranchCodeAndMerchantId(String branchCode, UUID merchantId);
 }
