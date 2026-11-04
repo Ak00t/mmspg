@@ -37,18 +37,41 @@ public class SecurityConfig {
 
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
-		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOrigins(
-				Arrays.asList("http://127.0.0.1:5173", "http://localhost:5173", "http://localhost:5174", "http://127.0.0.1:5174"));
-		configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-		configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept",
-				"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", "X-Client-ID",
-				"X-Client-Secret", "Idempotency-Key"));
-		configuration
+		// 1. Exported Configuration for Customer Checkout & External Frontends
+		CorsConfiguration exportedPaymentConfig = new CorsConfiguration();
+		exportedPaymentConfig.setAllowedOrigins(Arrays.asList(
+				"http://localhost:5173", "http://127.0.0.1:5173",
+				"http://localhost:5174", "http://127.0.0.1:5174",
+				"http://localhost:5175", "http://127.0.0.1:5175",
+				"http://localhost:3000", "http://127.0.0.1:3000"));
+		exportedPaymentConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+		exportedPaymentConfig.setAllowedHeaders(Arrays.asList(
+				"Authorization", "Content-Type", "X-Requested-With", "Accept",
+				"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers",
+				"X-Client-ID", "X-Client-Secret", "Idempotency-Key", "X-Client-Type", "x-client-type",
+				"X-Internal-Service-Key", "*"));
+		exportedPaymentConfig
 				.setExposedHeaders(Arrays.asList("Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"));
-		configuration.setAllowCredentials(true);
+		exportedPaymentConfig.setAllowCredentials(true);
+		exportedPaymentConfig.setMaxAge(3600L);
+
+		// 2. Strict Internal Configuration for MMSPG Back-office & Merchant Portal
+		CorsConfiguration internalMmspgConfig = new CorsConfiguration();
+		internalMmspgConfig.setAllowedOrigins(Arrays.asList("http://localhost:5175", "http://127.0.0.1:5175"));
+		internalMmspgConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+		internalMmspgConfig.setAllowedHeaders(Arrays.asList(
+				"Authorization", "Content-Type", "X-Requested-With", "Accept",
+				"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers",
+				"X-Client-ID", "X-Client-Secret", "Idempotency-Key", "X-Client-Type", "x-client-type",
+				"X-Internal-Service-Key", "*"));
+		internalMmspgConfig
+				.setExposedHeaders(Arrays.asList("Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"));
+		internalMmspgConfig.setAllowCredentials(true);
+		internalMmspgConfig.setMaxAge(3600L);
+
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-		source.registerCorsConfiguration("/**", configuration);
+		source.registerCorsConfiguration("/api/v1/payments/**", exportedPaymentConfig);
+		source.registerCorsConfiguration("/**", internalMmspgConfig);
 		return source;
 	}
 

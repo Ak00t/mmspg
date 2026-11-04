@@ -7,7 +7,6 @@ import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,63 +28,66 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/v1/admin/branches")
-@CrossOrigin(origins = {"http://localhost:5173", "http://127.0.0.1:5173"})
 @RequiredArgsConstructor
 @Tag(name = "Admin Branch Management", description = "Endpoints for managing merchant branches")
 public class AdminBranchController {
 
-    private final BranchService branchService;
+	private final BranchService branchService;
 
-    // 🔴 ၁။ အသစ်ဖန်တီးခြင်း (AUDITOR မပါပါ)
-    @PostMapping
-    @Auditable(menuName = "Branch Management", action = "CREATE", targetType = "MERCHANT_BRANCH", targetId = "#result?.body?.branchId")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
-    @Operation(summary = "Create Branch", description = "Creates a new branch for a specific merchant.")
-    public ResponseEntity<?> createBranch(@Valid @RequestBody BranchRequestDto request) {
-        try {
-            BranchResponseDto response = branchService.createBranch(request);
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
+	// 🔴 ၁။ အသစ်ဖန်တီးခြင်း (AUDITOR မပါပါ)
+	@PostMapping
+	@Auditable(menuName = "Branch Management", action = "CREATE", targetType = "MERCHANT_BRANCH", targetId = "#result?.body?.branchId")
+	@PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
+	@Operation(summary = "Create Branch", description = "Creates a new branch for a specific merchant.")
+	public ResponseEntity<?> createBranch(@Valid @RequestBody BranchRequestDto request) {
+		try {
+			BranchResponseDto response = branchService.createBranch(request);
+			return ResponseEntity.status(HttpStatus.CREATED)
+					.body(response);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest()
+					.body(Map.of("error", e.getMessage()));
+		}
+	}
 
-    // စာရင်းကြည့်ခြင်း (အားလုံး ကြည့်ခွင့်ရှိသည်)
-    @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT', 'AUDITOR')")
-    @Operation(summary = "Get All Branches", description = "Retrieves all branches. Optionally filters by merchantId.")
-    public ResponseEntity<List<BranchResponseDto>> getAllBranches(
-            @RequestParam(required = false) UUID merchantId) {
-        List<BranchResponseDto> branches = branchService.getAllBranches(merchantId);
-        return ResponseEntity.ok(branches);
-    }
+	// စာရင်းကြည့်ခြင်း (အားလုံး ကြည့်ခွင့်ရှိသည်)
+	@GetMapping
+	@PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT', 'AUDITOR')")
+	@Operation(summary = "Get All Branches", description = "Retrieves all branches. Optionally filters by merchantId.")
+	public ResponseEntity<List<BranchResponseDto>> getAllBranches(@RequestParam(required = false) UUID merchantId) {
+		List<BranchResponseDto> branches = branchService.getAllBranches(merchantId);
+		return ResponseEntity.ok(branches);
+	}
 
-    // 🔴 ၂။ ပြင်ဆင်ခြင်း (AUDITOR မပါပါ၊ @Valid ကို ဖြုတ်လိုက်ပါပြီ)
-    @PutMapping("/{id}")
-    @Auditable(menuName = "Branch Management", action = "UPDATE", targetType = "MERCHANT_BRANCH", targetId = "#id")
-    @Valid @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
-    @Operation(summary = "Update Branch", description = "Updates an existing branch.")
-    public ResponseEntity<?> updateBranch(
-            @PathVariable UUID id, 
-            @RequestBody BranchRequestDto request) { // <-- @Valid ကို ဖယ်ရှားလိုက်ပါသည်
-        try {
-            BranchResponseDto response = branchService.updateBranch(id, request);
-            return ResponseEntity.ok(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
+	// 🔴 ၂။ ပြင်ဆင်ခြင်း (AUDITOR မပါပါ၊ @Valid ကို ဖြုတ်လိုက်ပါပြီ)
+	@PutMapping("/{id}")
+	@Auditable(menuName = "Branch Management", action = "UPDATE", targetType = "MERCHANT_BRANCH", targetId = "#id")
+	@Valid
+	@PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
+	@Operation(summary = "Update Branch", description = "Updates an existing branch.")
+	public ResponseEntity<?> updateBranch(@PathVariable UUID id, @RequestBody BranchRequestDto request) { // <-- @Valid
+																											// ကို
+																											// ဖယ်ရှားလိုက်ပါသည်
+		try {
+			BranchResponseDto response = branchService.updateBranch(id, request);
+			return ResponseEntity.ok(response);
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest()
+					.body(Map.of("error", e.getMessage()));
+		}
+	}
 
-    // 🔴 ၃။ Status ပြောင်းခြင်း (AUDITOR မပါပါ)
-    @PutMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
-    @Operation(summary = "Toggle Branch Status", description = "Toggles branch status between ACTIVE and INACTIVE.")
-    public ResponseEntity<?> toggleBranchStatus(@PathVariable UUID id) {
-        try {
-            branchService.toggleBranchStatus(id);
-            return ResponseEntity.ok(Map.of("message", "Branch status toggled successfully."));
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
+	// 🔴 ၃။ Status ပြောင်းခြင်း (AUDITOR မပါပါ)
+	@PutMapping("/{id}/status")
+	@PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
+	@Operation(summary = "Toggle Branch Status", description = "Toggles branch status between ACTIVE and INACTIVE.")
+	public ResponseEntity<?> toggleBranchStatus(@PathVariable UUID id) {
+		try {
+			branchService.toggleBranchStatus(id);
+			return ResponseEntity.ok(Map.of("message", "Branch status toggled successfully."));
+		} catch (IllegalArgumentException e) {
+			return ResponseEntity.badRequest()
+					.body(Map.of("error", e.getMessage()));
+		}
+	}
 }
