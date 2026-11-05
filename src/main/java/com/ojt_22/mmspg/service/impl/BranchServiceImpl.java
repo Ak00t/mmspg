@@ -64,7 +64,7 @@ public class BranchServiceImpl implements BranchService {
 		branch.setStatus(MerchantBranchStatus.ACTIVE);
 		branch.setCreatedBy(staffUser);
 
-//		branch.setUpdatedAt(LocalDateTime.now());
+//		branch.setUpdatedAt(LocalDateTime.now());  by akt
 
 		MerchantBranch savedBranch = branchRepository.save(branch);
 
