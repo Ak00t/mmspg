@@ -2,7 +2,9 @@ package com.ojt_22.mmspg.service.impl;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -119,6 +121,28 @@ public class FeeServiceImpl implements FeeService {
 
 			throw new InvalidFeeConfigurationException("Effective to must be after effective from");
 		}
+	}
+
+	@Override
+	public List<FeeConfigResponse> getAllFees() {
+		return merchantFeeRepository.findAll().stream().map(fee -> {
+			FeeConfigResponse response = new FeeConfigResponse();
+			response.setFeeId(fee.getId());
+			if (fee.getMerchant() != null) {
+				response.setMerchantId(fee.getMerchant().getId());
+			}
+			response.setFeeType(fee.getFeeType());
+			response.setPercentageRate(fee.getPercentageRate());
+			response.setFlatFee(fee.getFlatFee());
+			response.setMinimumFee(fee.getMinimumFee());
+			response.setMaximumFee(fee.getMaximumFee());
+			response.setEffectiveFrom(fee.getEffectiveFrom());
+			response.setEffectiveTo(fee.getEffectiveTo());
+			response.setStatus(fee.getStatus());
+			response.setCreatedAt(fee.getCreatedAt());
+			response.setUpdatedAt(fee.getUpdatedAt());
+			return response;
+		}).collect(Collectors.toList());
 	}
 
 	@Override

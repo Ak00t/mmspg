@@ -31,9 +31,17 @@ public class TerminalServiceImpl implements TerminalService {
 	private final MerchantRepository merchantRepository;
 	private final BranchRepository branchRepository;
 	private final NotificationService notificationService;
+
 	@Override
 	@Transactional
 	public TerminalResponseDto provisionTerminal(TerminalRequestDto request) {
+		if (request.getMerchantId() == null) {
+			throw new IllegalArgumentException("Merchant is required");
+		}
+		if (request.getBranchId() == null) {
+			throw new IllegalArgumentException("Branch is required");
+		}
+
 		Merchant merchant = merchantRepository.findById(request.getMerchantId())
 				.orElseThrow(
 						() -> new IllegalArgumentException("Merchant not found with ID: " + request.getMerchantId()));
@@ -45,26 +53,30 @@ public class TerminalServiceImpl implements TerminalService {
 			throw new IllegalArgumentException("Branch does not belong to the specified Merchant.");
 		}
 
-		if (terminalRepository.existsByTerminalCode(request.getTerminalCode())) {
-			throw new IllegalArgumentException("Terminal code already exists.");
-		}
-
-		String type = request.getTerminalType().toUpperCase();
+		String type = request.getTerminalType() != null ? request.getTerminalType().trim().toUpperCase() : "PHYSICAL_POS";
 		if (!type.equals("PHYSICAL_POS") && !type.equals("VIRTUAL_API")) {
 			throw new IllegalArgumentException("Invalid Terminal Type. Must be PHYSICAL_POS or VIRTUAL_API.");
 		}
 
+		String code = request.getTerminalCode();
+		if (code == null || code.trim().isEmpty()) {
+			String prefix = type.equals("PHYSICAL_POS") ? "POS-" : "API-";
+			code = prefix + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+		} else {
+			code = code.trim();
+		}
+
+		if (terminalRepository.existsByTerminalCode(code)) {
+			throw new IllegalArgumentException("Terminal code already exists: " + code);
+		}
+
 		Terminal terminal = new Terminal();
-		
-        // 🔴 ဤနေရာရှိ Comment ပိတ်ထားသော စာကြောင်းကို ပြန်ဖွင့်ပေးလိုက်ပါ
 		terminal.setMerchant(merchant); 
-        
 		terminal.setBranch(branch);
-		terminal.setTerminalCode(request.getTerminalCode());
-		terminal.setTerminalName(request.getTerminalName());
+		terminal.setTerminalCode(code);
+		terminal.setTerminalName(request.getTerminalName() != null ? request.getTerminalName().trim() : "Terminal " + code);
 		terminal.setTerminalType(TerminalType.valueOf(type));
 		terminal.setStatus(TerminalStatus.ONLINE);
-//		terminal.setUpdatedAt(LocalDateTime.now());
 
 		Terminal savedTerminal = terminalRepository.save(terminal);
 
@@ -99,9 +111,19 @@ public class TerminalServiceImpl implements TerminalService {
 		Terminal terminal = terminalRepository.findById(terminalId)
 				.orElseThrow(() -> new IllegalArgumentException("Terminal not found with ID: " + terminalId));
 
-		String upperStatus = status.toUpperCase();
+		String upperStatus = status != null ? status.trim().toUpperCase() : "";
+		if (upperStatus.equals("MAINTENANCE") || upperStatus.equals("INACTIVE")) {
+			upperStatus = "OFFLINE";
+		}
+		if (upperStatus.equals("BAN") || upperStatus.equals("BANNED")) {
+			upperStatus = "SUSPENDED";
+		}
+		if (upperStatus.equals("CANCEL_BAN") || upperStatus.equals("CANCELBAN") || upperStatus.equals("UNBAN") || upperStatus.equals("ACTIVE")) {
+			upperStatus = "ONLINE";
+		}
+
 		if (!upperStatus.equals("ONLINE") && !upperStatus.equals("OFFLINE") && !upperStatus.equals("SUSPENDED")) {
-			throw new IllegalArgumentException("Invalid status. Must be ONLINE, OFFLINE, or SUSPENDED.");
+			throw new IllegalArgumentException("Invalid status. Must be ONLINE, OFFLINE, SUSPENDED, MAINTENANCE, or INACTIVE.");
 		}
 
 		terminal.setStatus(TerminalStatus.valueOf(upperStatus));
@@ -122,21 +144,16 @@ public class TerminalServiceImpl implements TerminalService {
 		);
 	}
 
-	
-	
 	@Override
 	@Transactional
 	public TerminalResponseDto updateTerminal(UUID id, TerminalRequestDto request) {
-		// ၁။ Database ထဲမှ သက်ဆိုင်ရာ Terminal ကို ရှာမည်
 		Terminal terminal = terminalRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("Terminal not found with ID: " + id));
 
-		// ၂။ Frontend မှ Terminal Name အသစ်ပါလာပါက အစားထိုးမည်
 		if (request.getTerminalName() != null && !request.getTerminalName().trim().isEmpty()) {
-			terminal.setTerminalName(request.getTerminalName());
+			terminal.setTerminalName(request.getTerminalName().trim());
 		}
 		
-		// ၃။ Frontend မှ Terminal Type အသစ်ပါလာပါက Enum အဖြစ်ပြောင်း၍ အစားထိုးမည်
 		if (request.getTerminalType() != null && !request.getTerminalType().trim().isEmpty()) {
 			String type = request.getTerminalType().toUpperCase();
 			if (!type.equals("PHYSICAL_POS") && !type.equals("VIRTUAL_API")) {
@@ -147,7 +164,6 @@ public class TerminalServiceImpl implements TerminalService {
 
 		terminal.setUpdatedAt(LocalDateTime.now());
 		
-		// ၄။ Database သို့ Save လုပ်မည်
 		Terminal updatedTerminal = terminalRepository.save(terminal);
 		
 		notificationService.sendNotificationToCurrentStaff(
@@ -155,10 +171,8 @@ public class TerminalServiceImpl implements TerminalService {
 				"Details for terminal \"" + updatedTerminal.getTerminalCode() + "\" have been successfully updated.",
 				"TERMINAL"
 		);
-		// ၅။ DTO သို့ ပြောင်း၍ ပြန်ပေးမည်
 		return mapToResponseDto(updatedTerminal);
 	}
-	
 	
 	private TerminalResponseDto mapToResponseDto(Terminal terminal) {
 		TerminalResponseDto dto = new TerminalResponseDto();
@@ -167,7 +181,6 @@ public class TerminalServiceImpl implements TerminalService {
 		dto.setTerminalName(terminal.getTerminalName());
 		dto.setTerminalType(terminal.getTerminalType().name());
         
-        // 🔴 ဤ ၂ ကြောင်းကို ပြန်ဖွင့်ပေးပါ
 		dto.setMerchantId(terminal.getMerchant().getId());
 		dto.setMerchantName(terminal.getMerchant().getBusinessName());
         

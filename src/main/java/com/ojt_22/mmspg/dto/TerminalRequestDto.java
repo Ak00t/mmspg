@@ -9,16 +9,16 @@ import lombok.Data;
 @Data
 public class TerminalRequestDto {
     
-    @NotNull(message = "Merchant ID is required")
+    @NotNull(message = "Merchant is required")
     private UUID merchantId;
 
-    @NotNull(message = "Branch ID is required")
+    @NotNull(message = "Branch is required")
     private UUID branchId;
 
-    @NotBlank(message = "Terminal Code is required")
     @Size(max = 50, message = "Terminal Code cannot exceed 50 characters")
     private String terminalCode;
 
+    @NotBlank(message = "Terminal Name is required")
     @Size(max = 100, message = "Terminal Name cannot exceed 100 characters")
     private String terminalName;
 

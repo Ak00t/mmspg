@@ -22,6 +22,7 @@ public class MccServiceImpl implements MccService {
 
 	private final MccCodeRepository mccCodeRepository;
 	private final NotificationService notificationService;
+
 	@Override
 	@Transactional(readOnly = true)
 	public List<MccCodeResponseDto> getAllMccCodes() {
@@ -34,10 +35,18 @@ public class MccServiceImpl implements MccService {
 	@Override
 	@Transactional
 	public MccCodeResponseDto addMccCode(MccCodeRequestDto request) {
+		String trimmedCode = request.getMccCode() != null ? request.getMccCode().trim() : "";
+		if (trimmedCode.isEmpty()) {
+			throw new IllegalArgumentException("MCC Code is required");
+		}
+		if (mccCodeRepository.existsByMccCode(trimmedCode)) {
+			throw new IllegalArgumentException("MCC code already exists: " + trimmedCode);
+		}
+
 		MccCode mcc = new MccCode();
-		mcc.setMccCode(request.getMccCode());
-		mcc.setMccName(request.getMccName());
-		mcc.setDescription(request.getDescription());
+		mcc.setMccCode(trimmedCode);
+		mcc.setMccName(request.getMccName() != null ? request.getMccName().trim() : "");
+		mcc.setDescription(request.getDescription() != null ? request.getDescription().trim() : null);
 		mcc.setStatus(MccCodeStatus.ACTIVE);
 
 		MccCode saved = mccCodeRepository.save(mcc);
@@ -56,22 +65,19 @@ public class MccServiceImpl implements MccService {
 		dto.setMccCode(mcc.getMccCode());
 		dto.setMccName(mcc.getMccName());
 		dto.setDescription(mcc.getDescription());
-		dto.setStatus(mcc.getStatus()
-				.name());
+		dto.setStatus(mcc.getStatus() != null ? mcc.getStatus().name() : "ACTIVE");
 		return dto;
 	}
 
 	@Override
 	@Transactional
 	public void deleteMccCode(Long id) {
-		// 🔴 Notification တွင်ပြရန် Data ကို အရင်လှမ်းဆွဲပါသည်
 		MccCode mcc = mccCodeRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("MCC not found with ID: " + id));
 
 		try {
 			mccCodeRepository.deleteById(id);
 			
-			// 🔴 Delete လုပ်ပြီးကြောင်း Notification ထည့်သွင်းခြင်း
 			notificationService.sendNotificationToCurrentStaff(
 					"MCC Deleted",
 					"MCC code \"" + mcc.getMccCode() + " - " + mcc.getMccName() + "\" has been successfully deleted.",
@@ -90,20 +96,23 @@ public class MccServiceImpl implements MccService {
 				.orElseThrow(() -> new IllegalArgumentException("MCC not found with ID: " + id));
 
 		if (request.getMccCode() != null && !request.getMccCode().trim().isEmpty()) {
-			mcc.setMccCode(request.getMccCode());
+			String trimmedCode = request.getMccCode().trim();
+			if (!trimmedCode.equals(mcc.getMccCode()) && mccCodeRepository.existsByMccCode(trimmedCode)) {
+				throw new IllegalArgumentException("MCC code already exists: " + trimmedCode);
+			}
+			mcc.setMccCode(trimmedCode);
 		}
 
 		if (request.getMccName() != null && !request.getMccName().trim().isEmpty()) {
-			mcc.setMccName(request.getMccName());
+			mcc.setMccName(request.getMccName().trim());
 		}
 
 		if (request.getDescription() != null) {
-			mcc.setDescription(request.getDescription());
+			mcc.setDescription(request.getDescription().trim());
 		}
 
 		MccCode updatedMcc = mccCodeRepository.save(mcc);
 
-		// 🔴 Update လုပ်ပြီးကြောင်း Notification ထည့်သွင်းခြင်း
 		notificationService.sendNotificationToCurrentStaff(
 				"MCC Updated",
 				"MCC code \"" + updatedMcc.getMccCode() + " - " + updatedMcc.getMccName() + "\" has been successfully updated.",

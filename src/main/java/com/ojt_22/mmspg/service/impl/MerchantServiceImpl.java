@@ -27,7 +27,9 @@ import com.ojt_22.mmspg.service.MerchantService;
 import com.ojt_22.mmspg.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MerchantServiceImpl implements MerchantService {
@@ -41,41 +43,82 @@ public class MerchantServiceImpl implements MerchantService {
 	@Transactional
 	public Merchant registerMerchant(MerchantRegistrationRequest request) {
 
-		if (merchantRepository.existsByMerchantCode(request.getMerchantCode())) {
-			throw new IllegalArgumentException("Merchant code already exists");
+		if (request.getMerchantCode() == null || request.getMerchantCode().trim().isEmpty()) {
+			throw new IllegalArgumentException("Merchant code is required");
+		}
+		if (request.getBusinessName() == null || request.getBusinessName().trim().isEmpty()) {
+			throw new IllegalArgumentException("Business name is required");
+		}
+		if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
+			throw new IllegalArgumentException("Email is required");
+		}
+		if (request.getRawPassword() == null || request.getRawPassword().trim().length() < 6) {
+			throw new IllegalArgumentException("Password must be at least 6 characters");
 		}
 
-		if (merchantRepository.existsByEmail(request.getEmail())) {
-			throw new IllegalArgumentException("Email is already in use");
+		String trimmedCode = request.getMerchantCode().trim();
+		String trimmedEmail = request.getEmail().trim().toLowerCase();
+
+		if (merchantRepository.existsByMerchantCode(trimmedCode)) {
+			throw new IllegalArgumentException("Merchant code already exists: " + trimmedCode);
 		}
 
-		MccCode mccCode = mccCodeRepository.findById(request.getMccId())
-				.orElseThrow(() -> new IllegalArgumentException("Invalid MCC ID provided"));
+		if (merchantRepository.existsByEmail(trimmedEmail)) {
+			throw new IllegalArgumentException("Email is already in use: " + trimmedEmail);
+		}
+
+		MccCode mccCode = null;
+		if (request.getMccId() != null) {
+			mccCode = mccCodeRepository.findById(request.getMccId()).orElse(null);
+		}
+		if (mccCode == null) {
+			java.util.List<MccCode> allMccs = mccCodeRepository.findAll();
+			if (!allMccs.isEmpty()) {
+				mccCode = allMccs.get(0);
+			} else {
+				MccCode defaultMcc = new MccCode();
+				defaultMcc.setMccCode("5411");
+				defaultMcc.setMccName("General Merchant");
+				defaultMcc.setDescription("Default Merchant Category");
+				defaultMcc.setStatus(com.ojt_22.mmspg.enums.MccCodeStatus.ACTIVE);
+				mccCode = mccCodeRepository.save(defaultMcc);
+			}
+		}
 
 		Merchant merchant = new Merchant();
-		merchant.setMerchantCode(request.getMerchantCode());
-		merchant.setBusinessName(request.getBusinessName());
-		merchant.setEmail(request.getEmail());
+		merchant.setMerchantCode(trimmedCode);
+		merchant.setBusinessName(request.getBusinessName().trim());
+		merchant.setBusinessRegistrationNo(trimmedCode);
+		merchant.setEmail(trimmedEmail);
 		merchant.setMccCode(mccCode);
-		merchant.setSettlementAccountNo(request.getSettlementAccountNo());
+		merchant.setSettlementAccountNo(
+				request.getSettlementAccountNo() != null && !request.getSettlementAccountNo().trim().isEmpty()
+						? request.getSettlementAccountNo().trim()
+						: "SETTLE-" + System.currentTimeMillis()
+		);
 		merchant.setContactName(request.getContactName());
 		merchant.setPhone(request.getPhone());
 		merchant.setAddress(request.getAddress());
 
 		// Hash the password
-		merchant.setPasswordHash(passwordEncoder.encode(request.getRawPassword()));
+		merchant.setPasswordHash(passwordEncoder.encode(request.getRawPassword().trim()));
 
 		// Default status
 		merchant.setStatus(MerchantStatus.PENDING);
+		merchant.setUpdatedAt(LocalDateTime.now());
 
-		// updatedAt must be set manually if there's no @UpdateTimestamp
 		Merchant savedMerchant = merchantRepository.save(merchant);
 
-		// Trigger notification on success
-		notificationService.sendNotificationToCurrentStaff(
-				"New Merchant Added", "Merchant \"" + savedMerchant.getBusinessName() + "\" (Code: "
-						+ savedMerchant.getMerchantCode() + ") has been successfully registered with PENDING status.",
-				"MERCHANT");
+		// Trigger notification on success safely
+		try {
+			notificationService.sendNotificationToCurrentStaff(
+					"New Merchant Added",
+					"Merchant \"" + savedMerchant.getBusinessName() + "\" (Code: " + savedMerchant.getMerchantCode() + ") has been successfully registered with PENDING status.",
+					"MERCHANT"
+			);
+		} catch (Exception ex) {
+			log.warn("Failed to dispatch notification for merchant registration: {}", ex.getMessage());
+		}
 
 		return savedMerchant;
 	}
@@ -130,7 +173,7 @@ public class MerchantServiceImpl implements MerchantService {
 	@Override
 	@Transactional(readOnly = true)
 	public java.util.List<com.ojt_22.mmspg.dto.MerchantResponseDto> getAllMerchants() {
-		java.util.List<Merchant> merchants = merchantRepository.findAll();
+		java.util.List<Merchant> merchants = merchantRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt"));
 
 		return merchants.stream()
 				.map(merchant -> {

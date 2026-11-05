@@ -10,12 +10,17 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -30,9 +35,7 @@ import com.ojt_22.mmspg.repository.WebhookConfigRepository;
 import com.ojt_22.mmspg.repository.WebhookDeliveryRepository;
 import com.ojt_22.mmspg.service.WebhookDeliveryService;
 import com.ojt_22.mmspg.utils.ApiLogUtils;
-import com.ojt_22.mmspg.utils.CredentialUtils;
 
-import org.springframework.beans.factory.annotation.Value;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -45,11 +48,11 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
     private final WebhookConfigRepository webhookConfigRepository;
     private final ObjectMapper objectMapper = new ObjectMapper().findAndRegisterModules();
 
-    @Value("${merchant.ecommerce.base-url:http://localhost:8080}")
-    private String ecommerceBaseUrl;
-
     @Value("${merchant.ecommerce.webhook-secret:whsec_dev_g5_callback_secret_2026}")
-    private String devWebhookSecret;
+    private String defaultWebhookSecret = "whsec_dev_g5_callback_secret_2026";
+
+    @Value("${merchant.ecommerce.base-url:http://localhost:8080}")
+    private String ecommerceBaseUrl = "http://localhost:8080";
 
     @Override
     @Transactional
@@ -146,17 +149,19 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
         delivery.setSentAt(LocalDateTime.now());
 
         try {
-            String fullUrl = resolveCallbackUrl(config.getCallbackUrl());
-            log.info("Dispatching webhook event [{}] to URL: {}", delivery.getEventType(), fullUrl);
-
             HttpClient client = HttpClient.newBuilder()
                     .connectTimeout(Duration.ofSeconds(5))
                     .build();
 
-            String signature = CredentialUtils.generateHmacSha256(delivery.getPayload(), devWebhookSecret);
+            String rawCallbackUrl = config.getCallbackUrl() != null ? config.getCallbackUrl().trim() : "";
+            String targetUrl = rawCallbackUrl.startsWith("http://") || rawCallbackUrl.startsWith("https://")
+                    ? rawCallbackUrl
+                    : ecommerceBaseUrl + (rawCallbackUrl.startsWith("/") ? "" : "/") + rawCallbackUrl;
+
+            String signature = calculateHmacSha256(delivery.getPayload(), defaultWebhookSecret);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(fullUrl))
+                    .uri(URI.create(targetUrl))
                     .header("Content-Type", "application/json")
                     .header("User-Agent", "MMSPG-Webhook-Engine/1.0")
                     .header("X-Event-Type", delivery.getEventType())
@@ -240,22 +245,27 @@ public class WebhookDeliveryServiceImpl implements WebhookDeliveryService {
         }
     }
 
-    private String resolveCallbackUrl(String callbackUrl) {
-        if (callbackUrl == null || callbackUrl.isBlank()) {
-            return callbackUrl;
+    private String calculateHmacSha256(String payload, String secret) {
+        if (payload == null || secret == null) {
+            return "";
         }
-        String trimmed = callbackUrl.trim();
-        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-            return trimmed;
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKeySpec = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+            mac.init(secretKeySpec);
+            byte[] rawHmac = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : rawHmac) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            log.error("Failed to generate HMAC-SHA256 signature for webhook", e);
+            throw new IllegalStateException("Failed to calculate webhook signature", e);
         }
-        String base = (ecommerceBaseUrl != null && !ecommerceBaseUrl.isBlank())
-                ? ecommerceBaseUrl.trim()
-                : "http://localhost:8080";
-        if (base.endsWith("/") && trimmed.startsWith("/")) {
-            return base + trimmed.substring(1);
-        } else if (!base.endsWith("/") && !trimmed.startsWith("/")) {
-            return base + "/" + trimmed;
-        }
-        return base + trimmed;
     }
 }

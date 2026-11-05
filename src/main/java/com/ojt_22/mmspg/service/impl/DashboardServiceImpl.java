@@ -1,15 +1,19 @@
 package com.ojt_22.mmspg.service.impl;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.ojt_22.mmspg.dto.ChangePasswordRequestDto;
 import com.ojt_22.mmspg.dto.MerchantDashboardSummaryResponse;
 import com.ojt_22.mmspg.dto.MerchantProfileResponseDto;
 import com.ojt_22.mmspg.dto.PaymentTransactionSummaryDto;
@@ -30,6 +34,7 @@ public class DashboardServiceImpl implements DashboardService {
     private final MerchantRepository merchantRepository;
     private final MerchantDashboardReportRepository dashboardReportRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public MerchantDashboardSummaryResponse getDashboardSummary(LocalDate startDate, LocalDate endDate) {
@@ -58,6 +63,7 @@ public class DashboardServiceImpl implements DashboardService {
                 .contactName(merchant.getContactName())
                 .settlementAccountNo(merchant.getSettlementAccountNo())
                 .status(merchant.getStatus() != null ? merchant.getStatus().name() : null)
+                .profileImageUrl(merchant.getProfileImageUrl())
                 .mccCode(merchant.getMccCode() != null ? merchant.getMccCode().getMccCode() : null)
                 .mccDescription(merchant.getMccCode() != null ? merchant.getMccCode().getMccName() : null)
                 .build();
@@ -79,6 +85,56 @@ public class DashboardServiceImpl implements DashboardService {
                         .initiatedAt(t.getInitiatedAt() != null ? t.getInitiatedAt() : t.getCreatedAt())
                         .build())
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public String uploadProfilePicture(MultipartFile file) {
+        Merchant merchant = getAuthenticatedMerchant();
+        try {
+            String uploadDir = "uploads/profiles/";
+            java.io.File directory = new java.io.File(uploadDir);
+            if (!directory.exists()) {
+                directory.mkdirs();
+            }
+
+            String originalFilename = file.getOriginalFilename();
+            String extension = (originalFilename != null && originalFilename.contains("."))
+                    ? originalFilename.substring(originalFilename.lastIndexOf("."))
+                    : ".jpg";
+            String newFilename = UUID.randomUUID().toString() + extension;
+
+            java.nio.file.Path filePath = java.nio.file.Paths.get(uploadDir + newFilename);
+            java.nio.file.Files.copy(
+                    file.getInputStream(),
+                    filePath,
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING
+            );
+
+            String fileUrl = "/uploads/profiles/" + newFilename;
+            merchant.setProfileImageUrl(fileUrl);
+            merchant.setUpdatedAt(LocalDateTime.now());
+            merchantRepository.save(merchant);
+
+            return fileUrl;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to upload profile picture: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void changeMerchantPassword(ChangePasswordRequestDto request) {
+        Merchant merchant = getAuthenticatedMerchant();
+        if (!passwordEncoder.matches(request.getCurrentPassword(), merchant.getPasswordHash())) {
+            throw new IllegalArgumentException("Current password does not match");
+        }
+        if (passwordEncoder.matches(request.getNewPassword(), merchant.getPasswordHash())) {
+            throw new IllegalArgumentException("New password cannot be the same as the current password");
+        }
+        merchant.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        merchant.setUpdatedAt(LocalDateTime.now());
+        merchantRepository.save(merchant);
     }
 
     private Merchant getAuthenticatedMerchant() {
