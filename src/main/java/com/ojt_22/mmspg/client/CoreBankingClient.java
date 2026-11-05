@@ -42,6 +42,9 @@ public class CoreBankingClient {
 	@Value("${core.banking.service.url:http://localhost:8080/api/v1/payments/ecommerce/checkout}")
 	private String coreBankingCheckoutUrl;
 
+	@Value("${core.banking.mock.enabled:true}")
+	private boolean mockEnabled;
+
 	@Value("${core.banking.merchant-id:GW-PAYMENT-001}")
 	private String merchantId;
 
@@ -50,6 +53,28 @@ public class CoreBankingClient {
 
 	public CoreBankingResponseDto executeDebit(String sourceAccountNumber, String merchantAccountNumber,
 			BigDecimal amount, BigDecimal feeAmount, String orderId, String transactionReference, String description) {
+
+		if (mockEnabled) {
+			log.info("Mock Core Banking mode is ACTIVE. Simulating debit for orderId={}, amount={}, fee={}",
+					orderId, amount, feeAmount);
+
+			if ("FAIL_ACC".equalsIgnoreCase(sourceAccountNumber)
+					|| (amount != null && amount.compareTo(new BigDecimal("100000000")) > 0)) {
+				return CoreBankingResponseDto.builder()
+						.success(false)
+						.coreTransactionRef(null)
+						.failureReason("Insufficient account balance or account locked (Mock)")
+						.build();
+			}
+
+			String mockTxnRef = "CORE-MOCK-" + System.currentTimeMillis();
+			log.info("Mock Core Banking debit approved: coreTransactionRef={}", mockTxnRef);
+			return CoreBankingResponseDto.builder()
+					.success(true)
+					.coreTransactionRef(mockTxnRef)
+					.failureReason(null)
+					.build();
+		}
 
 		EcommercePaymentRequestDto request = EcommercePaymentRequestDto.builder()
 				.sourceAccountNumber(sourceAccountNumber)

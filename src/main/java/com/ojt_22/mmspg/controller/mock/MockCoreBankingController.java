@@ -35,4 +35,13 @@ public class MockCoreBankingController {
 				.failureReason(null)
 				.build());
 	}
+
+	@PostMapping("/checkout")
+	public ResponseEntity<java.util.Map<String, Object>> mockCheckout(@RequestBody(required = false) java.util.Map<String, Object> request) {
+		return ResponseEntity.ok(java.util.Map.of(
+				"status", "SUCCESS",
+				"transactionRef", "CORE-TXN-" + System.currentTimeMillis(),
+				"message", "Mock Core Banking Checkout Approved"
+		));
+	}
 }

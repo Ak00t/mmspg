@@ -34,4 +34,50 @@ public class CoreBankingClientHmacTest {
         assertNotNull(actualHex);
         assertEquals(expectedHex, actualHex);
     }
+
+    @Test
+    public void testExecuteDebit_MockEnabled_ReturnsSuccess() throws Exception {
+        CoreBankingClient client = new CoreBankingClient(null, null);
+        java.lang.reflect.Field mockField = CoreBankingClient.class.getDeclaredField("mockEnabled");
+        mockField.setAccessible(true);
+        mockField.set(client, true);
+
+        com.ojt_22.mmspg.dto.CoreBankingResponseDto response = client.executeDebit(
+                "100200300400",
+                "900800700600",
+                new java.math.BigDecimal("50000"),
+                new java.math.BigDecimal("500"),
+                "ORDER-123",
+                "TXN-123456",
+                "Test Payment"
+        );
+
+        assertNotNull(response);
+        org.junit.jupiter.api.Assertions.assertTrue(response.isSuccess());
+        assertNotNull(response.getCoreTransactionRef());
+        org.junit.jupiter.api.Assertions.assertTrue(response.getCoreTransactionRef().startsWith("CORE-MOCK-"));
+    }
+
+    @Test
+    public void testExecuteDebit_MockEnabled_ExceededLimit_Fails() throws Exception {
+        CoreBankingClient client = new CoreBankingClient(null, null);
+        java.lang.reflect.Field mockField = CoreBankingClient.class.getDeclaredField("mockEnabled");
+        mockField.setAccessible(true);
+        mockField.set(client, true);
+
+        com.ojt_22.mmspg.dto.CoreBankingResponseDto response = client.executeDebit(
+                "100200300400",
+                "900800700600",
+                new java.math.BigDecimal("999999999"),
+                new java.math.BigDecimal("500"),
+                "ORDER-123",
+                "TXN-123456",
+                "Test Payment"
+        );
+
+        assertNotNull(response);
+        org.junit.jupiter.api.Assertions.assertFalse(response.isSuccess());
+        org.junit.jupiter.api.Assertions.assertNull(response.getCoreTransactionRef());
+        assertNotNull(response.getFailureReason());
+    }
 }
