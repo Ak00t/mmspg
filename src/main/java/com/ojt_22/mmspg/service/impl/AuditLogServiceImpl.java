@@ -1,7 +1,11 @@
 package com.ojt_22.mmspg.service.impl;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import com.ojt_22.mmspg.dto.AuditDashboardSummaryDto;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -87,6 +91,58 @@ public class AuditLogServiceImpl implements AuditLogService {
 				.stream()
 				.map(this::mapToDto)
 				.toList();
+	}
+
+	@Override
+	@Transactional(readOnly = true)
+	public AuditDashboardSummaryDto getAuditDashboardSummary(Integer days) {
+		long totalEvents = auditLogRepository.count();
+		long successCount = auditLogRepository.countByStatus(AuditStatus.SUCCESS);
+		long failedCount = auditLogRepository.countByStatus(AuditStatus.FAILURE);
+		double successRate = totalEvents > 0 ? ((double) successCount / totalEvents) * 100.0 : 100.0;
+
+		LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
+		long todayEvents = auditLogRepository.countByCreatedAtAfter(startOfToday);
+		long activeActorsCount = auditLogRepository.countDistinctActors();
+
+		Map<String, Long> actionBreakdown = new LinkedHashMap<>();
+		List<Object[]> actionCounts = auditLogRepository.countGroupByAction();
+		if (actionCounts != null) {
+			for (Object[] row : actionCounts) {
+				if (row != null && row.length >= 2 && row[0] != null && row[1] != null) {
+					actionBreakdown.put(row[0].toString(), ((Number) row[1]).longValue());
+				}
+			}
+		}
+
+		Map<String, Long> menuBreakdown = new LinkedHashMap<>();
+		List<Object[]> menuCounts = auditLogRepository.countGroupByMenuName();
+		if (menuCounts != null) {
+			for (Object[] row : menuCounts) {
+				if (row != null && row.length >= 2 && row[0] != null && row[1] != null) {
+					menuBreakdown.put(row[0].toString(), ((Number) row[1]).longValue());
+				}
+			}
+		}
+
+		Pageable pageable = PageRequest.of(0, 8);
+		List<AuditLogResponseDto> recentCriticalEvents = auditLogRepository
+				.findCriticalEvents(AuditStatus.FAILURE, pageable)
+				.stream()
+				.map(this::mapToDto)
+				.toList();
+
+		return AuditDashboardSummaryDto.builder()
+				.totalEvents(totalEvents)
+				.successCount(successCount)
+				.failedCount(failedCount)
+				.successRate(Math.round(successRate * 10.0) / 10.0)
+				.todayEvents(todayEvents)
+				.activeActorsCount(activeActorsCount)
+				.actionBreakdown(actionBreakdown)
+				.menuBreakdown(menuBreakdown)
+				.recentCriticalEvents(recentCriticalEvents)
+				.build();
 	}
 
 	private AuditLogResponseDto mapToDto(AuditLog entity) {

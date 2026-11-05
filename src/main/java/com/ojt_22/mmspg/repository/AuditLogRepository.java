@@ -37,5 +37,21 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
 			Pageable pageable);
 
 	List<AuditLog> findTop10ByOrderByCreatedAtDesc();
+
+	long countByStatus(AuditStatus status);
+
+	long countByCreatedAtAfter(LocalDateTime dateTime);
+
+	@Query("SELECT COUNT(DISTINCT a.actorId) FROM AuditLog a WHERE a.actorId IS NOT NULL")
+	long countDistinctActors();
+
+	@Query("SELECT a.action, COUNT(a) FROM AuditLog a GROUP BY a.action ORDER BY COUNT(a) DESC")
+	List<Object[]> countGroupByAction();
+
+	@Query("SELECT a.menuName, COUNT(a) FROM AuditLog a GROUP BY a.menuName ORDER BY COUNT(a) DESC")
+	List<Object[]> countGroupByMenuName();
+
+	@Query("SELECT a FROM AuditLog a WHERE a.status = :status OR UPPER(a.action) LIKE '%FAILED%' OR UPPER(a.action) LIKE '%REJECT%' ORDER BY a.createdAt DESC")
+	List<AuditLog> findCriticalEvents(@Param("status") AuditStatus status, Pageable pageable);
 }
 

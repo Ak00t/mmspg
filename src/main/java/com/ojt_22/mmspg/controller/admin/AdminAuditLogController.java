@@ -49,4 +49,11 @@ public class AdminAuditLogController {
         List<AuditLogResponseDto> recentLogs = auditLogService.getRecentActivities(limit);
         return ResponseEntity.ok(recentLogs);
     }
+
+    @GetMapping("/summary")
+    public ResponseEntity<com.ojt_22.mmspg.dto.AuditDashboardSummaryDto> getAuditDashboardSummary(
+            @RequestParam(required = false, defaultValue = "7") Integer days
+    ) {
+        return ResponseEntity.ok(auditLogService.getAuditDashboardSummary(days));
+    }
 }

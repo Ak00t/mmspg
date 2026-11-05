@@ -24,5 +24,7 @@ public interface AuditLogService {
 			Pageable pageable);
 
 	List<AuditLogResponseDto> getRecentActivities(int limit);
+
+	com.ojt_22.mmspg.dto.AuditDashboardSummaryDto getAuditDashboardSummary(Integer days);
 }
 
