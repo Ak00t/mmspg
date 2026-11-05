@@ -1,64 +1,99 @@
 package com.ojt_22.mmspg.exception;
 
 import java.time.Instant;
+import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.ojt_22.mmspg.dto.ErrorResponse;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+	private ResponseEntity<ErrorResponse> buildJsonResponse(HttpStatus status, String message) {
+		ErrorResponse body = new ErrorResponse(
+				Instant.now(),
+				status.value(),
+				status.getReasonPhrase(),
+				message != null ? message : status.getReasonPhrase()
+		);
+		return ResponseEntity.status(status)
+				.contentType(MediaType.APPLICATION_JSON)
+				.body(body);
+	}
+
+	@ExceptionHandler(DuplicateTransactionException.class)
+	public ResponseEntity<ErrorResponse> handleDuplicateTransaction(DuplicateTransactionException ex) {
+		log.warn("Duplicate transaction rejected: {}", ex.getMessage());
+		return buildJsonResponse(HttpStatus.CONFLICT, ex.getMessage());
+	}
+
 	@ExceptionHandler(ResourceNotFoundException.class)
-	public ResponseEntity<String> handleResourceNotFound(ResourceNotFoundException ex) {
-
-		return ResponseEntity.status(HttpStatus.NOT_FOUND)
-				.body(ex.getMessage());
-	}
-
-	@ExceptionHandler(InvalidTransactionStatusException.class)
-	public ResponseEntity<String> handleInvalidTransactionStatus(InvalidTransactionStatusException ex) {
-
-		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-				.body(ex.getMessage());
-	}
-
-	@ExceptionHandler(SettlementAlreadyExistsException.class)
-	public ResponseEntity<String> handleSettlementAlreadyExists(SettlementAlreadyExistsException ex) {
-
-		return ResponseEntity.status(HttpStatus.CONFLICT)
-				.body(ex.getMessage());
-	}
-
-	@ExceptionHandler(InvalidAmountException.class)
-	public ResponseEntity<String> handleInvalidAmount(InvalidAmountException ex) {
-
-		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-				.body(ex.getMessage());
-	}
-
-	@ExceptionHandler(InvalidFeeConfigurationException.class)
-	public ResponseEntity<String> handleInvalidFeeConfiguration(InvalidFeeConfigurationException ex) {
-
-		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-				.body(ex.getMessage());
+	public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
+		return buildJsonResponse(HttpStatus.NOT_FOUND, ex.getMessage());
 	}
 
 	@ExceptionHandler(MerchantNotFoundException.class)
-	public ResponseEntity<String> handelMerchantNotFound(MerchantNotFoundException ex) {
-		return ResponseEntity.status(HttpStatus.NOT_FOUND)
-				.body(ex.getMessage());
+	public ResponseEntity<ErrorResponse> handleMerchantNotFound(MerchantNotFoundException ex) {
+		return buildJsonResponse(HttpStatus.NOT_FOUND, ex.getMessage());
+	}
+
+	@ExceptionHandler(InvalidTransactionStatusException.class)
+	public ResponseEntity<ErrorResponse> handleInvalidTransactionStatus(InvalidTransactionStatusException ex) {
+		return buildJsonResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+	}
+
+	@ExceptionHandler(InvalidAmountException.class)
+	public ResponseEntity<ErrorResponse> handleInvalidAmount(InvalidAmountException ex) {
+		return buildJsonResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+	}
+
+	@ExceptionHandler(InvalidFeeConfigurationException.class)
+	public ResponseEntity<ErrorResponse> handleInvalidFeeConfiguration(InvalidFeeConfigurationException ex) {
+		return buildJsonResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+	}
+
+	@ExceptionHandler(SettlementAlreadyExistsException.class)
+	public ResponseEntity<ErrorResponse> handleSettlementAlreadyExists(SettlementAlreadyExistsException ex) {
+		return buildJsonResponse(HttpStatus.CONFLICT, ex.getMessage());
+	}
+
+	@ExceptionHandler(IllegalArgumentException.class)
+	public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
+		log.warn("Bad request argument: {}", ex.getMessage());
+		return buildJsonResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+	}
+
+	@ExceptionHandler(IllegalStateException.class)
+	public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException ex) {
+		log.warn("Illegal state: {}", ex.getMessage());
+		return buildJsonResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+	}
+
+	@ExceptionHandler(MethodArgumentNotValidException.class)
+	public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
+		String errorMessage = ex.getBindingResult().getFieldErrors().stream()
+				.map(FieldError::getDefaultMessage)
+				.collect(Collectors.joining(", "));
+		log.warn("Validation failure: {}", errorMessage);
+		return buildJsonResponse(HttpStatus.BAD_REQUEST, errorMessage);
 	}
 
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
-
-		ErrorResponse body = new ErrorResponse(Instant.now(), HttpStatus.INTERNAL_SERVER_ERROR.value(),
-				HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(), "An unexpected internal server error occurred.");
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(body);
+		log.error("Unhandled exception in API: ", ex);
+		String message = (ex.getMessage() != null && !ex.getMessage().isBlank())
+				? ex.getMessage()
+				: "An unexpected internal server error occurred.";
+		return buildJsonResponse(HttpStatus.INTERNAL_SERVER_ERROR, message);
 	}
 }

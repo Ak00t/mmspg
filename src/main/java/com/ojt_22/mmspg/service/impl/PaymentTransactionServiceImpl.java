@@ -39,6 +39,10 @@ import com.ojt_22.mmspg.repository.MerchantLedgerRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.repository.PaymentTransactionRepository;
 import com.ojt_22.mmspg.repository.TerminalRepository;
+import com.ojt_22.mmspg.exception.DuplicateTransactionException;
+import com.ojt_22.mmspg.exception.InvalidFeeConfigurationException;
+import com.ojt_22.mmspg.exception.MerchantNotFoundException;
+import com.ojt_22.mmspg.exception.ResourceNotFoundException;
 import com.ojt_22.mmspg.service.PaymentTransactionService;
 import com.ojt_22.mmspg.service.WebhookDeliveryService;
 
@@ -88,14 +92,14 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 		}
 		// 1. Merchant ရှိမရှိ စစ်ဆေးရန်
 		Merchant merchant = merchantRepository.findById(requestDto.getMerchantId())
-				.orElseThrow(() -> new RuntimeException("Merchant not found"));
+				.orElseThrow(() -> new MerchantNotFoundException("Merchant not found with ID: " + requestDto.getMerchantId()));
 
 		// 🔴 [ဖြည့်ရန် ၁.၂] Merchant Active ဖြစ်မဖြစ် validate လုပ်ရန် ထည့်ပါ
 		validateMerchant(merchant);
 
 		// Order ID Duplicate & Active Session စစ်ဆေးခြင်း
 		Optional<PaymentTransaction> existingInitiatedTxn = checkOrderDuplicateAndGetActive(
-				requestDto.getMerchantId(), requestDto.getOrderId());
+				requestDto.getMerchantId(), requestDto);
 		if (existingInitiatedTxn.isPresent()) {
 			PaymentTransaction txn = existingInitiatedTxn.get();
 			return PaymentInitiateResponseDto.builder()
@@ -111,26 +115,26 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 		
 		// ၁။ နှစ်ခုလုံး null ဖြစ်နေပါက (တစ်လှည့်မှ မပါလာပါက) Exception တက်စေရန် စစ်ဆေးခြင်း
 		if (requestDto.getBranchId() == null && requestDto.getTerminalId() == null) {
-		    throw new RuntimeException("At least one of Branch ID or Terminal ID must be provided.");
+		    throw new IllegalArgumentException("At least one of Branch ID or Terminal ID must be provided.");
 		}
 
 		// ၂။ Branch ID ပါလာမှသာ DB တွင် ရှာမည်၊ ပါမလာပါက branch ကို null ထားမည်
 		MerchantBranch branch = null;
 		if (requestDto.getBranchId() != null) {
 		    branch = branchRepository.findById(requestDto.getBranchId())
-		            .orElseThrow(() -> new RuntimeException("Branch not found"));
+		            .orElseThrow(() -> new ResourceNotFoundException("Branch not found with ID: " + requestDto.getBranchId()));
 		}
 
 		// ၃။ Terminal ID ပါလာမှသာ DB တွင် ရှာမည်၊ ပါမလာပါက terminal ကို null ထားမည်
 		Terminal terminal = null;
 		if (requestDto.getTerminalId() != null) {
 		    terminal = terminalRepository.findById(requestDto.getTerminalId())
-		            .orElseThrow(() -> new RuntimeException("Terminal not found"));
+		            .orElseThrow(() -> new ResourceNotFoundException("Terminal not found with ID: " + requestDto.getTerminalId()));
 		}
 
 		// 4. Fee အချက်အလက်ကို ရှာယူခြင်းနှင့် Flat + Percentage Fee တွက်ချက်ခြင်း
 				MerchantFee merchantFee = merchantFeeRepository.findByMerchantId(requestDto.getMerchantId())
-						.orElseThrow(() -> new RuntimeException("Merchant fee configuration not found"));
+						.orElseThrow(() -> new InvalidFeeConfigurationException("Merchant fee configuration not found"));
 
 				BigDecimal flatFee = merchantFee.getFlatFee() != null ? merchantFee.getFlatFee() : BigDecimal.ZERO;
 				BigDecimal percentageRate = merchantFee.getPercentageRate() != null ? merchantFee.getPercentageRate() : BigDecimal.ZERO;
@@ -354,24 +358,66 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 
 	private void validateMerchant(Merchant merchant) {
 		if (merchant == null) {
-			throw new RuntimeException("Invalid merchant account");
+			throw new MerchantNotFoundException("Invalid merchant account");
 		}
 
 		if (merchant.getStatus() == null || !"ACTIVE".equalsIgnoreCase(merchant.getStatus()
 				.name())) {
-			throw new RuntimeException("Merchant account is not active");
+			throw new IllegalStateException("Merchant account is not active");
 		}
 	}
 
-	private Optional<PaymentTransaction> checkOrderDuplicateAndGetActive(UUID merchantId, String orderId) {
+	private Optional<PaymentTransaction> checkOrderDuplicateAndGetActive(UUID merchantId, PaymentInitiateRequestDto requestDto) {
+		String orderId = requestDto.getOrderId();
+		BigDecimal amount = requestDto.getAmount();
+
 		// ၁။ COMPLETED ဖြစ်ပြီးသား Order ID ဖြစ်ပါက ထပ်မံပေးချေခွင့် မပြုပါ (Double payment ကာကွယ်ရန်)
 		if (transactionRepository.existsByMerchantIdAndOrderIdAndStatus(merchantId, orderId, PaymentTransactionStatus.COMPLETED)) {
-			throw new RuntimeException("Duplicate transaction: Order ID '" + orderId + "' has already been completed.");
+			Optional<PaymentTransaction> completedOpt = transactionRepository.findFirstByMerchantIdAndOrderIdAndStatusOrderByCreatedAtDesc(
+					merchantId, orderId, PaymentTransactionStatus.COMPLETED);
+
+			if (completedOpt.isPresent()) {
+				PaymentTransaction completedTxn = completedOpt.get();
+				boolean isRecent = (completedTxn.getCompletedAt() == null && completedTxn.getCreatedAt() == null)
+						|| (completedTxn.getCompletedAt() != null && completedTxn.getCompletedAt().isAfter(LocalDateTime.now().minusHours(24)))
+						|| (completedTxn.getCreatedAt() != null && completedTxn.getCreatedAt().isAfter(LocalDateTime.now().minusHours(24)));
+				boolean isSameAmount = (amount == null) || (completedTxn.getAmount() != null && completedTxn.getAmount().compareTo(amount) == 0);
+
+				if (isRecent && isSameAmount) {
+					throw new DuplicateTransactionException("Duplicate transaction: Order ID '" + orderId + "' has already been completed.");
+				}
+			} else {
+				throw new DuplicateTransactionException("Duplicate transaction: Order ID '" + orderId + "' has already been completed.");
+			}
 		}
 
-		// ၂။ INITIATED ဖြစ်နေဆဲ (User မပြီးပြတ်သေးဘဲ ပြန်လာပြီး ထပ်နှိပ်ပါက) လက်ရှိ Session အဟောင်းကို ပြန်ပေးရန်
-		return transactionRepository.findFirstByMerchantIdAndOrderIdAndStatusOrderByCreatedAtDesc(
+		// ၂။ INITIATED ဖြစ်နေဆဲ Session ရှိမရှိ စစ်ဆေးခြင်း
+		Optional<PaymentTransaction> initiatedOpt = transactionRepository.findFirstByMerchantIdAndOrderIdAndStatusOrderByCreatedAtDesc(
 				merchantId, orderId, PaymentTransactionStatus.INITIATED);
+
+		if (initiatedOpt.isPresent()) {
+			PaymentTransaction txn = initiatedOpt.get();
+			// Session Expiry Check (15 minutes) and Amount consistency
+			boolean isRecent = (txn.getInitiatedAt() == null) || txn.getInitiatedAt().isAfter(LocalDateTime.now().minusMinutes(15));
+			boolean isSameAmount = (amount == null) || (txn.getAmount() != null && txn.getAmount().compareTo(amount) == 0);
+
+			if (isRecent && isSameAmount) {
+				return Optional.of(txn);
+			}
+			// If session is expired or for a different amount, mark the old initiated transaction as FAILED so a new clean session can proceed
+			txn.setStatus(PaymentTransactionStatus.FAILED);
+			txn.setFailureReason("Initiated session expired or superseded by new initiate request");
+			transactionRepository.save(txn);
+		}
+
+		return Optional.empty();
+	}
+
+	// Overload for backward compatibility with existing unit tests
+	Optional<PaymentTransaction> checkOrderDuplicateAndGetActive(UUID merchantId, String orderId) {
+		PaymentInitiateRequestDto dummy = new PaymentInitiateRequestDto();
+		dummy.setOrderId(orderId);
+		return checkOrderDuplicateAndGetActive(merchantId, dummy);
 	}
 
 }

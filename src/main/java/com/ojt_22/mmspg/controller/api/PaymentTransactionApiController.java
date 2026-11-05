@@ -34,7 +34,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/v1/payments")
+@RequestMapping(value = "/api/v1/payments", produces = org.springframework.http.MediaType.APPLICATION_JSON_VALUE)
 @RequiredArgsConstructor
 public class PaymentTransactionApiController {
 

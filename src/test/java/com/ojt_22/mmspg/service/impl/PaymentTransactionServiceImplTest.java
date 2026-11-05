@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -49,6 +50,7 @@ public class PaymentTransactionServiceImplTest {
     @Mock private TerminalRepository terminalRepository;
     @Mock private MerchantLedgerRepository ledgerRepository;
     @Mock private WebhookDeliveryService webhookDeliveryService;
+    @Mock private com.ojt_22.mmspg.repository.WebhookConfigRepository webhookConfigRepository;
     @Mock private CoreBankingClient coreBankingClient;
 
     @InjectMocks
@@ -359,7 +361,6 @@ public class PaymentTransactionServiceImplTest {
         when(transactionRepository.existsByMerchantIdAndOrderIdAndStatus(any(), any(), any())).thenReturn(false);
         when(transactionRepository.findFirstByMerchantIdAndOrderIdAndStatusOrderByCreatedAtDesc(any(), any(), any()))
                 .thenReturn(Optional.empty());
-        when(branchRepository.findById(any())).thenReturn(Optional.of(branch));
         when(terminalRepository.findById(terminalId)).thenReturn(Optional.empty());
 
         Exception exception = assertThrows(RuntimeException.class, () -> {
@@ -427,6 +428,94 @@ public class PaymentTransactionServiceImplTest {
         });
 
         assertTrue(exception.getMessage().contains("Duplicate transaction"));
+    }
+
+    @Test
+    public void testInitiateTransaction_SameOrderIdDifferentAmount_Allowed() {
+        String idempotencyKey = "key-diff-amount";
+        UUID merchantId = UUID.randomUUID();
+        UUID branchId = UUID.randomUUID();
+        PaymentInitiateRequestDto requestDto = new PaymentInitiateRequestDto();
+        requestDto.setMerchantId(merchantId);
+        requestDto.setOrderId("ORD-001");
+        requestDto.setAmount(BigDecimal.valueOf(20000));
+        requestDto.setCurrency("MMK");
+        requestDto.setBranchId(branchId);
+
+        Merchant merchant = new Merchant();
+        merchant.setId(merchantId);
+        merchant.setStatus(com.ojt_22.mmspg.enums.MerchantStatus.ACTIVE);
+
+        PaymentTransaction completedTxn = new PaymentTransaction();
+        completedTxn.setAmount(BigDecimal.valueOf(10000));
+        completedTxn.setStatus(PaymentTransactionStatus.COMPLETED);
+        completedTxn.setCompletedAt(LocalDateTime.now().minusHours(1));
+
+        MerchantBranch branch = new MerchantBranch();
+        MerchantFee fee = new MerchantFee();
+        fee.setFlatFee(BigDecimal.valueOf(100));
+        fee.setPercentageRate(BigDecimal.valueOf(1));
+
+        when(transactionRepository.findByIdempotencyKey(idempotencyKey)).thenReturn(Optional.empty());
+        when(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchant));
+        when(transactionRepository.existsByMerchantIdAndOrderIdAndStatus(merchantId, "ORD-001", PaymentTransactionStatus.COMPLETED))
+                .thenReturn(true);
+        when(transactionRepository.findFirstByMerchantIdAndOrderIdAndStatusOrderByCreatedAtDesc(merchantId, "ORD-001", PaymentTransactionStatus.COMPLETED))
+                .thenReturn(Optional.of(completedTxn));
+        when(transactionRepository.findFirstByMerchantIdAndOrderIdAndStatusOrderByCreatedAtDesc(merchantId, "ORD-001", PaymentTransactionStatus.INITIATED))
+                .thenReturn(Optional.empty());
+        when(branchRepository.findById(branchId)).thenReturn(Optional.of(branch));
+        when(merchantFeeRepository.findByMerchantId(merchantId)).thenReturn(Optional.of(fee));
+        when(transactionRepository.save(any(PaymentTransaction.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        PaymentInitiateResponseDto response = transactionService.initiateTransaction(requestDto, idempotencyKey);
+
+        assertNotNull(response);
+        assertEquals("INITIATED", response.getStatus());
+    }
+
+    @Test
+    public void testInitiateTransaction_SameOrderIdOlderThan24Hours_Allowed() {
+        String idempotencyKey = "key-older-order";
+        UUID merchantId = UUID.randomUUID();
+        UUID branchId = UUID.randomUUID();
+        PaymentInitiateRequestDto requestDto = new PaymentInitiateRequestDto();
+        requestDto.setMerchantId(merchantId);
+        requestDto.setOrderId("ORD-001");
+        requestDto.setAmount(BigDecimal.valueOf(10000));
+        requestDto.setCurrency("MMK");
+        requestDto.setBranchId(branchId);
+
+        Merchant merchant = new Merchant();
+        merchant.setId(merchantId);
+        merchant.setStatus(com.ojt_22.mmspg.enums.MerchantStatus.ACTIVE);
+
+        PaymentTransaction completedTxn = new PaymentTransaction();
+        completedTxn.setAmount(BigDecimal.valueOf(10000));
+        completedTxn.setStatus(PaymentTransactionStatus.COMPLETED);
+        completedTxn.setCompletedAt(LocalDateTime.now().minusHours(25));
+
+        MerchantBranch branch = new MerchantBranch();
+        MerchantFee fee = new MerchantFee();
+        fee.setFlatFee(BigDecimal.valueOf(100));
+        fee.setPercentageRate(BigDecimal.valueOf(1));
+
+        when(transactionRepository.findByIdempotencyKey(idempotencyKey)).thenReturn(Optional.empty());
+        when(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchant));
+        when(transactionRepository.existsByMerchantIdAndOrderIdAndStatus(merchantId, "ORD-001", PaymentTransactionStatus.COMPLETED))
+                .thenReturn(true);
+        when(transactionRepository.findFirstByMerchantIdAndOrderIdAndStatusOrderByCreatedAtDesc(merchantId, "ORD-001", PaymentTransactionStatus.COMPLETED))
+                .thenReturn(Optional.of(completedTxn));
+        when(transactionRepository.findFirstByMerchantIdAndOrderIdAndStatusOrderByCreatedAtDesc(merchantId, "ORD-001", PaymentTransactionStatus.INITIATED))
+                .thenReturn(Optional.empty());
+        when(branchRepository.findById(branchId)).thenReturn(Optional.of(branch));
+        when(merchantFeeRepository.findByMerchantId(merchantId)).thenReturn(Optional.of(fee));
+        when(transactionRepository.save(any(PaymentTransaction.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        PaymentInitiateResponseDto response = transactionService.initiateTransaction(requestDto, idempotencyKey);
+
+        assertNotNull(response);
+        assertEquals("INITIATED", response.getStatus());
     }
 
     @Test
@@ -514,9 +603,6 @@ public class PaymentTransactionServiceImplTest {
 
         when(transactionRepository.findByIdempotencyKey(idempotencyKey)).thenReturn(Optional.empty());
         when(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchant));
-        when(transactionRepository.existsByMerchantIdAndOrderIdAndStatus(any(), any(), any())).thenReturn(false);
-        when(transactionRepository.findFirstByMerchantIdAndOrderIdAndStatusOrderByCreatedAtDesc(any(), any(), any()))
-                .thenReturn(Optional.empty());
 
         Exception exception = assertThrows(RuntimeException.class, () -> {
             transactionService.initiateTransaction(requestDto, idempotencyKey);
@@ -768,8 +854,6 @@ public class PaymentTransactionServiceImplTest {
 
         when(transactionRepository.findByIdempotencyKey(idempotencyKey)).thenReturn(Optional.empty());
         when(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchant));
-        when(transactionRepository.existsByMerchantIdAndOrderIdAndStatus(any(), any(), any())).thenReturn(false);
-        when(transactionRepository.findFirstByMerchantIdAndOrderIdAndStatusOrderByCreatedAtDesc(any(), any(), any())).thenReturn(Optional.empty());
 
         Exception exception = assertThrows(RuntimeException.class, () -> {
             transactionService.initiateTransaction(requestDto, idempotencyKey);

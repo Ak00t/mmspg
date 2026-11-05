@@ -222,21 +222,20 @@ public class PaymentTransactionApiControllerTest {
                 .header("Idempotency-Key", idempotencyKey)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(requestDto)))
-                .andExpect(status().isInternalServerError()); // 👈 isBadRequest() မှ isInternalServerError() သို့ ပြောင်းပါ
+                .andExpect(status().isBadRequest());
     }
 
     @Test
-    public void testAuthorizeTransaction_Unauthorized() throws Exception {
+    public void testAuthorizeTransaction_InvalidRequest_ReturnsBadRequest() throws Exception {
         PaymentAuthorizeRequestDto requestDto = new PaymentAuthorizeRequestDto();
-        requestDto.setPaymentToken("token-abc");
+        requestDto.setPaymentToken(""); // blank token triggers validation failure
         requestDto.setCustomerId("CUST-001");
         requestDto.setStatus("SUCCESS");
 
         mockMvc.perform(post("/api/v1/payments/authorize")
-                .header("X-Internal-Service-Key", "wrong-secret-key") // မှားယွင်းသော Key ပို့၍ Unauthorized (401) ဖြစ်ခြင်းကို စမ်းသပ်ရန်
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(requestDto)))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isBadRequest());
     }
     
     @Test
@@ -258,7 +257,7 @@ public class PaymentTransactionApiControllerTest {
                 .header("Idempotency-Key", idempotencyKey)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(requestDto)))
-                .andExpect(status().isInternalServerError());
+                .andExpect(status().isBadRequest());
     }
     
     @Test
