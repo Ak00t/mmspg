@@ -1,5 +1,6 @@
 package com.ojt_22.mmspg.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -15,6 +16,7 @@ public interface ApiCredentialRepository extends JpaRepository<ApiCredential, UU
 
     Optional<ApiCredential> findByClientIdAndStatus(String clientId, ApiCredentialStatus status);
 
-   
+    List<ApiCredential> findByMerchantIdOrderByCreatedAtDesc(UUID merchantId);
+
     boolean existsByClientId(String clientId);
 }

@@ -83,7 +83,6 @@ class ApiCredentialServiceTest {
 	private void stubSuccessfulCreateDependencies() {
 		when(authenticatedMerchantService.resolveMerchantId()).thenReturn(merchantId);
 		when(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchant));
-		when(staffUserRepository.findById(DEFAULT_STAFF_ID)).thenReturn(Optional.of(new StaffUser()));
 		when(passwordEncoder.encode(anyString())).thenReturn("hashed");
 		when(credentialRepository.save(any(ApiCredential.class))).thenAnswer(inv -> {
 			ApiCredential c = inv.getArgument(0);
@@ -220,41 +219,26 @@ class ApiCredentialServiceTest {
 	}
 
 	@Test
-	void createApiCredential_DefaultStaffMissing_FallsBackToFirstStaff() {
-		StaffUser fallback = new StaffUser();
+	void getMerchantCredentials_ReturnsListOfResponses() {
 		when(authenticatedMerchantService.resolveMerchantId()).thenReturn(merchantId);
-		when(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchant));
-		when(staffUserRepository.findById(DEFAULT_STAFF_ID)).thenReturn(Optional.empty());
-		when(staffUserRepository.findAll()).thenReturn(List.of(fallback));
-		when(passwordEncoder.encode(anyString())).thenReturn("hashed");
-		when(credentialRepository.save(any(ApiCredential.class))).thenAnswer(inv -> inv.getArgument(0));
+		ApiCredential c1 = credentialOwnedBy(merchantId);
+		c1.setKeyName("Primary Key");
+		c1.setRateLimit(100);
+		when(credentialRepository.findByMerchantIdOrderByCreatedAtDesc(merchantId))
+				.thenReturn(List.of(c1));
 
-		service.createApiCredential(request(merchantId, "sandbox"));
+		List<CredentialResponse> responses = service.getMerchantCredentials();
 
-		ArgumentCaptor<ApiCredential> captor = ArgumentCaptor.forClass(ApiCredential.class);
-		verify(credentialRepository).save(captor.capture());
-		assertEquals(fallback, captor.getValue().getCreatedBy());
-	}
-
-	@Test
-	void createApiCredential_NoStaffAtAll_ThrowsIllegalState() {
-		when(authenticatedMerchantService.resolveMerchantId()).thenReturn(merchantId);
-		when(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchant));
-		when(staffUserRepository.findById(DEFAULT_STAFF_ID)).thenReturn(Optional.empty());
-		when(staffUserRepository.findAll()).thenReturn(List.of());
-
-		assertThrows(IllegalStateException.class,
-				() -> service.createApiCredential(request(merchantId, "sandbox")));
-
-		verify(credentialRepository, never()).save(any());
+		assertEquals(1, responses.size());
+		assertEquals("Primary Key", responses.get(0).getKeyName());
+		assertNull(responses.get(0).getClientSecret());
+		assertEquals(c1.getClientId(), responses.get(0).getClientId());
 	}
 
 	@Test
 	void createApiCredential_InvalidEnvironment_ThrowsIllegalArgument() {
 		when(authenticatedMerchantService.resolveMerchantId()).thenReturn(merchantId);
 		when(merchantRepository.findById(merchantId)).thenReturn(Optional.of(merchant));
-		when(staffUserRepository.findById(DEFAULT_STAFF_ID)).thenReturn(Optional.of(new StaffUser()));
-		when(passwordEncoder.encode(anyString())).thenReturn("hashed");
 
 		assertThrows(IllegalArgumentException.class,
 				() -> service.createApiCredential(request(merchantId, "staging")));

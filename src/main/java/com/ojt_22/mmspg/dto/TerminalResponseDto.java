@@ -15,5 +15,7 @@ public class TerminalResponseDto {
     private UUID branchId;
     private String branchName;
     private String status;
+    private UUID createdByStaffId;
+    private String createdByName;
     private LocalDateTime createdAt;
 }

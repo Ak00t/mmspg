@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,11 +15,13 @@ import com.ojt_22.mmspg.dto.TerminalRequestDto;
 import com.ojt_22.mmspg.dto.TerminalResponseDto;
 import com.ojt_22.mmspg.entity.Merchant;
 import com.ojt_22.mmspg.entity.MerchantBranch;
+import com.ojt_22.mmspg.entity.StaffUser;
 import com.ojt_22.mmspg.entity.Terminal;
 import com.ojt_22.mmspg.enums.TerminalStatus;
 import com.ojt_22.mmspg.enums.TerminalType;
 import com.ojt_22.mmspg.repository.BranchRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
+import com.ojt_22.mmspg.repository.StaffUserRepository;
 import com.ojt_22.mmspg.repository.TerminalRepository;
 import com.ojt_22.mmspg.service.NotificationService;
 import com.ojt_22.mmspg.service.TerminalService;
@@ -30,6 +35,7 @@ public class TerminalServiceImpl implements TerminalService {
 	private final TerminalRepository terminalRepository;
 	private final MerchantRepository merchantRepository;
 	private final BranchRepository branchRepository;
+	private final StaffUserRepository staffUserRepository;
 	private final NotificationService notificationService;
 
 	@Override
@@ -70,6 +76,8 @@ public class TerminalServiceImpl implements TerminalService {
 			throw new IllegalArgumentException("Terminal code already exists: " + code);
 		}
 
+		StaffUser currentStaff = getCurrentStaffUser();
+
 		Terminal terminal = new Terminal();
 		terminal.setMerchant(merchant); 
 		terminal.setBranch(branch);
@@ -77,6 +85,7 @@ public class TerminalServiceImpl implements TerminalService {
 		terminal.setTerminalName(request.getTerminalName() != null ? request.getTerminalName().trim() : "Terminal " + code);
 		terminal.setTerminalType(TerminalType.valueOf(type));
 		terminal.setStatus(TerminalStatus.ONLINE);
+		terminal.setCreatedBy(currentStaff);
 
 		Terminal savedTerminal = terminalRepository.save(terminal);
 
@@ -187,7 +196,28 @@ public class TerminalServiceImpl implements TerminalService {
 		dto.setBranchId(terminal.getBranch().getId());
 		dto.setBranchName(terminal.getBranch().getBranchName());
 		dto.setStatus(terminal.getStatus().name());
+		if (terminal.getCreatedBy() != null) {
+			dto.setCreatedByStaffId(terminal.getCreatedBy().getId());
+			dto.setCreatedByName(terminal.getCreatedBy().getFullName());
+		}
 		dto.setCreatedAt(terminal.getCreatedAt());
 		return dto;
+	}
+
+	private StaffUser getCurrentStaffUser() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		if (authentication == null || !authentication.isAuthenticated()
+				|| "anonymousUser".equals(authentication.getPrincipal())) {
+			throw new AccessDeniedException("Authentication is required to provision a terminal");
+		}
+		String identifier = authentication.getName();
+		try {
+			UUID staffId = UUID.fromString(identifier);
+			return staffUserRepository.findById(staffId)
+					.orElseThrow(() -> new AccessDeniedException("Authenticated staff user was not found for ID: " + staffId));
+		} catch (IllegalArgumentException e) {
+			return staffUserRepository.findByEmail(identifier)
+					.orElseThrow(() -> new AccessDeniedException("Authenticated staff user was not found for email: " + identifier));
+		}
 	}
 }

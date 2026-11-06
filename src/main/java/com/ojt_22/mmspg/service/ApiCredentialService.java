@@ -3,6 +3,7 @@ package com.ojt_22.mmspg.service;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Base64;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -56,6 +57,34 @@ public class ApiCredentialService {
 				.encodeToString(randomBytes);
 	}
 
+	@Transactional(readOnly = true)
+	public List<CredentialResponse> getMerchantCredentials() {
+		UUID authenticatedMerchantId = authenticatedMerchantService.resolveMerchantId();
+		return credentialRepository.findByMerchantIdOrderByCreatedAtDesc(authenticatedMerchantId)
+				.stream()
+				.map(this::toResponseWithoutSecret)
+				.toList();
+	}
+
+	private CredentialResponse toResponseWithoutSecret(ApiCredential credential) {
+		return CredentialResponse.builder()
+				.credentialId(credential.getId())
+				.clientId(credential.getClientId())
+				.clientSecret(null)
+				.keyName(credential.getKeyName())
+				.environment(credential.getEnvironment()
+						.name())
+				.status(credential.getStatus()
+						.name())
+				.ipAddress(credential.getIpAddress())
+				.rateLimit(credential.getRateLimit())
+				.lastUsedAt(credential.getLastUsedAt())
+				.revokedAt(credential.getRevokedAt())
+				.expiresAt(credential.getExpiresAt())
+				.createdAt(credential.getCreatedAt())
+				.build();
+	}
+
 	@Transactional
 	public CredentialResponse createApiCredential(CreateCredentialRequest request) {
 		UUID authenticatedMerchantId = authenticatedMerchantService.resolveMerchantId();
@@ -64,28 +93,22 @@ public class ApiCredentialService {
 		}
 		Merchant merchant = merchantRepository.findById(authenticatedMerchantId)
 				.orElseThrow(
-						() -> new IllegalArgumentException("Merchant not found with ID: " + request.getMerchantId()));
+						() -> new IllegalArgumentException("Merchant not found with ID: " + authenticatedMerchantId));
 
-		// 1. created_by အတွက် Staff User ကို Database မှ ဆွဲယူခြင်း (Column
-		// 'created_by' cannot be null ကို ဖြေရှင်းခြင်း)
-//		UUID defaultStaffId = UUID.fromString("11111111-2222-3333-4444-555555555555");
-//		StaffUser createdByStaff = staffUserRepository.findById(defaultStaffId)
-//				.orElseGet(() -> staffUserRepository.findAll()
-//						.stream()
-//						.findFirst()
-//						.orElseThrow(() -> new IllegalStateException("No staff user found to assign created_by")));   by akt
+		String envString = request.getEnvironment() != null ? request.getEnvironment() : request.getEnviroment();
+		if (envString == null || envString.isBlank()) {
+			envString = "SANDBOX";
+		}
 
 		String rawSecret = generateClientSecret();
-		String clientId = generateClientId(request.getEnviroment());
+		String clientId = generateClientId(envString);
 
 		ApiCredential credential = new ApiCredential();
 		credential.setMerchant(merchant);
-//		credential.setCreatedBy(createdByStaff); // created_by field သို့ မဖြစ်မနေ ထည့်သွင်းပေးရပါမည်
 		credential.setClientId(clientId);
 		credential.setClientSecretHash(passwordEncoder.encode(rawSecret));
-		credential.setIpAddress(request.getIpAddress());
-		credential.setEnvironment(ApiCredentialEnvironment.valueOf(request.getEnviroment()
-				.toUpperCase()));
+		credential.setIpAddress(request.getIpAddress() != null ? request.getIpAddress() : "0.0.0.0/0");
+		credential.setEnvironment(ApiCredentialEnvironment.valueOf(envString.toUpperCase()));
 		credential.setStatus(ApiCredentialStatus.ACTIVE);
 		credential.setKeyName(request.getKeyName());
 		credential.setRateLimit(100);
@@ -98,11 +121,15 @@ public class ApiCredentialService {
 				.credentialId(saved.getId())
 				.clientId(saved.getClientId())
 				.clientSecret(rawSecret)
+				.keyName(saved.getKeyName())
 				.environment(saved.getEnvironment()
 						.name())
 				.status(saved.getStatus()
 						.name())
 				.ipAddress(saved.getIpAddress())
+				.rateLimit(saved.getRateLimit())
+				.lastUsedAt(saved.getLastUsedAt())
+				.revokedAt(saved.getRevokedAt())
 				.expiresAt(saved.getExpiresAt())
 				.createdAt(saved.getCreatedAt())
 				.build();
@@ -123,13 +150,17 @@ public class ApiCredentialService {
 				.credentialId(credential.getId())
 				.clientId(credential.getClientId())
 				.clientSecret(newRawSecret)
+				.keyName(credential.getKeyName())
 				.environment(credential.getEnvironment()
 						.name())
 				.status(credential.getStatus()
 						.name())
 				.ipAddress(credential.getIpAddress())
+				.rateLimit(credential.getRateLimit())
+				.lastUsedAt(credential.getLastUsedAt())
+				.revokedAt(credential.getRevokedAt())
 				.expiresAt(credential.getExpiresAt())
-//				.createdAt(credential.getCreatedAt()) by akt
+				.createdAt(credential.getCreatedAt())
 				.build();
 	}
 

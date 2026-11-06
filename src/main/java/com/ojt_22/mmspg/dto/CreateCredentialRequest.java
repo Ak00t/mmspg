@@ -15,4 +15,11 @@ public class CreateCredentialRequest {
 	private String ipAddress;
 	private String enviroment;
 
+	public String getEnvironment() {
+		return this.enviroment;
+	}
+
+	public void setEnvironment(String environment) {
+		this.enviroment = environment;
+	}
 }

@@ -19,9 +19,13 @@ public class CredentialResponse {
     private UUID credentialId;
     private String clientId;
     private String clientSecret; 
+    private String keyName;
     private String environment;
     private String status;
     private String ipAddress;
+    private Integer rateLimit;
+    private LocalDateTime lastUsedAt;
+    private LocalDateTime revokedAt;
     private LocalDateTime expiresAt;
     private LocalDateTime createdAt;
 }

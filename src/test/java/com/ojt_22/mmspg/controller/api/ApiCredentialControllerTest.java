@@ -7,6 +7,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,20 @@ class ApiCredentialControllerTest {
 
 	@InjectMocks
 	private ApiCredentialController controller;
+
+	@Test
+	void getCredentials_Returns200WithList() {
+		List<CredentialResponse> expected = List.of(
+				CredentialResponse.builder().credentialId(UUID.randomUUID()).keyName("key-1").build()
+		);
+		when(apiCredentialService.getMerchantCredentials()).thenReturn(expected);
+
+		ResponseEntity<List<CredentialResponse>> result = controller.getCredentials();
+
+		assertEquals(HttpStatus.OK, result.getStatusCode());
+		assertSame(expected, result.getBody());
+		verify(apiCredentialService).getMerchantCredentials();
+	}
 
 	@Test
 	void createCredential_Returns201WithBody() {
