@@ -1,7 +1,9 @@
 package com.ojt_22.mmspg.config;
 
 import java.util.Arrays;
+import java.util.List;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -35,21 +37,22 @@ public class SecurityConfig {
 		return configuration.getAuthenticationManager();
 	}
 
+	@Value("${app.cors.allowed-origins}")
+	private List<String> allowedOrigins;
+
+	@Value("${app.cors.internal-origins}")
+	private List<String> internalOrigins;
+
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
+
 		// 1. Exported Configuration for Customer Checkout & External Frontends
 		CorsConfiguration exportedPaymentConfig = new CorsConfiguration();
-		exportedPaymentConfig.setAllowedOrigins(Arrays.asList(
-				"http://localhost:5173", "http://127.0.0.1:5173",
-				"http://localhost:5174", "http://127.0.0.1:5174",
-				"http://localhost:5175", "http://127.0.0.1:5175",
-				"http://localhost:3000", "http://127.0.0.1:3000"));
+		exportedPaymentConfig.setAllowedOrigins(allowedOrigins);
 		exportedPaymentConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-		exportedPaymentConfig.setAllowedHeaders(Arrays.asList(
-				"Authorization", "Content-Type", "X-Requested-With", "Accept",
-				"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers",
-				"X-Client-ID", "X-Client-Secret", "Idempotency-Key", "X-Client-Type", "x-client-type",
-				"X-Internal-Service-Key", "*"));
+		exportedPaymentConfig.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With",
+				"Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", "X-Client-ID",
+				"X-Client-Secret", "Idempotency-Key", "X-Client-Type", "x-client-type", "X-Internal-Service-Key", "*"));
 		exportedPaymentConfig
 				.setExposedHeaders(Arrays.asList("Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"));
 		exportedPaymentConfig.setAllowCredentials(true);
@@ -57,13 +60,11 @@ public class SecurityConfig {
 
 		// 2. Strict Internal Configuration for MMSPG Back-office & Merchant Portal
 		CorsConfiguration internalMmspgConfig = new CorsConfiguration();
-		internalMmspgConfig.setAllowedOrigins(Arrays.asList("http://localhost:5175", "http://127.0.0.1:5175"));
+		internalMmspgConfig.setAllowedOrigins(internalOrigins);
 		internalMmspgConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-		internalMmspgConfig.setAllowedHeaders(Arrays.asList(
-				"Authorization", "Content-Type", "X-Requested-With", "Accept",
-				"Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers",
-				"X-Client-ID", "X-Client-Secret", "Idempotency-Key", "X-Client-Type", "x-client-type",
-				"X-Internal-Service-Key", "*"));
+		internalMmspgConfig.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With",
+				"Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers", "X-Client-ID",
+				"X-Client-Secret", "Idempotency-Key", "X-Client-Type", "x-client-type", "X-Internal-Service-Key", "*"));
 		internalMmspgConfig
 				.setExposedHeaders(Arrays.asList("Access-Control-Allow-Origin", "Access-Control-Allow-Credentials"));
 		internalMmspgConfig.setAllowCredentials(true);
@@ -80,10 +81,14 @@ public class SecurityConfig {
 
 		http.cors(Customizer.withDefaults())
 				.csrf(AbstractHttpConfigurer::disable)
-				.authorizeHttpRequests(authorize -> authorize.requestMatchers("/uploads/**").permitAll()
-						.requestMatchers("/api/v1/auth/**").permitAll()
-						.requestMatchers("/api/v1/merchant-portal/auth/**").permitAll()
-						.requestMatchers("/api/v1/login", "/api/v1/merchant-portal/auth/login").permitAll()
+				.authorizeHttpRequests(authorize -> authorize.requestMatchers("/uploads/**")
+						.permitAll()
+						.requestMatchers("/api/v1/auth/**")
+						.permitAll()
+						.requestMatchers("/api/v1/merchant-portal/auth/**")
+						.permitAll()
+						.requestMatchers("/api/v1/login", "/api/v1/merchant-portal/auth/login")
+						.permitAll()
 						.requestMatchers("/error")
 						.permitAll()
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
