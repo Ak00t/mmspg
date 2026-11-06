@@ -13,7 +13,6 @@ import com.ojt_22.mmspg.dto.CreateCredentialRequest;
 import com.ojt_22.mmspg.dto.CredentialResponse;
 import com.ojt_22.mmspg.entity.ApiCredential;
 import com.ojt_22.mmspg.entity.Merchant;
-import com.ojt_22.mmspg.entity.StaffUser;
 import com.ojt_22.mmspg.enums.ApiCredentialEnvironment;
 import com.ojt_22.mmspg.enums.ApiCredentialStatus;
 import com.ojt_22.mmspg.repository.ApiCredentialRepository;
@@ -67,26 +66,31 @@ public class ApiCredentialService {
 				.orElseThrow(
 						() -> new IllegalArgumentException("Merchant not found with ID: " + request.getMerchantId()));
 
-		// 1. created_by အတွက် Staff User ကို Database မှ ဆွဲယူခြင်း (Column 'created_by' cannot be null ကို ဖြေရှင်းခြင်း)
-		UUID defaultStaffId = UUID.fromString("11111111-2222-3333-4444-555555555555");
-		StaffUser createdByStaff = staffUserRepository.findById(defaultStaffId)
-				.orElseGet(() -> staffUserRepository.findAll().stream().findFirst()
-						.orElseThrow(() -> new IllegalStateException("No staff user found to assign created_by")));
+		// 1. created_by အတွက် Staff User ကို Database မှ ဆွဲယူခြင်း (Column
+		// 'created_by' cannot be null ကို ဖြေရှင်းခြင်း)
+//		UUID defaultStaffId = UUID.fromString("11111111-2222-3333-4444-555555555555");
+//		StaffUser createdByStaff = staffUserRepository.findById(defaultStaffId)
+//				.orElseGet(() -> staffUserRepository.findAll()
+//						.stream()
+//						.findFirst()
+//						.orElseThrow(() -> new IllegalStateException("No staff user found to assign created_by")));   by akt
 
 		String rawSecret = generateClientSecret();
 		String clientId = generateClientId(request.getEnviroment());
 
 		ApiCredential credential = new ApiCredential();
 		credential.setMerchant(merchant);
-		credential.setCreatedBy(createdByStaff); // created_by field သို့ မဖြစ်မနေ ထည့်သွင်းပေးရပါမည်
+//		credential.setCreatedBy(createdByStaff); // created_by field သို့ မဖြစ်မနေ ထည့်သွင်းပေးရပါမည်
 		credential.setClientId(clientId);
 		credential.setClientSecretHash(passwordEncoder.encode(rawSecret));
 		credential.setIpAddress(request.getIpAddress());
-		credential.setEnvironment(ApiCredentialEnvironment.valueOf(request.getEnviroment().toUpperCase()));
+		credential.setEnvironment(ApiCredentialEnvironment.valueOf(request.getEnviroment()
+				.toUpperCase()));
 		credential.setStatus(ApiCredentialStatus.ACTIVE);
 		credential.setKeyName(request.getKeyName());
 		credential.setRateLimit(100);
-		credential.setExpiresAt(LocalDateTime.now().plusYears(1));
+		credential.setExpiresAt(LocalDateTime.now()
+				.plusYears(1));
 
 		ApiCredential saved = credentialRepository.save(credential);
 
@@ -94,8 +98,10 @@ public class ApiCredentialService {
 				.credentialId(saved.getId())
 				.clientId(saved.getClientId())
 				.clientSecret(rawSecret)
-				.environment(saved.getEnvironment().name())
-				.status(saved.getStatus().name())
+				.environment(saved.getEnvironment()
+						.name())
+				.status(saved.getStatus()
+						.name())
 				.ipAddress(saved.getIpAddress())
 				.expiresAt(saved.getExpiresAt())
 				.createdAt(saved.getCreatedAt())
@@ -106,7 +112,8 @@ public class ApiCredentialService {
 	public CredentialResponse regenerateClientSecret(UUID credentialId) {
 		ApiCredential credential = credentialRepository.findById(credentialId)
 				.orElseThrow(() -> new IllegalArgumentException("Credential not found with ID: " + credentialId));
-		authenticatedMerchantService.assertMerchantAccess(credential.getMerchant().getId());
+		authenticatedMerchantService.assertMerchantAccess(credential.getMerchant()
+				.getId());
 
 		String newRawSecret = generateClientSecret();
 		credential.setClientSecretHash(passwordEncoder.encode(newRawSecret));
@@ -116,11 +123,13 @@ public class ApiCredentialService {
 				.credentialId(credential.getId())
 				.clientId(credential.getClientId())
 				.clientSecret(newRawSecret)
-				.environment(credential.getEnvironment().name())
-				.status(credential.getStatus().name())
+				.environment(credential.getEnvironment()
+						.name())
+				.status(credential.getStatus()
+						.name())
 				.ipAddress(credential.getIpAddress())
 				.expiresAt(credential.getExpiresAt())
-				.createdAt(credential.getCreatedAt())
+//				.createdAt(credential.getCreatedAt()) by akt
 				.build();
 	}
 
@@ -128,7 +137,8 @@ public class ApiCredentialService {
 	public void revokeApiCredential(UUID credentialId) {
 		ApiCredential credential = credentialRepository.findById(credentialId)
 				.orElseThrow(() -> new IllegalArgumentException("Credential not found with ID: " + credentialId));
-		authenticatedMerchantService.assertMerchantAccess(credential.getMerchant().getId());
+		authenticatedMerchantService.assertMerchantAccess(credential.getMerchant()
+				.getId());
 
 		credential.setStatus(ApiCredentialStatus.REVOKED);
 		credential.setRevokedAt(LocalDateTime.now());
