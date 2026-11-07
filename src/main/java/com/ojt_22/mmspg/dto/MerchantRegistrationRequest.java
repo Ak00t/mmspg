@@ -9,7 +9,6 @@ import lombok.Data;
 @Data
 public class MerchantRegistrationRequest {
 
-	@NotBlank(message = "Merchant Code is required")
 	@Size(max = 50, message = "Merchant Code cannot exceed 50 characters")
 	private String merchantCode;
 

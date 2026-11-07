@@ -24,4 +24,7 @@ public interface MerchantRepository extends JpaRepository<Merchant, UUID> {
     
     // 🔴 ဤနေရာတွင်လည်း String အစား MerchantStatus ဟု ပြောင်းလဲပါ
     org.springframework.data.domain.Page<Merchant> findByStatus(MerchantStatus status, org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT MAX(m.merchantCode) FROM Merchant m WHERE m.merchantCode LIKE 'MC-%'")
+    Optional<String> findMaxMerchantCode();
 }

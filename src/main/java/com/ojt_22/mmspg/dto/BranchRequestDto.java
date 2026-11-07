@@ -12,7 +12,6 @@ public class BranchRequestDto {
     @NotNull(message = "Merchant ID is required")
     private UUID merchantId;
 
-    @NotBlank(message = "Branch Code is required")
     @Size(max = 50, message = "Branch Code cannot exceed 50 characters")
     private String branchCode;
 

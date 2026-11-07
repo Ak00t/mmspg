@@ -23,6 +23,7 @@ import com.ojt_22.mmspg.repository.BranchRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.repository.StaffUserRepository;
 import com.ojt_22.mmspg.repository.TerminalRepository;
+import com.ojt_22.mmspg.service.CodeGeneratorService;
 import com.ojt_22.mmspg.service.NotificationService;
 import com.ojt_22.mmspg.service.TerminalService;
 
@@ -37,6 +38,7 @@ public class TerminalServiceImpl implements TerminalService {
 	private final BranchRepository branchRepository;
 	private final StaffUserRepository staffUserRepository;
 	private final NotificationService notificationService;
+	private final CodeGeneratorService codeGeneratorService;
 
 	@Override
 	@Transactional
@@ -64,16 +66,16 @@ public class TerminalServiceImpl implements TerminalService {
 			throw new IllegalArgumentException("Invalid Terminal Type. Must be PHYSICAL_POS or VIRTUAL_API.");
 		}
 
+		TerminalType terminalType = TerminalType.valueOf(type);
+
 		String code = request.getTerminalCode();
 		if (code == null || code.trim().isEmpty()) {
-			String prefix = type.equals("PHYSICAL_POS") ? "POS-" : "API-";
-			code = prefix + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+			code = codeGeneratorService.generateTerminalCode(terminalType);
 		} else {
 			code = code.trim();
-		}
-
-		if (terminalRepository.existsByTerminalCode(code)) {
-			throw new IllegalArgumentException("Terminal code already exists: " + code);
+			if (terminalRepository.existsByTerminalCode(code)) {
+				throw new IllegalArgumentException("Terminal code already exists: " + code);
+			}
 		}
 
 		StaffUser currentStaff = getCurrentStaffUser();

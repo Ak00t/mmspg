@@ -21,6 +21,7 @@ import com.ojt_22.mmspg.repository.BranchRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.repository.StaffUserRepository;
 import com.ojt_22.mmspg.service.BranchService;
+import com.ojt_22.mmspg.service.CodeGeneratorService;
 import com.ojt_22.mmspg.service.NotificationService;
 
 import lombok.RequiredArgsConstructor;
@@ -32,8 +33,8 @@ public class BranchServiceImpl implements BranchService {
 	private final BranchRepository branchRepository;
 	private final MerchantRepository merchantRepository;
 	private final StaffUserRepository staffUserRepository;
-
 	private final NotificationService notificationService;
+	private final CodeGeneratorService codeGeneratorService;
 
 	@Override
 	@Transactional
@@ -42,9 +43,16 @@ public class BranchServiceImpl implements BranchService {
 				.orElseThrow(
 						() -> new IllegalArgumentException("Merchant not found with ID: " + request.getMerchantId()));
 
-		if (branchRepository.existsByBranchCodeAndMerchantId(request.getBranchCode(), request.getMerchantId())) {
-			throw new IllegalArgumentException("Branch code already exists for this merchant.");
+		String branchCode;
+		if (request.getBranchCode() == null || request.getBranchCode().trim().isEmpty()) {
+			branchCode = codeGeneratorService.generateBranchCode(merchant);
+		} else {
+			branchCode = request.getBranchCode().trim();
+			if (branchRepository.existsByBranchCodeAndMerchantId(branchCode, request.getMerchantId())) {
+				throw new IllegalArgumentException("Branch code already exists for this merchant.");
+			}
 		}
+
 		Authentication authentication = SecurityContextHolder.getContext()
 				.getAuthentication();
 		if (authentication == null || !authentication.isAuthenticated()
@@ -56,7 +64,7 @@ public class BranchServiceImpl implements BranchService {
 
 		MerchantBranch branch = new MerchantBranch();
 		branch.setMerchant(merchant);
-		branch.setBranchCode(request.getBranchCode());
+		branch.setBranchCode(branchCode);
 		branch.setBranchName(request.getBranchName());
 		branch.setCity(request.getCity());
 		branch.setAddress(request.getAddress());

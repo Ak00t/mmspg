@@ -23,6 +23,7 @@ import com.ojt_22.mmspg.entity.Merchant;
 import com.ojt_22.mmspg.enums.MerchantStatus;
 import com.ojt_22.mmspg.repository.MccCodeRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
+import com.ojt_22.mmspg.service.CodeGeneratorService;
 import com.ojt_22.mmspg.service.MerchantService;
 import com.ojt_22.mmspg.service.NotificationService;
 
@@ -38,14 +39,12 @@ public class MerchantServiceImpl implements MerchantService {
 	private final MccCodeRepository mccCodeRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final NotificationService notificationService;
+	private final CodeGeneratorService codeGeneratorService;
 
 	@Override
 	@Transactional
 	public Merchant registerMerchant(MerchantRegistrationRequest request) {
 
-		if (request.getMerchantCode() == null || request.getMerchantCode().trim().isEmpty()) {
-			throw new IllegalArgumentException("Merchant code is required");
-		}
 		if (request.getBusinessName() == null || request.getBusinessName().trim().isEmpty()) {
 			throw new IllegalArgumentException("Business name is required");
 		}
@@ -56,12 +55,16 @@ public class MerchantServiceImpl implements MerchantService {
 			throw new IllegalArgumentException("Password must be at least 6 characters");
 		}
 
-		String trimmedCode = request.getMerchantCode().trim();
-		String trimmedEmail = request.getEmail().trim().toLowerCase();
-
-		if (merchantRepository.existsByMerchantCode(trimmedCode)) {
-			throw new IllegalArgumentException("Merchant code already exists: " + trimmedCode);
+		String trimmedCode;
+		if (request.getMerchantCode() == null || request.getMerchantCode().trim().isEmpty()) {
+			trimmedCode = codeGeneratorService.generateMerchantCode();
+		} else {
+			trimmedCode = request.getMerchantCode().trim();
+			if (merchantRepository.existsByMerchantCode(trimmedCode)) {
+				throw new IllegalArgumentException("Merchant code already exists: " + trimmedCode);
+			}
 		}
+		String trimmedEmail = request.getEmail().trim().toLowerCase();
 
 		if (merchantRepository.existsByEmail(trimmedEmail)) {
 			throw new IllegalArgumentException("Email is already in use: " + trimmedEmail);

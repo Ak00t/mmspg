@@ -18,4 +18,7 @@ public interface TerminalRepository extends JpaRepository<Terminal, UUID> {
 	List<Terminal> findAllWithDetails();
 
 	boolean existsByTerminalCode(String terminalCode);
+
+	@Query("SELECT MAX(t.terminalCode) FROM Terminal t WHERE t.terminalCode LIKE :prefix")
+	java.util.Optional<String> findMaxTerminalCodeByPrefix(@org.springframework.data.repository.query.Param("prefix") String prefix);
 }
