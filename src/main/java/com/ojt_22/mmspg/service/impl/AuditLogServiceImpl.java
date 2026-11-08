@@ -71,9 +71,12 @@ public class AuditLogServiceImpl implements AuditLogService {
 			}
 		}
 
+		String cleanMenu = (menuName != null && !menuName.trim().isEmpty()) ? menuName.trim().toLowerCase() : null;
+		String cleanAction = (action != null && !action.trim().isEmpty()) ? action.trim().toLowerCase() : null;
+
 		Page<AuditLog> page = auditLogRepository.findWithFilters(
-				(menuName != null && !menuName.trim().isEmpty()) ? menuName.trim() : null,
-				(action != null && !action.trim().isEmpty()) ? action.trim() : null,
+				cleanMenu,
+				cleanAction,
 				auditStatus,
 				startDate,
 				endDate,

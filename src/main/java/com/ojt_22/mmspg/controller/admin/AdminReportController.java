@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.service.AdminExportReportService;
 import com.ojt_22.mmspg.service.ExportedReport;
 
@@ -38,6 +39,7 @@ public class AdminReportController {
     }
 
     @GetMapping("/sales-ledger/export")
+    @Auditable(menuName = "Reporting", action = "EXPORT_SALES_LEDGER", targetType = "REPORT", targetId = "#merchantId != null ? #merchantId.toString() : 'ALL'", description = "Admin export sales ledger report")
     @Operation(summary = "Export Sales Ledger Report", description = "Exports Sales Ledger records for all merchants or a specific merchant in CSV, XLSX, or PDF.")
     public ResponseEntity<ByteArrayResource> salesLedger(
             @RequestParam(required = false) UUID merchantId,
@@ -49,6 +51,7 @@ public class AdminReportController {
     }
 
     @GetMapping("/settlements/export")
+    @Auditable(menuName = "Reporting", action = "EXPORT_SETTLEMENT", targetType = "REPORT", targetId = "#merchantId != null ? #merchantId.toString() : 'ALL'", description = "Admin export settlement report")
     @Operation(summary = "Export Settlement Report", description = "Exports Settlement payout records for all merchants or a specific merchant in CSV, XLSX, or PDF.")
     public ResponseEntity<ByteArrayResource> settlements(
             @RequestParam(required = false) UUID merchantId,

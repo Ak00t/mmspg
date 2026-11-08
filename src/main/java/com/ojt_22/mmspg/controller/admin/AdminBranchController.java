@@ -78,6 +78,7 @@ public class AdminBranchController {
 
     // Status ပြောင်းခြင်း (ADMIN သာ ပြောင်းလဲခွင့်ရှိသည် - SUPPORT မပါပါ)
     @PutMapping("/{id}/status")
+    @Auditable(menuName = "Branch Management", action = "UPDATE_STATUS", targetType = "MERCHANT_BRANCH", targetId = "#id")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Toggle Branch Status", description = "Toggles branch status between ACTIVE and INACTIVE.")
     public ResponseEntity<?> toggleBranchStatus(@PathVariable UUID id) {

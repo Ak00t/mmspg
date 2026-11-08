@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ojt_22.mmspg.annotation.Auditable;
 import com.ojt_22.mmspg.service.ExportedReport;
 import com.ojt_22.mmspg.service.MerchantExportReportService;
 
@@ -35,6 +36,7 @@ public class MerchantReportController {
 	}
 
 	@GetMapping("/sales-ledger/export")
+	@Auditable(menuName = "Reporting", action = "EXPORT_SALES_LEDGER", targetType = "REPORT", description = "Merchant export sales ledger report")
 	public ResponseEntity<ByteArrayResource> salesLedger(
 			@RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy") LocalDate startDate,
 			@RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy") LocalDate endDate,
@@ -44,6 +46,7 @@ public class MerchantReportController {
 	}
 
 	@GetMapping("/settlements/export")
+	@Auditable(menuName = "Reporting", action = "EXPORT_SETTLEMENT", targetType = "REPORT", description = "Merchant export settlement report")
 	public ResponseEntity<ByteArrayResource> settlements(
 			@RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy") LocalDate startDate,
 			@RequestParam @DateTimeFormat(pattern = "dd-MM-yyyy") LocalDate endDate,
