@@ -10,7 +10,7 @@ BEGIN
            s.settlement_date AS settlementDate
     FROM merchant_ledger_entries l
     LEFT JOIN payment_transactions t ON t.transaction_id = l.transaction_id
-    LEFT JOIN settlements s ON s.settlement_id = l.settlement_id
+    LEFT JOIN settlements s ON s.settlement_id = l.settlement_id OR s.transaction_id = t.transaction_id
     WHERE l.merchant_id = p_merchant_id
       AND (p_start_date IS NULL OR l.created_at >= p_start_date)
       AND (p_end_date IS NULL OR l.created_at <= p_end_date)

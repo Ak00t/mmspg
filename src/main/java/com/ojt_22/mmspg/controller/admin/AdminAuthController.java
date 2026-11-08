@@ -1,5 +1,6 @@
 package com.ojt_22.mmspg.controller.admin;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
@@ -81,6 +82,10 @@ public class AdminAuthController {
 				.setAuthentication(authentication);
 
 		String token = jwtTokenProvider.generateToken(authentication);
+
+		// Update last login timestamp
+		staff.setLastLoginAt(LocalDateTime.now());
+		staffUserRepository.save(staff);
 
 		// 🔴 ဤနေရာတွင် Profile ပုံ (profileImageUrl) ကိုပါ နောက်ဆုံးတွင်
 		// ထပ်ပေါင်းထည့်ပေးလိုက်ပါ

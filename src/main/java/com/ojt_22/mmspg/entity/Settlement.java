@@ -73,6 +73,9 @@ public class Settlement {
 	@Column(name = "processed_at")
 	private LocalDateTime processedAt;
 
+	@Column(name = "refund_amount", nullable = false, precision = 18, scale = 4)
+	private BigDecimal refundAmount = BigDecimal.ZERO;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
@@ -82,7 +85,7 @@ public class Settlement {
 	private LocalDateTime updatedAt;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "created_by", nullable = false, updatable = false)
+	@JoinColumn(name = "created_by", nullable = true, updatable = false)
 	private StaffUser createdBy;
 
 	@ManyToOne(fetch = FetchType.LAZY)
