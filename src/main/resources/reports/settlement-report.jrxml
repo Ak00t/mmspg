@@ -6,6 +6,10 @@
   <parameter name="reportPeriod" class="java.lang.String"/>
   <parameter name="statusFilter" class="java.lang.String"/>
   <parameter name="generatedAt" class="java.lang.String"/>
+  <field name="branchName" class="java.lang.String"/>
+  <field name="branchCode" class="java.lang.String"/>
+  <field name="terminalCode" class="java.lang.String"/>
+  <field name="terminalType" class="java.lang.String"/>
   <field name="settlementReference" class="java.lang.String"/>
   <field name="transactionReference" class="java.lang.String"/>
   <field name="formattedSettlementDate" class="java.lang.String"/>
@@ -62,48 +66,60 @@
   <columnHeader>
     <band height="24">
       <staticText>
-        <reportElement x="0" y="0" width="135" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <reportElement x="0" y="0" width="95" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <box leftPadding="6"/>
+        <textElement verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+        <text><![CDATA[Branch (Origin)]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="95" y="0" width="70" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <box leftPadding="4"/>
+        <textElement verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+        <text><![CDATA[Terminal]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="165" y="0" width="115" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
         <box leftPadding="6"/>
         <textElement verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
         <text><![CDATA[Settlement Ref]]></text>
       </staticText>
       <staticText>
-        <reportElement x="135" y="0" width="135" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <reportElement x="280" y="0" width="115" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
         <box leftPadding="6"/>
         <textElement verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
         <text><![CDATA[Transaction Ref]]></text>
       </staticText>
       <staticText>
-        <reportElement x="270" y="0" width="95" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <reportElement x="395" y="0" width="70" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
         <textElement textAlignment="Center" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
         <text><![CDATA[Settlement Date]]></text>
       </staticText>
       <staticText>
-        <reportElement x="365" y="0" width="95" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
-        <box rightPadding="6"/>
+        <reportElement x="465" y="0" width="75" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <box rightPadding="4"/>
         <textElement textAlignment="Right" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
         <text><![CDATA[Gross Amount]]></text>
       </staticText>
       <staticText>
-        <reportElement x="460" y="0" width="85" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
-        <box rightPadding="6"/>
+        <reportElement x="540" y="0" width="65" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <box rightPadding="4"/>
         <textElement textAlignment="Right" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
         <text><![CDATA[Fee Amount]]></text>
       </staticText>
       <staticText>
-        <reportElement x="545" y="0" width="95" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
-        <box rightPadding="6"/>
+        <reportElement x="605" y="0" width="75" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <box rightPadding="4"/>
         <textElement textAlignment="Right" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
         <text><![CDATA[Net Amount]]></text>
       </staticText>
       <staticText>
-        <reportElement x="640" y="0" width="95" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
-        <box leftPadding="6"/>
+        <reportElement x="680" y="0" width="70" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <box leftPadding="4"/>
         <textElement verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
         <text><![CDATA[Bank Account]]></text>
       </staticText>
       <staticText>
-        <reportElement x="735" y="0" width="67" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <reportElement x="750" y="0" width="52" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
         <textElement textAlignment="Center" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
         <text><![CDATA[Status]]></text>
       </staticText>
@@ -112,49 +128,61 @@
   <detail>
     <band height="20">
       <textField isBlankWhenNull="true">
-        <reportElement x="0" y="0" width="135" height="20" forecolor="#1E293B"/>
+        <reportElement x="0" y="0" width="95" height="20" forecolor="#475569"/>
+        <box leftPadding="6"><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
+        <textElement verticalAlignment="Middle"><font size="8"/></textElement>
+        <textFieldExpression><![CDATA[$F{branchName} != null ? $F{branchName} : ($F{branchCode} != null ? $F{branchCode} : "-")]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="95" y="0" width="70" height="20" forecolor="#475569"/>
+        <box leftPadding="4"><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
+        <textElement verticalAlignment="Middle"><font size="8"/></textElement>
+        <textFieldExpression><![CDATA[$F{terminalCode} != null ? $F{terminalCode} : "-"]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="165" y="0" width="115" height="20" forecolor="#1E293B"/>
         <box leftPadding="6"><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
         <textElement verticalAlignment="Middle"><font size="8"/></textElement>
         <textFieldExpression><![CDATA[$F{settlementReference}]]></textFieldExpression>
       </textField>
       <textField isBlankWhenNull="true">
-        <reportElement x="135" y="0" width="135" height="20" forecolor="#1E293B"/>
+        <reportElement x="280" y="0" width="115" height="20" forecolor="#1E293B"/>
         <box leftPadding="6"><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
         <textElement verticalAlignment="Middle"><font size="8"/></textElement>
         <textFieldExpression><![CDATA[$F{transactionReference}]]></textFieldExpression>
       </textField>
       <textField isBlankWhenNull="true">
-        <reportElement x="270" y="0" width="95" height="20" forecolor="#1E293B"/>
+        <reportElement x="395" y="0" width="70" height="20" forecolor="#1E293B"/>
         <box><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
         <textElement textAlignment="Center" verticalAlignment="Middle"><font size="8"/></textElement>
         <textFieldExpression><![CDATA[$F{formattedSettlementDate}]]></textFieldExpression>
       </textField>
       <textField isBlankWhenNull="true" pattern="#,##0.00">
-        <reportElement x="365" y="0" width="95" height="20" forecolor="#0F172A"/>
-        <box rightPadding="6"><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
+        <reportElement x="465" y="0" width="75" height="20" forecolor="#0F172A"/>
+        <box rightPadding="4"><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
         <textElement textAlignment="Right" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
         <textFieldExpression><![CDATA[$F{grossAmount}]]></textFieldExpression>
       </textField>
       <textField isBlankWhenNull="true" pattern="#,##0.00">
-        <reportElement x="460" y="0" width="85" height="20" forecolor="#64748B"/>
-        <box rightPadding="6"><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
+        <reportElement x="540" y="0" width="65" height="20" forecolor="#64748B"/>
+        <box rightPadding="4"><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
         <textElement textAlignment="Right" verticalAlignment="Middle"><font size="8"/></textElement>
         <textFieldExpression><![CDATA[$F{feeAmount}]]></textFieldExpression>
       </textField>
       <textField isBlankWhenNull="true" pattern="#,##0.00">
-        <reportElement x="545" y="0" width="95" height="20" forecolor="#0F172A"/>
-        <box rightPadding="6"><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
+        <reportElement x="605" y="0" width="75" height="20" forecolor="#0F172A"/>
+        <box rightPadding="4"><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
         <textElement textAlignment="Right" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
         <textFieldExpression><![CDATA[$F{netAmount}]]></textFieldExpression>
       </textField>
       <textField isBlankWhenNull="true">
-        <reportElement x="640" y="0" width="95" height="20" forecolor="#1E293B"/>
-        <box leftPadding="6"><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
+        <reportElement x="680" y="0" width="70" height="20" forecolor="#1E293B"/>
+        <box leftPadding="4"><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
         <textElement verticalAlignment="Middle"><font size="8"/></textElement>
         <textFieldExpression><![CDATA[$F{bankAccountNo}]]></textFieldExpression>
       </textField>
       <textField isBlankWhenNull="true">
-        <reportElement x="735" y="0" width="67" height="20" forecolor="#1E293B"/>
+        <reportElement x="750" y="0" width="52" height="20" forecolor="#1E293B"/>
         <box><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
         <textElement textAlignment="Center" verticalAlignment="Middle"><font size="8"/></textElement>
         <textFieldExpression><![CDATA[$F{status}]]></textFieldExpression>

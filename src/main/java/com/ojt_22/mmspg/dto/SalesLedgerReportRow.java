@@ -11,6 +11,7 @@ public class SalesLedgerReportRow {
     private String merchantCode, merchantBusinessName, merchantEmail, merchantPhone;
     private String ledgerId, transactionReference, orderId, entryType, balanceType, description;
     private String transactionStatus, settlementReference;
+    private String branchName, branchCode, terminalCode, terminalType;
     private BigDecimal amount;
     private LocalDateTime createdAt;
     private LocalDate settlementDate;

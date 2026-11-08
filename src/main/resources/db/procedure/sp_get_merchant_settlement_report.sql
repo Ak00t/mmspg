@@ -3,13 +3,20 @@ DROP PROCEDURE IF EXISTS sp_get_merchant_settlement_report$$
 CREATE PROCEDURE sp_get_merchant_settlement_report(
     IN p_merchant_id BINARY(16), IN p_start_date DATE, IN p_end_date DATE, IN p_status VARCHAR(50))
 BEGIN
-    SELECT BIN_TO_UUID(s.settlement_id) AS settlementId, s.settlement_reference AS settlementReference,
+    SELECT BIN_TO_UUID(s.settlement_id) AS settlementId,
+           b.branch_name AS branchName,
+           b.branch_code AS branchCode,
+           term.terminal_code AS terminalCode,
+           term.terminal_type AS terminalType,
+           s.settlement_reference AS settlementReference,
            t.transaction_reference AS transactionReference, s.settlement_date AS settlementDate,
            s.gross_amount AS grossAmount, s.fee_amount AS feeAmount, s.net_amount AS netAmount,
            s.bank_account_no AS bankAccountNo, s.status AS status, s.processed_at AS processedAt,
            s.created_at AS createdAt
     FROM settlements s
     LEFT JOIN payment_transactions t ON t.transaction_id = s.transaction_id
+    LEFT JOIN merchant_branches b ON b.branch_id = t.branch_id
+    LEFT JOIN terminals term ON term.terminal_id = t.terminal_id
     WHERE s.merchant_id = p_merchant_id
       AND (p_start_date IS NULL OR s.settlement_date >= p_start_date)
       AND (p_end_date IS NULL OR s.settlement_date <= p_end_date)

@@ -119,7 +119,8 @@ public class AdminExportReportServiceImpl implements AdminExportReportService {
         if ("csv".equals(normalized)) {
             var out = new StringBuilder("\uFEFF");
             out.append(csv(
-                    "Merchant Code", "Merchant Name", "Merchant Email", "Merchant Phone", "Ledger ID", "Transaction Reference", "Order ID", "Entry Type",
+                    "Merchant Code", "Merchant Name", "Merchant Email", "Merchant Phone", "Branch Name", "Branch Code", "Terminal Code", "Terminal Type",
+                    "Ledger ID", "Transaction Reference", "Order ID", "Entry Type",
                     "Balance Type", "Amount", "Description", "Transaction Status", "Settlement Reference",
                     "Created At", "Settlement Date"
             )).append('\n');
@@ -128,6 +129,10 @@ public class AdminExportReportServiceImpl implements AdminExportReportService {
                     r.getMerchantBusinessName(),
                     r.getMerchantEmail(),
                     r.getMerchantPhone(),
+                    r.getBranchName(),
+                    r.getBranchCode(),
+                    r.getTerminalCode(),
+                    r.getTerminalType(),
                     r.getLedgerId(),
                     r.getTransactionReference(),
                     r.getOrderId(),
@@ -168,7 +173,8 @@ public class AdminExportReportServiceImpl implements AdminExportReportService {
         if ("csv".equals(normalized)) {
             var out = new StringBuilder("\uFEFF");
             out.append(csv(
-                    "Merchant Code", "Merchant Name", "Merchant Email", "Merchant Phone", "Settlement ID", "Settlement Reference", "Transaction Reference",
+                    "Merchant Code", "Merchant Name", "Merchant Email", "Merchant Phone", "Branch Name", "Branch Code", "Terminal Code", "Terminal Type",
+                    "Settlement ID", "Settlement Reference", "Transaction Reference",
                     "Settlement Date", "Gross Amount", "Fee Amount", "Net Amount",
                     "Bank Account", "Status", "Processed At", "Created At"
             )).append('\n');
@@ -177,6 +183,10 @@ public class AdminExportReportServiceImpl implements AdminExportReportService {
                     r.getMerchantBusinessName(),
                     r.getMerchantEmail(),
                     r.getMerchantPhone(),
+                    r.getBranchName(),
+                    r.getBranchCode(),
+                    r.getTerminalCode(),
+                    r.getTerminalType(),
                     r.getSettlementId(),
                     r.getSettlementReference(),
                     r.getTransactionReference(),

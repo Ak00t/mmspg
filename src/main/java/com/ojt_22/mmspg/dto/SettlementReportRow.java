@@ -9,6 +9,7 @@ import lombok.Setter;
 @Getter @Setter
 public class SettlementReportRow {
     private String merchantCode, merchantBusinessName, merchantEmail, merchantPhone;
+    private String branchName, branchCode, terminalCode, terminalType;
     private String settlementId, settlementReference, transactionReference, bankAccountNo, status;
     private LocalDate settlementDate;
     private BigDecimal grossAmount, feeAmount, netAmount;

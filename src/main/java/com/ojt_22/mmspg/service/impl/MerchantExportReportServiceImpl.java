@@ -139,7 +139,8 @@ public class MerchantExportReportServiceImpl implements MerchantExportReportServ
 
         if ("csv".equals(normalized)) {
             var out = new StringBuilder(csv(
-                    "Merchant Name", "Merchant Email", "Merchant Phone", "Ledger ID", "Transaction Reference", "Order ID", "Entry Type",
+                    "Merchant Name", "Merchant Email", "Merchant Phone", "Branch Name", "Branch Code", "Terminal Code", "Terminal Type",
+                    "Ledger ID", "Transaction Reference", "Order ID", "Entry Type",
                     "Balance Type", "Amount", "Description", "Transaction Status", "Settlement Reference",
                     "Created At", "Settlement Date"
             )).append('\n');
@@ -147,6 +148,10 @@ public class MerchantExportReportServiceImpl implements MerchantExportReportServ
                     merchant.getBusinessName(),
                     merchant.getEmail(),
                     merchant.getPhone(),
+                    r.getBranchName(),
+                    r.getBranchCode(),
+                    r.getTerminalCode(),
+                    r.getTerminalType(),
                     r.getLedgerId(),
                     r.getTransactionReference(),
                     r.getOrderId(),
@@ -178,7 +183,8 @@ public class MerchantExportReportServiceImpl implements MerchantExportReportServ
 
         if ("csv".equals(normalized)) {
             var out = new StringBuilder(csv(
-                    "Merchant Name", "Merchant Email", "Merchant Phone", "Settlement ID", "Settlement Reference", "Transaction Reference",
+                    "Merchant Name", "Merchant Email", "Merchant Phone", "Branch Name", "Branch Code", "Terminal Code", "Terminal Type",
+                    "Settlement ID", "Settlement Reference", "Transaction Reference",
                     "Settlement Date", "Gross Amount", "Fee Amount", "Net Amount",
                     "Bank Account", "Status", "Processed At", "Created At"
             )).append('\n');
@@ -186,6 +192,10 @@ public class MerchantExportReportServiceImpl implements MerchantExportReportServ
                     merchant.getBusinessName(),
                     merchant.getEmail(),
                     merchant.getPhone(),
+                    r.getBranchName(),
+                    r.getBranchCode(),
+                    r.getTerminalCode(),
+                    r.getTerminalType(),
                     r.getSettlementId(),
                     r.getSettlementReference(),
                     r.getTransactionReference(),

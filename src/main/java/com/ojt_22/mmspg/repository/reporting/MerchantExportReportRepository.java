@@ -29,6 +29,10 @@ public class MerchantExportReportRepository {
                 r.setBalanceType(rs.getString("balanceType")); r.setAmount(rs.getBigDecimal("amount"));
                 r.setDescription(rs.getString("description")); r.setTransactionStatus(rs.getString("transactionStatus"));
                 r.setSettlementReference(rs.getString("settlementReference"));
+                r.setBranchName(rs.getString("branchName"));
+                r.setBranchCode(rs.getString("branchCode"));
+                r.setTerminalCode(rs.getString("terminalCode"));
+                r.setTerminalType(rs.getString("terminalType"));
                 Timestamp created = rs.getTimestamp("createdAt");
                 if (created != null) r.setCreatedAt(created.toLocalDateTime());
                 java.sql.Date settled = rs.getDate("settlementDate");
@@ -48,6 +52,10 @@ public class MerchantExportReportRepository {
             (rs, n) -> {
                 SettlementReportRow r = new SettlementReportRow();
                 r.setSettlementId(rs.getString("settlementId"));
+                r.setBranchName(rs.getString("branchName"));
+                r.setBranchCode(rs.getString("branchCode"));
+                r.setTerminalCode(rs.getString("terminalCode"));
+                r.setTerminalType(rs.getString("terminalType"));
                 r.setSettlementReference(rs.getString("settlementReference"));
                 r.setTransactionReference(rs.getString("transactionReference"));
                 java.sql.Date date = rs.getDate("settlementDate");

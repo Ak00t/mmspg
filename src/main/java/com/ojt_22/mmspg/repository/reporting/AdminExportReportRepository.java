@@ -44,6 +44,10 @@ public class AdminExportReportRepository {
             r.setDescription(rs.getString("description"));
             r.setTransactionStatus(rs.getString("transactionStatus"));
             r.setSettlementReference(rs.getString("settlementReference"));
+            r.setBranchName(rs.getString("branchName"));
+            r.setBranchCode(rs.getString("branchCode"));
+            r.setTerminalCode(rs.getString("terminalCode"));
+            r.setTerminalType(rs.getString("terminalType"));
             Timestamp created = rs.getTimestamp("createdAt");
             if (created != null) r.setCreatedAt(created.toLocalDateTime());
             java.sql.Date settled = rs.getDate("settlementDate");
@@ -69,6 +73,10 @@ public class AdminExportReportRepository {
             r.setMerchantBusinessName(rs.getString("merchantBusinessName"));
             r.setMerchantEmail(rs.getString("merchantEmail"));
             r.setMerchantPhone(rs.getString("merchantPhone"));
+            r.setBranchName(rs.getString("branchName"));
+            r.setBranchCode(rs.getString("branchCode"));
+            r.setTerminalCode(rs.getString("terminalCode"));
+            r.setTerminalType(rs.getString("terminalType"));
             r.setSettlementReference(rs.getString("settlementReference"));
             r.setTransactionReference(rs.getString("transactionReference"));
             java.sql.Date date = rs.getDate("settlementDate");

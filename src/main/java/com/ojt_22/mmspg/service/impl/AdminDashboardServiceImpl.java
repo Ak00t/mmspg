@@ -71,6 +71,27 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
 
 		response.setRecentMerchantRequests(recentRequests);
 
+		// 6. Recent Platform Live Transactions (with Origin: Merchant, Branch, Terminal)
+		List<com.ojt_22.mmspg.dto.PlatformLiveTransactionDto> liveTransactions = paymentTransactionRepository.findTop10ByOrderByCreatedAtDesc()
+				.stream()
+				.map(t -> com.ojt_22.mmspg.dto.PlatformLiveTransactionDto.builder()
+						.transactionReference(t.getTransactionReference())
+						.orderId(t.getOrderId())
+						.merchantName(t.getMerchant() != null ? t.getMerchant().getBusinessName() : "N/A")
+						.merchantCode(t.getMerchant() != null ? t.getMerchant().getMerchantCode() : "N/A")
+						.branchName(t.getBranch() != null ? t.getBranch().getBranchName() : "Main / Online")
+						.branchCode(t.getBranch() != null ? t.getBranch().getBranchCode() : "-")
+						.terminalCode(t.getTerminal() != null ? t.getTerminal().getTerminalCode() : "ONLINE-API")
+						.terminalType(t.getTerminal() != null && t.getTerminal().getTerminalType() != null ? t.getTerminal().getTerminalType().name() : "VIRTUAL_API")
+						.amount(t.getAmount())
+						.currency(t.getCurrency())
+						.status(t.getStatus() != null ? t.getStatus().name() : "UNKNOWN")
+						.createdAt(t.getCreatedAt())
+						.build())
+				.collect(Collectors.toList());
+
+		response.setRecentTransactions(liveTransactions);
+
 		return response;
 	}
 }

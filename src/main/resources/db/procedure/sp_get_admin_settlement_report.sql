@@ -12,6 +12,10 @@ BEGIN
            m.business_name AS merchantBusinessName,
            m.email AS merchantEmail,
            m.phone AS merchantPhone,
+           b.branch_name AS branchName,
+           b.branch_code AS branchCode,
+           term.terminal_code AS terminalCode,
+           term.terminal_type AS terminalType,
            s.settlement_reference AS settlementReference,
            t.transaction_reference AS transactionReference,
            s.settlement_date AS settlementDate,
@@ -25,6 +29,8 @@ BEGIN
     FROM settlements s
     INNER JOIN merchants m ON m.merchant_id = s.merchant_id
     LEFT JOIN payment_transactions t ON t.transaction_id = s.transaction_id
+    LEFT JOIN merchant_branches b ON b.branch_id = t.branch_id
+    LEFT JOIN terminals term ON term.terminal_id = t.terminal_id
     WHERE (p_merchant_id IS NULL OR s.merchant_id = p_merchant_id)
       AND (p_start_date IS NULL OR s.settlement_date >= p_start_date)
       AND (p_end_date IS NULL OR s.settlement_date <= p_end_date)

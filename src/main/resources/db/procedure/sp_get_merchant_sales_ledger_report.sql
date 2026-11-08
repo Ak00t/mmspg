@@ -7,10 +7,16 @@ BEGIN
            t.order_id AS orderId, l.entry_type AS entryType, l.balance_type AS balanceType,
            l.amount AS amount, l.description AS description, t.status AS transactionStatus,
            s.settlement_reference AS settlementReference, l.created_at AS createdAt,
-           s.settlement_date AS settlementDate
+           s.settlement_date AS settlementDate,
+           b.branch_name AS branchName,
+           b.branch_code AS branchCode,
+           term.terminal_code AS terminalCode,
+           term.terminal_type AS terminalType
     FROM merchant_ledger_entries l
     LEFT JOIN payment_transactions t ON t.transaction_id = l.transaction_id
     LEFT JOIN settlements s ON s.settlement_id = l.settlement_id OR s.transaction_id = t.transaction_id
+    LEFT JOIN merchant_branches b ON b.branch_id = t.branch_id
+    LEFT JOIN terminals term ON term.terminal_id = t.terminal_id
     WHERE l.merchant_id = p_merchant_id
       AND (p_start_date IS NULL OR l.created_at >= p_start_date)
       AND (p_end_date IS NULL OR l.created_at <= p_end_date)
