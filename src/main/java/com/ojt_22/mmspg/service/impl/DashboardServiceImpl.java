@@ -5,6 +5,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -84,25 +88,31 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     @Override
-    public List<PaymentTransactionSummaryDto> getRecentTransactions(int limit) {
+    public Page<PaymentTransactionSummaryDto> getRecentTransactions(int page, int size) {
         UUID merchantId = getAuthenticatedMerchant().getId();
+        int safePage = Math.max(0, page);
+        int safeSize = Math.max(1, size);
+        Pageable pageable = PageRequest.of(safePage, safeSize, Sort.by(Sort.Direction.DESC, "createdAt"));
 
-        List<PaymentTransaction> transactions = paymentTransactionRepository.findTop10ByMerchantIdOrderByCreatedAtDesc(merchantId);
+        Page<PaymentTransaction> transactions = paymentTransactionRepository.findByMerchantId(merchantId, pageable);
 
-        return transactions.stream()
-                .map(t -> PaymentTransactionSummaryDto.builder()
-                        .transactionReference(t.getTransactionReference())
-                        .orderId(t.getOrderId())
-                        .amount(t.getAmount())
-                        .currency(t.getCurrency())
-                        .status(t.getStatus() != null ? t.getStatus().name() : null)
-                        .initiatedAt(t.getInitiatedAt() != null ? t.getInitiatedAt() : t.getCreatedAt())
-                        .branchName(t.getBranch() != null ? t.getBranch().getBranchName() : null)
-                        .branchCode(t.getBranch() != null ? t.getBranch().getBranchCode() : null)
-                        .terminalCode(t.getTerminal() != null ? t.getTerminal().getTerminalCode() : null)
-                        .terminalType(t.getTerminal() != null && t.getTerminal().getTerminalType() != null ? t.getTerminal().getTerminalType().name() : null)
-                        .build())
-                .toList();
+        return transactions.map(t -> PaymentTransactionSummaryDto.builder()
+                .transactionReference(t.getTransactionReference())
+                .orderId(t.getOrderId())
+                .amount(t.getAmount())
+                .currency(t.getCurrency())
+                .status(t.getStatus() != null ? t.getStatus().name() : null)
+                .initiatedAt(t.getInitiatedAt() != null ? t.getInitiatedAt() : t.getCreatedAt())
+                .branchName(t.getBranch() != null ? t.getBranch().getBranchName() : null)
+                .branchCode(t.getBranch() != null ? t.getBranch().getBranchCode() : null)
+                .terminalCode(t.getTerminal() != null ? t.getTerminal().getTerminalCode() : null)
+                .terminalType(t.getTerminal() != null && t.getTerminal().getTerminalType() != null ? t.getTerminal().getTerminalType().name() : null)
+                .build());
+    }
+
+    @Override
+    public List<PaymentTransactionSummaryDto> getRecentTransactions(int limit) {
+        return getRecentTransactions(0, limit).getContent();
     }
 
     @Override

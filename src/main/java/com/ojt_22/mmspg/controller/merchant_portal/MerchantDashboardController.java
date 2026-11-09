@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -89,8 +90,11 @@ public class MerchantDashboardController {
 
 	@GetMapping("/recent-transactions")
 	@PreAuthorize("hasRole('MERCHANT')")
-	public ResponseEntity<List<PaymentTransactionSummaryDto>> getRecentTransactions(
-			@RequestParam(defaultValue = "10") int limit) {
-		return ResponseEntity.ok(dashboardService.getRecentTransactions(limit));
+	public ResponseEntity<Page<PaymentTransactionSummaryDto>> getRecentTransactions(
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "10") int size,
+			@RequestParam(required = false) Integer limit) {
+		int effectiveSize = (limit != null && limit > 0) ? limit : size;
+		return ResponseEntity.ok(dashboardService.getRecentTransactions(page, effectiveSize));
 	}
 }

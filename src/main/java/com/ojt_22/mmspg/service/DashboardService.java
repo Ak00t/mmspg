@@ -7,6 +7,7 @@ import com.ojt_22.mmspg.dto.ChangePasswordRequestDto;
 import com.ojt_22.mmspg.dto.MerchantDashboardSummaryResponse;
 import com.ojt_22.mmspg.dto.MerchantProfileResponseDto;
 import com.ojt_22.mmspg.dto.PaymentTransactionSummaryDto;
+import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface DashboardService {
@@ -15,7 +16,11 @@ public interface DashboardService {
 
     MerchantProfileResponseDto getMerchantProfile();
 
-    List<PaymentTransactionSummaryDto> getRecentTransactions(int limit);
+    Page<PaymentTransactionSummaryDto> getRecentTransactions(int page, int size);
+
+    default List<PaymentTransactionSummaryDto> getRecentTransactions(int limit) {
+        return getRecentTransactions(0, limit).getContent();
+    }
 
     String uploadProfilePicture(MultipartFile file);
 

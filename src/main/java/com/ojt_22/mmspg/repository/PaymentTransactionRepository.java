@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.Lock;
@@ -48,6 +50,8 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
 
    
     List<PaymentTransaction> findByMerchantId(UUID merchantId);
+
+    Page<PaymentTransaction> findByMerchantId(UUID merchantId, Pageable pageable);
     
     List<PaymentTransaction> findTop10ByMerchantIdOrderByCreatedAtDesc(UUID merchantId);
 
