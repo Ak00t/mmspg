@@ -8,6 +8,11 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +42,12 @@ public class WebhookConfigServiceImpl implements WebhookConfigService {
     private final MerchantRepository merchantRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticatedMerchantService authenticatedMerchantService;
+
+    @Value("${merchant.ecommerce.webhook-secret:whsec_dev_g5_callback_secret_2026}")
+    private String defaultWebhookSecret = "whsec_dev_g5_callback_secret_2026";
+
+    @Value("${merchant.ecommerce.base-url:http://localhost:8008}")
+    private String ecommerceBaseUrl = "http://localhost:8008";
 
     @Override
     @Transactional
@@ -141,19 +152,51 @@ public class WebhookConfigServiceImpl implements WebhookConfigService {
                     .connectTimeout(Duration.ofSeconds(5))
                     .build();
 
+            String rawCallbackUrl = config.getCallbackUrl() != null ? config.getCallbackUrl().trim() : "";
+            String targetUrl = rawCallbackUrl.startsWith("http://") || rawCallbackUrl.startsWith("https://")
+                    ? rawCallbackUrl
+                    : ecommerceBaseUrl + (rawCallbackUrl.startsWith("/") ? "" : "/") + rawCallbackUrl;
+
+            String signature = calculateHmacSha256(testPayload, defaultWebhookSecret);
+
             HttpRequest httpRequest = HttpRequest.newBuilder()
-                    .uri(URI.create(config.getCallbackUrl()))
+                    .uri(URI.create(targetUrl))
                     .header("Content-Type", "application/json")
                     .header("User-Agent", "MMSPG-Webhook-Tester/1.0")
+                    .header("X-Event-Type", "TEST_PING")
+                    .header("X-Signature", signature)
                     .POST(HttpRequest.BodyPublishers.ofString(testPayload))
                     .timeout(Duration.ofSeconds(5))
                     .build();
 
-            HttpResponse response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = client.send(httpRequest, HttpResponse.BodyHandlers.ofString());
 
             return "Test Webhook sent. Remote status code: " + response.statusCode();
         } catch (Exception e) {
             return "Test Webhook failed to connect: " + e.getMessage();
+        }
+    }
+
+    private String calculateHmacSha256(String payload, String secret) {
+        if (payload == null || secret == null) {
+            return "";
+        }
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            SecretKeySpec secretKeySpec = new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+            mac.init(secretKeySpec);
+            byte[] rawHmac = mac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : rawHmac) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (Exception e) {
+            return "";
         }
     }
 

@@ -1,6 +1,7 @@
 package com.ojt_22.mmspg.service.impl;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -324,6 +325,32 @@ class WebhookConfigServiceImplTest {
 		String result = service.testWebhook(config.getId());
 
 		assertEquals("Test Webhook sent. Remote status code: 200", result);
+	}
+
+	@Test
+	void testWebhook_SendsSignatureAndEventTypeHeaders() throws IOException {
+		String[] captured = new String[2];
+
+		server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+		server.createContext("/hook", exchange -> {
+			captured[0] = exchange.getRequestHeaders().getFirst("X-Signature");
+			captured[1] = exchange.getRequestHeaders().getFirst("X-Event-Type");
+			exchange.getRequestBody().readAllBytes();
+			exchange.sendResponseHeaders(200, -1);
+			exchange.close();
+		});
+		server.start();
+
+		WebhookConfig config = config(merchantId);
+		config.setCallbackUrl("http://127.0.0.1:" + server.getAddress().getPort() + "/hook");
+		when(webhookConfigRepository.findById(config.getId())).thenReturn(Optional.of(config));
+
+		String result = service.testWebhook(config.getId());
+
+		assertEquals("Test Webhook sent. Remote status code: 200", result);
+		assertNotNull(captured[0]);
+		assertFalse(captured[0].isBlank());
+		assertEquals("TEST_PING", captured[1]);
 	}
 
 	@Test

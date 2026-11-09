@@ -29,9 +29,14 @@ public class PasswordResetController {
     @PostMapping("/forgot-password")
     @Operation(summary = "Forgot Password", description = "Generates a reset token for the given email if it exists.")
     public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        // We always return the same message to prevent email enumeration attacks
-        passwordResetService.forgotPassword(request.getEmail());
-        return ResponseEntity.ok(Map.of("message", "If the email exists, a reset link has been sent."));
+        try {
+            passwordResetService.forgotPassword(request.getEmail());
+            return ResponseEntity.ok(Map.of("message", "A password reset code has been sent to your email."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage(), "message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", e.getMessage(), "message", e.getMessage()));
+        }
     }
 
     @PostMapping("/reset-password")

@@ -85,203 +85,96 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     
 
     @Override
-
     @Transactional
-
     public void forgotPassword(String email) {
+        Optional<StaffUser> staffOpt = staffUserRepository.findByEmail(email);
+        Optional<Merchant> merchantOpt = staffOpt.isEmpty() ? merchantRepository.findByEmail(email) : Optional.empty();
 
-        String token = UUID.randomUUID().toString();
+        if (staffOpt.isEmpty() && merchantOpt.isEmpty()) {
+            log.warn("Forgot password requested for non-existent email: {}", email);
+            throw new IllegalArgumentException("This email address is not registered in our system.");
+        }
 
+        String token = String.format("%06d", new java.security.SecureRandom().nextInt(1_000_000));
         LocalDateTime expiry = LocalDateTime.now().plusMinutes(resetTokenExpiryMinutes);
 
-        boolean found = false;
-
-
-
-        Optional<StaffUser> staffOpt = staffUserRepository.findByEmail(email);
-
         if (staffOpt.isPresent()) {
-
             StaffUser staff = staffOpt.get();
-
             staff.setResetToken(token);
-
             staff.setResetTokenExpiry(expiry);
-
             staffUserRepository.save(staff);
-
-            found = true;
-
-        } else {
-
-            Optional<Merchant> merchantOpt = merchantRepository.findByEmail(email);
-
-            if (merchantOpt.isPresent()) {
-
-                Merchant merchant = merchantOpt.get();
-
-                merchant.setResetToken(token);
-
-                merchant.setResetTokenExpiry(expiry);
-
-                merchantRepository.save(merchant);
-
-                found = true;
-
-            }
-
+        } else if (merchantOpt.isPresent()) {
+            Merchant merchant = merchantOpt.get();
+            merchant.setResetToken(token);
+            merchant.setResetTokenExpiry(expiry);
+            merchantRepository.save(merchant);
         }
 
-
-
-        if (found) {
-
-            log.info("Generated Password Reset Token for {}: {}", email, token);
-
-            sendPasswordResetEmail(email, token);
-
-        } else {
-
-            log.warn("Forgot password requested for non-existent email: {}", email);
-
-        }
-
+        log.info("Generated Password Reset Code for {}: {}", email, token);
+        sendPasswordResetEmail(email, token);
     }
 
-
-
-    
-
     private void sendPasswordResetEmail(String toEmail, String token) {
-
         String resetLink = frontendUrl + "/reset-password?token=" + token;
 
-
-
         try {
-
             MimeMessage message = mailSender.createMimeMessage();
-
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
 
-
-
-            helper.setFrom(fromEmail, "MMSPG Support");
-
+            helper.setFrom(fromEmail, "MMSPG");
             helper.setTo(toEmail);
-
-            helper.setSubject("Password Reset Request - MMSPG Payment Gateway");
-
-
+            helper.setSubject("Password Reset Request - MMSPG");
 
             String htmlContent = "<!DOCTYPE html>"
-
                     + "<html>"
-
                     + "<head>"
-
                     + "<meta charset=\"UTF-8\">"
-
                     + "<style>"
-
-                    + "  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; margin: 0; padding: 20px; color: #334155; }"
-
-                    + "  .container { max-width: 580px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; }"
-
-                    + "  .header { background: linear-gradient(135deg, #2563eb, #1d4ed8); padding: 32px 24px; text-align: center; color: #ffffff; }"
-
-                    + "  .header h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }"
-
-                    + "  .header p { margin: 8px 0 0; font-size: 14px; opacity: 0.9; }"
-
-                    + "  .content { padding: 32px 24px; }"
-
-                    + "  .btn-wrapper { text-align: center; margin: 30px 0; }"
-
-                    + "  .btn { display: inline-block; background-color: #2563eb; color: #ffffff !important; padding: 14px 32px; font-size: 15px; font-weight: 600; text-decoration: none; border-radius: 8px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }"
-
-                    + "  .token-box { background-color: #f1f5f9; border-left: 4px solid #2563eb; padding: 16px; margin: 24px 0; border-radius: 4px; }"
-
-                    + "  .token-box p { margin: 0 0 6px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: #64748b; font-weight: 600; }"
-
-                    + "  .token-box code { font-size: 15px; font-family: monospace; color: #0f172a; word-break: break-all; font-weight: bold; }"
-
-                    + "  .footer { background-color: #f8fafc; padding: 20px 24px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; }"
-
+                    + "  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #1e293b; }"
+                    + "  .container { max-width: 520px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08); border: 1px solid #e2e8f0; }"
+                    + "  .header { background: #2563eb; padding: 24px; text-align: center; color: #ffffff; }"
+                    + "  .header h1 { margin: 0; font-size: 20px; font-weight: 700; }"
+                    + "  .content { padding: 32px 24px; font-size: 15px; line-height: 1.6; color: #334155; }"
+                    + "  .greeting { font-size: 16px; margin-bottom: 20px; color: #0f172a; }"
+                    + "  .greeting a { color: #2563eb; text-decoration: underline; }"
+                    + "  .code-title { margin: 24px 0 10px 0; font-weight: 600; color: #1e293b; }"
+                    + "  .code-box { background-color: #eff6ff; border: 2px dashed #93c5fd; padding: 16px; margin: 12px 0 20px 0; text-align: center; border-radius: 8px; font-size: 32px; font-weight: 800; letter-spacing: 6px; color: #1d4ed8; font-family: monospace; }"
+                    + "  .btn-wrapper { text-align: center; margin: 24px 0; }"
+                    + "  .btn { display: inline-block; background-color: #2563eb; color: #ffffff !important; padding: 12px 28px; font-size: 14px; font-weight: 600; text-decoration: none; border-radius: 8px; }"
+                    + "  .expiry { font-size: 13px; color: #64748b; margin-top: 16px; }"
+                    + "  .footer { background-color: #f8fafc; padding: 16px 24px; text-align: center; font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; }"
                     + "</style>"
-
                     + "</head>"
-
                     + "<body>"
-
                     + "<div class=\"container\">"
-
                     + "  <div class=\"header\">"
-
                     + "    <h1>MMSPG Payment Gateway</h1>"
-
-                    + "    <p>Password Reset Request</p>"
-
                     + "  </div>"
-
                     + "  <div class=\"content\">"
-
-                    + "    <p>Hello,</p>"
-
-                    + "    <p>We received a request to reset the password for your account (<strong>" + toEmail + "</strong>). Click the button below to choose a new password:</p>"
-
+                    + "    <p class=\"greeting\">Hi <a href=\"mailto:" + toEmail + "\">" + toEmail + "</a>,</p>"
+                    + "    <p class=\"code-title\">Your Password Reset Code is: " + token + "</p>"
+                    + "    <div class=\"code-box\">" + token + "</div>"
+                    + "    <p class=\"expiry\">This code will expire in " + resetTokenExpiryMinutes + " minutes.</p>"
                     + "    <div class=\"btn-wrapper\">"
-
-                    + "      <a href=\"" + resetLink + "\" class=\"btn\">Reset Password</a>"
-
+                    + "      <a href=\"" + resetLink + "\" class=\"btn\">Reset Password Directly</a>"
                     + "    </div>"
-
-                    + "    <div class=\"token-box\">"
-
-                    + "      <p>Reset Token</p>"
-
-                    + "      <code>" + token + "</code>"
-
-                    + "    </div>"
-
-                    + "    <p style=\"font-size: 13px; color: #64748b;\">If the button above does not work, copy and paste this link into your browser:<br>"
-
-                    + "    <a href=\"" + resetLink + "\" style=\"color: #2563eb; word-break: break-all;\">" + resetLink + "</a></p>"
-
-                    + "    <p style=\"font-size: 13px; color: #e11d48; margin-top: 24px;\">&#9888;&#65039; <strong>Notice:</strong> This reset token and link will expire in <strong>" + resetTokenExpiryMinutes + " minutes</strong>.</p>"
-
-                    + "    <p style=\"font-size: 13px; color: #64748b;\">If you did not request a password reset, you can safely ignore this email or reach out to our security support team.</p>"
-
+                    + "    <p style=\"font-size: 12px; color: #94a3b8; margin-top: 24px;\">If you did not request a password reset, you can safely ignore this email.</p>"
                     + "  </div>"
-
                     + "  <div class=\"footer\">"
-
-                    + "    <p>&copy; 2026 MMSPG Payment Gateway System. All rights reserved.</p>"
-
+                    + "    &copy; 2026 MMSPG Payment Gateway System. All rights reserved."
                     + "  </div>"
-
                     + "</div>"
-
                     + "</body>"
-
                     + "</html>";
 
-
-
             helper.setText(htmlContent, true);
-
             mailSender.send(message);
-
             log.info("Successfully sent password reset email to: {}", toEmail);
 
-
-
         } catch (Exception e) {
-
             log.error("Failed to send password reset email to {}: {}", toEmail, e.getMessage(), e);
-
+            throw new RuntimeException("Email delivery failed: " + e.getMessage(), e);
         }
-
     }
 
 
