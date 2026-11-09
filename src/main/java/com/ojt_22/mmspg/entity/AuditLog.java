@@ -41,7 +41,9 @@ public class AuditLog {
 
 	@Column(name = "actor_id", columnDefinition = "BINARY(16)", updatable = false)
 	private UUID actorId;
-	
+
+	@Column(name = "actor_username", length = 100, updatable = false)
+	private String actorUsername;
 
 	@Column(name = "actor_type", length = 50, nullable = false, updatable = false)
 	private String actorType;

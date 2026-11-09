@@ -1,5 +1,7 @@
 package com.ojt_22.mmspg.controller.merchant_portal;
 
+import java.time.LocalDateTime;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -55,9 +57,38 @@ public class MerchantAuthController {
 			throw new BadCredentialsException("Invalid email or password");
 		}
 
-		if (!passwordEncoder.matches(loginRequest.getPassword(), userDetails.getPassword())) {
-			throw new BadCredentialsException("Invalid email or password");
+		Merchant merchant = merchantRepository.findByEmail(loginRequest.getEmail())
+				.orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
+
+		// Check if account is locked
+		if (merchant.getLockedUntil() != null) {
+			if (merchant.getLockedUntil().isAfter(LocalDateTime.now())) {
+				long minutesLeft = java.time.Duration.between(LocalDateTime.now(), merchant.getLockedUntil()).toMinutes() + 1;
+				throw new BadCredentialsException("Account is temporarily locked due to 5 failed attempts. Please try again in " + minutesLeft + " minute(s).");
+			} else {
+				merchant.setLockedUntil(null);
+				merchant.setFailedLoginAttempts(0);
+				merchantRepository.save(merchant);
+			}
 		}
+
+		if (!passwordEncoder.matches(loginRequest.getPassword(), userDetails.getPassword())) {
+			int attempts = (merchant.getFailedLoginAttempts() != null ? merchant.getFailedLoginAttempts() : 0) + 1;
+			if (attempts >= 5) {
+				merchant.setFailedLoginAttempts(0);
+				merchant.setLockedUntil(LocalDateTime.now().plusMinutes(15));
+				merchantRepository.save(merchant);
+				throw new BadCredentialsException("Account has been locked due to 5 consecutive failed attempts. Please try again in 15 minutes.");
+			} else {
+				merchant.setFailedLoginAttempts(attempts);
+				merchantRepository.save(merchant);
+				throw new BadCredentialsException("Invalid email or password. Attempt " + attempts + " of 5.");
+			}
+		}
+
+		merchant.setFailedLoginAttempts(0);
+		merchant.setLockedUntil(null);
+		merchantRepository.save(merchant);
 
 		Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null,
 				userDetails.getAuthorities());
@@ -66,9 +97,6 @@ public class MerchantAuthController {
 				.setAuthentication(authentication);
 
 		String token = jwtTokenProvider.generateToken(authentication);
-
-		Merchant merchant = merchantRepository.findByEmail(loginRequest.getEmail())
-				.orElseThrow(() -> new UsernameNotFoundException("Merchant not found"));
 
 		JwtAuthResponse authResponse = new JwtAuthResponse(token, merchant.getId(), merchant.getBusinessName());
 		return ResponseEntity.ok(authResponse);

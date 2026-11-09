@@ -100,4 +100,10 @@ public class Merchant {
 
 	@Column(name = "reset_token_expiry")
 	private LocalDateTime resetTokenExpiry;
+
+	@Column(name = "failed_login_attempts", nullable = false)
+	private Integer failedLoginAttempts = 0;
+
+	@Column(name = "locked_until")
+	private LocalDateTime lockedUntil;
 }

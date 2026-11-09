@@ -20,6 +20,7 @@ import lombok.Setter;
 public class AuditLogResponseDto {
 	private Long auditId;
 	private UUID actorId;
+	private String actorUsername;
 	private String actorType;
 	private String roleName;
 	private String permissionUsed;

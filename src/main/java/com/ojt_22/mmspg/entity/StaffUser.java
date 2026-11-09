@@ -67,6 +67,12 @@ public class StaffUser {
 	@Column(name = "reset_token_expiry")
 	private LocalDateTime resetTokenExpiry;
 
+	@Column(name = "failed_login_attempts", nullable = false)
+	private Integer failedLoginAttempts = 0;
+
+	@Column(name = "locked_until")
+	private LocalDateTime lockedUntil;
+
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;

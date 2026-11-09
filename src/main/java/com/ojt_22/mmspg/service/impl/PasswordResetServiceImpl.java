@@ -33,6 +33,7 @@ import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.repository.StaffUserRepository;
 
 import com.ojt_22.mmspg.service.PasswordResetService;
+import com.ojt_22.mmspg.util.PasswordValidator;
 
 
 
@@ -76,8 +77,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
 
 
-    @Value("${app.jwt.reset-token.expiration-minutes:10}")
-
+    @Value("${app.jwt.reset-token.expiration-minutes:5}")
     private int resetTokenExpiryMinutes;
 
     
@@ -180,67 +180,53 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
 
     @Override
-
     @Transactional
-
     public void resetPassword(String token, String newPassword) {
+        if (token == null || token.isBlank()) {
+            throw new IllegalArgumentException("Password reset code cannot be empty.");
+        }
 
-        
+        PasswordValidator.validate(newPassword);
 
         Optional<StaffUser> staffOpt = staffUserRepository.findByResetToken(token);
-
         if (staffOpt.isPresent()) {
-
             StaffUser staff = staffOpt.get();
-
-            if (staff.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
-
-                throw new IllegalArgumentException("Reset token has expired");
-
+            if (staff.getResetTokenExpiry() != null && staff.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+                // Invalidate expired token immediately
+                staff.setResetToken(null);
+                staff.setResetTokenExpiry(null);
+                staffUserRepository.save(staff);
+                throw new IllegalArgumentException("This reset code has expired. Please request a new one.");
             }
 
             staff.setPasswordHash(passwordEncoder.encode(newPassword));
-
+            // Invalidate token immediately so it can only ever be used once
             staff.setResetToken(null);
-
             staff.setResetTokenExpiry(null);
-
             staffUserRepository.save(staff);
-
             return;
-
         }
 
-
-
         Optional<Merchant> merchantOpt = merchantRepository.findByResetToken(token);
-
         if (merchantOpt.isPresent()) {
-
             Merchant merchant = merchantOpt.get();
-
-            if (merchant.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
-
-                throw new IllegalArgumentException("Reset token has expired");
-
+            if (merchant.getResetTokenExpiry() != null && merchant.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
+                // Invalidate expired token immediately
+                merchant.setResetToken(null);
+                merchant.setResetTokenExpiry(null);
+                merchantRepository.save(merchant);
+                throw new IllegalArgumentException("This reset code has expired. Please request a new one.");
             }
 
             merchant.setPasswordHash(passwordEncoder.encode(newPassword));
-
+            // Invalidate token immediately so it can only ever be used once
             merchant.setResetToken(null);
-
             merchant.setResetTokenExpiry(null);
-
             merchantRepository.save(merchant);
-
             return;
-
         }
 
-
-
-        throw new IllegalArgumentException("Invalid reset token");
-
+        throw new IllegalArgumentException("Invalid or already used reset code. Please request a new one.");
     }
 
 }

@@ -18,6 +18,7 @@ import lombok.Setter;
 @Builder
 public class AuditLogCreateRequest {
 	private UUID actorId;
+	private String actorUsername;
 	private String actorType;
 	private String roleName;
 	private String permissionUsed;

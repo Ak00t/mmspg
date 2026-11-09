@@ -59,14 +59,40 @@ public class AdminAuthController {
 			throw new BadCredentialsException("Invalid email or password");
 		}
 
-		// ၁။ Password မှန်/မမှန် အရင်ဆုံး စစ်ဆေးပါမည်
-		if (!passwordEncoder.matches(loginRequest.getPassword(), userDetails.getPassword())) {
-			throw new BadCredentialsException("Invalid email or password");
+		// ၁။ Database မှ သက်ဆိုင်ရာ User ကို ဆွဲထုတ်ပါမည်
+		StaffUser staff = staffUserRepository.findByEmail(loginRequest.getEmail())
+				.orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
+
+		// ၂။ Account Lockout စစ်ဆေးပါမည်
+		if (staff.getLockedUntil() != null) {
+			if (staff.getLockedUntil().isAfter(LocalDateTime.now())) {
+				long minutesLeft = java.time.Duration.between(LocalDateTime.now(), staff.getLockedUntil()).toMinutes() + 1;
+				throw new BadCredentialsException("Account is temporarily locked due to 5 failed attempts. Please try again in " + minutesLeft + " minute(s).");
+			} else {
+				staff.setLockedUntil(null);
+				staff.setFailedLoginAttempts(0);
+				staffUserRepository.save(staff);
+			}
 		}
 
-		// ၂။ Database မှ သက်ဆိုင်ရာ User ကို ဆွဲထုတ်ပါမည်
-		StaffUser staff = staffUserRepository.findByEmail(loginRequest.getEmail())
-				.orElseThrow(() -> new UsernameNotFoundException("User not found"));
+		// ၃။ Password မှန်/မမှန် စစ်ဆေးပါမည် (မှားယွင်းမှု အကြိမ်ရေ ၅ ကြိမ် ရောက်ပါက Lock ချပါမည်)
+		if (!passwordEncoder.matches(loginRequest.getPassword(), userDetails.getPassword())) {
+			int attempts = (staff.getFailedLoginAttempts() != null ? staff.getFailedLoginAttempts() : 0) + 1;
+			if (attempts >= 5) {
+				staff.setFailedLoginAttempts(0);
+				staff.setLockedUntil(LocalDateTime.now().plusMinutes(15));
+				staffUserRepository.save(staff);
+				throw new BadCredentialsException("Account has been locked due to 5 consecutive failed attempts. Please try again in 15 minutes.");
+			} else {
+				staff.setFailedLoginAttempts(attempts);
+				staffUserRepository.save(staff);
+				throw new BadCredentialsException("Invalid email or password. Attempt " + attempts + " of 5.");
+			}
+		}
+
+		// Login အောင်မြင်ပါက failed attempts ကို ပြန်လည်ရှင်းလင်းပါမည်
+		staff.setFailedLoginAttempts(0);
+		staff.setLockedUntil(null);
 
 		// ၃။ Role စစ်ဆေးပါမည် (ADMIN, SUPPORT, AUDITOR တစ်ခုခု ဖြစ်ရပါမည်)
 		String roleName = staff.getRole()

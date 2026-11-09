@@ -37,6 +37,7 @@ public class AuditLogServiceImpl implements AuditLogService {
 
 		AuditLog logEntry = AuditLog.builder()
 				.actorId(requestDto.getActorId())
+				.actorUsername(requestDto.getActorUsername())
 				.actorType(requestDto.getActorType())
 				.roleName(requestDto.getRoleName())
 				.permissionUsed(requestDto.getPermissionUsed())
@@ -158,9 +159,15 @@ public class AuditLogServiceImpl implements AuditLogService {
 			actorType = "SYSTEM";
 		}
 
+		String actorUsername = entity.getActorUsername();
+		if (actorUsername == null || actorUsername.isBlank()) {
+			actorUsername = ("SYSTEM".equalsIgnoreCase(actorType) || "SYSTEM".equalsIgnoreCase(roleName)) ? "SYSTEM" : null;
+		}
+
 		return AuditLogResponseDto.builder()
 				.auditId(entity.getAuditId())
 				.actorId(entity.getActorId())
+				.actorUsername(actorUsername)
 				.actorType(actorType)
 				.roleName(roleName)
 				.permissionUsed(entity.getPermissionUsed())

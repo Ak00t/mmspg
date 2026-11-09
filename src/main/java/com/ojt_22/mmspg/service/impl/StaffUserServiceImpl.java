@@ -17,6 +17,7 @@ import com.ojt_22.mmspg.enums.StaffUserStatus;
 import com.ojt_22.mmspg.repository.StaffUserRepository;
 import com.ojt_22.mmspg.service.NotificationService;
 import com.ojt_22.mmspg.service.StaffUserService;
+import com.ojt_22.mmspg.util.PasswordValidator;
 
 import lombok.RequiredArgsConstructor;
 
@@ -40,6 +41,7 @@ public class StaffUserServiceImpl implements StaffUserService {
 			throw new IllegalArgumentException("Email is already in use");
 		}
 
+		PasswordValidator.validate(request.getPassword());
 		StaffUser staffUser = new StaffUser();
 		staffUser.setUsername(request.getEmail());
 		staffUser.setEmail(request.getEmail());
@@ -72,6 +74,8 @@ public class StaffUserServiceImpl implements StaffUserService {
 		if (staffUserRepository.existsByEmail(request.getEmail())) {
 			throw new IllegalArgumentException("Email is already in use");
 		}
+
+		PasswordValidator.validate(request.getPassword());
 
 		StaffUser staffUser = new StaffUser();
 		staffUser.setUsername(request.getEmail()); // Using email as username since UI doesn't provide it
@@ -213,6 +217,8 @@ public class StaffUserServiceImpl implements StaffUserService {
         if (passwordEncoder.matches(request.getNewPassword(), staff.getPasswordHash())) {
             throw new IllegalArgumentException("New password cannot be the same as the current password");
         }
+
+        PasswordValidator.validate(request.getNewPassword());
 
         staff.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         staff.setUpdatedAt(LocalDateTime.now());

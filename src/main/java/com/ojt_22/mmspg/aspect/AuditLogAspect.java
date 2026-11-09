@@ -65,6 +65,7 @@ public class AuditLogAspect {
 			}
 
 			UUID actorId = null;
+			String actorUsername = "SYSTEM";
 			String actorType = "SYSTEM";
 			String roleName = "SYSTEM";
 
@@ -72,6 +73,7 @@ public class AuditLogAspect {
 					.getAuthentication();
 			if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getPrincipal())) {
 				String identifier = auth.getName();
+				actorUsername = (identifier != null && !identifier.isBlank()) ? identifier : "SYSTEM";
 
 				roleName = auth.getAuthorities()
 						.stream()
@@ -104,6 +106,7 @@ public class AuditLogAspect {
 
 			AuditLogCreateRequest auditRequest = AuditLogCreateRequest.builder()
 					.actorId(actorId)
+					.actorUsername(actorUsername)
 					.actorType(actorType)
 					.roleName(roleName)
 					.permissionUsed(auditable.permissionUsed()
