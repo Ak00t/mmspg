@@ -60,10 +60,10 @@ public class AdminBranchController {
         return ResponseEntity.ok(branches);
     }
 
-    // ပြင်ဆင်ခြင်း (ADMIN သာ ပြင်ဆင်ခွင့်ရှိသည် - SUPPORT မပါပါ)
+    // ပြင်ဆင်ခြင်း (ADMIN နှင့် SUPPORT ပြင်ဆင်ခွင့်ရှိသည်)
     @PutMapping("/{id}")
     @Auditable(menuName = "Branch Management", action = "UPDATE", targetType = "MERCHANT_BRANCH", targetId = "#id")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
     @Operation(summary = "Update Branch", description = "Updates an existing branch.")
     public ResponseEntity<?> updateBranch(
             @PathVariable UUID id, 
@@ -76,9 +76,9 @@ public class AdminBranchController {
         }
     }
 
-    // Status ပြောင်းခြင်း (ADMIN သာ ပြောင်းလဲခွင့်ရှိသည် - SUPPORT မပါပါ)
+    // Status ပြောင်းခြင်း (ADMIN နှင့် SUPPORT ပြောင်းလဲခွင့်ရှိသည်)
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPPORT')")
     @Operation(summary = "Toggle Branch Status", description = "Toggles branch status between ACTIVE and INACTIVE.")
     public ResponseEntity<?> toggleBranchStatus(@PathVariable UUID id) {
         try {
