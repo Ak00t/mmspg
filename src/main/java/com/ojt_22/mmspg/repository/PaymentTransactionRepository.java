@@ -65,4 +65,13 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
             PaymentTransactionStatus status,
             LocalDateTime startDate,
             LocalDateTime endDate);
+
+    @Query("SELECT t.branch.id, t.branch.branchName, t.branch.branchCode, COUNT(t), COALESCE(SUM(CASE WHEN t.status = 'COMPLETED' THEN t.amount ELSE 0 END), 0) " +
+           "FROM PaymentTransaction t " +
+           "WHERE t.merchant.id = :merchantId AND t.createdAt >= :startDate AND t.createdAt <= :endDate AND t.branch IS NOT NULL " +
+           "GROUP BY t.branch.id, t.branch.branchName, t.branch.branchCode " +
+           "ORDER BY SUM(CASE WHEN t.status = 'COMPLETED' THEN t.amount ELSE 0 END) DESC")
+    List<Object[]> getBranchSalesSummary(@Param("merchantId") UUID merchantId, @Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
+
+    List<PaymentTransaction> findTop10ByOrderByCreatedAtDesc();
 }

@@ -1,6 +1,7 @@
 package com.ojt_22.mmspg.repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,6 +17,8 @@ public interface MerchantLedgerRepository extends JpaRepository<MerchantLedgerEn
 
 	@Query("SELECT m FROM MerchantLedgerEntry m WHERE m.merchant.id = :merchantId AND m.balanceType = :balanceType")
 	List<MerchantLedgerEntry> findByMerchantIdAndBalanceType(@Param("merchantId") UUID merchantId, @Param("balanceType") com.ojt_22.mmspg.enums.MerchantLedgerEntryBalanceType balanceType);
+
+    Optional<MerchantLedgerEntry> findByTransactionId(UUID transactionId);
 
     // 2. Specific Ledger ID အလိုက် balance_type ကို Update လုပ်ရန်
     @Modifying

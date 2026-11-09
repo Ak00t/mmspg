@@ -76,6 +76,7 @@ public class AdminTerminalController {
 
     // Terminal အချက်အလက်များ ပြင်ဆင်ခြင်း (ADMIN သာ ပြင်ဆင်ခွင့်ရှိသည် - SUPPORT မပါပါ)
     @PutMapping("/{id}")
+    @Auditable(menuName = "Terminal Management", action = "UPDATE", targetType = "TERMINAL", targetId = "#id")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Edit Terminal", description = "Updates terminal name and type.")
     public ResponseEntity<?> editTerminal(

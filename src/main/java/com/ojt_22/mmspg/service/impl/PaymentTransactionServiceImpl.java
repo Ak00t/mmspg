@@ -2,6 +2,7 @@ package com.ojt_22.mmspg.service.impl;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -26,10 +27,12 @@ import com.ojt_22.mmspg.entity.MerchantBranch;
 import com.ojt_22.mmspg.entity.MerchantFee;
 import com.ojt_22.mmspg.entity.MerchantLedgerEntry;
 import com.ojt_22.mmspg.entity.PaymentTransaction;
+import com.ojt_22.mmspg.entity.Settlement;
 import com.ojt_22.mmspg.entity.Terminal;
 import com.ojt_22.mmspg.enums.MerchantLedgerEntryBalanceType;
 import com.ojt_22.mmspg.enums.MerchantLedgerEntryType;
 import com.ojt_22.mmspg.enums.PaymentTransactionStatus;
+import com.ojt_22.mmspg.enums.SettlementStatus;
 import com.ojt_22.mmspg.entity.WebhookConfig;
 import com.ojt_22.mmspg.enums.WebhookConfigStatus;
 import com.ojt_22.mmspg.repository.WebhookConfigRepository;
@@ -38,6 +41,7 @@ import com.ojt_22.mmspg.repository.MerchantFeeRepository;
 import com.ojt_22.mmspg.repository.MerchantLedgerRepository;
 import com.ojt_22.mmspg.repository.MerchantRepository;
 import com.ojt_22.mmspg.repository.PaymentTransactionRepository;
+import com.ojt_22.mmspg.repository.SettlementRepository;
 import com.ojt_22.mmspg.repository.TerminalRepository;
 import com.ojt_22.mmspg.exception.DuplicateTransactionException;
 import com.ojt_22.mmspg.exception.InvalidFeeConfigurationException;
@@ -57,10 +61,10 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 	private final PaymentTransactionRepository transactionRepository;
 	private final MerchantRepository merchantRepository;
 	private final MerchantFeeRepository merchantFeeRepository;
-
 	private final MerchantBranchRepository branchRepository;
 	private final TerminalRepository terminalRepository;
 	private final MerchantLedgerRepository ledgerRepository;
+	private final SettlementRepository settlementRepository;
 
 	private final WebhookDeliveryService webhookDeliveryService;
 	private final WebhookConfigRepository webhookConfigRepository;
@@ -270,10 +274,28 @@ public class PaymentTransactionServiceImpl implements PaymentTransactionService 
 		transaction.setUpdatedAt(LocalDateTime.now());
 		PaymentTransaction completedTxn = transactionRepository.save(transaction);
 
-		// 6. Merchant ၏ Ledger ထဲသို့ PENDING Balance အဖြစ် CREDIT မှတ်တမ်းထည့်ခြင်း
+		// 6. Settlement record အလိုအလျောက် ဆောက်ပြီး သိမ်းခြင်း
+		Settlement settlement = new Settlement();
+		settlement.setTransaction(completedTxn);
+		settlement.setMerchant(completedTxn.getMerchant());
+		settlement.setGrossAmount(completedTxn.getAmount());
+		settlement.setFeeAmount(completedTxn.getFeeAmount());
+		settlement.setNetAmount(completedTxn.getNetAmount());
+		settlement.setCurrency(completedTxn.getCurrency());
+		settlement.setSettlementDate(completedTxn.getCompletedAt().toLocalDate());
+		settlement.setSettlementReference("STL-" + UUID.randomUUID());
+		settlement.setBankAccountNo(completedTxn.getMerchant().getSettlementAccountNo() != null 
+				? completedTxn.getMerchant().getSettlementAccountNo() : "N/A");
+		settlement.setStatus(SettlementStatus.COMPLETED);
+		settlement.setProcessedAt(LocalDateTime.now());
+		settlement.setRefundAmount(BigDecimal.ZERO);
+		Settlement savedSettlement = settlementRepository.save(settlement);
+
+		// 7. Merchant ၏ Ledger ထဲသို့ SETTLED Balance အဖြစ် CREDIT မှတ်တမ်းထည့်ခြင်း (Settlement ချိတ်ဆက်ခြင်း)
 		MerchantLedgerEntry ledgerEntry = new MerchantLedgerEntry();
 		ledgerEntry.setMerchant(completedTxn.getMerchant());
 		ledgerEntry.setTransaction(completedTxn);
+		ledgerEntry.setSettlement(savedSettlement);
 		ledgerEntry.setMerchantLedgerEntryType(MerchantLedgerEntryType.CREDIT);
 		ledgerEntry.setBalanceType(MerchantLedgerEntryBalanceType.SETTLED);
 		ledgerEntry.setAmount(completedTxn.getNetAmount());

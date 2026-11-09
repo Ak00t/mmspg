@@ -22,6 +22,7 @@ import com.ojt_22.mmspg.repository.PaymentTransactionRepository;
 import com.ojt_22.mmspg.repository.SettlementRepository;
 import com.ojt_22.mmspg.repository.StaffUserRepository;
 import com.ojt_22.mmspg.service.SettlementService;
+import com.ojt_22.mmspg.repository.MerchantLedgerRepository;
 import java.util.List;
 @Service
 public class SettlementServiceImpl implements SettlementService {
@@ -29,15 +30,18 @@ public class SettlementServiceImpl implements SettlementService {
     private final SettlementRepository settlementRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final StaffUserRepository staffUserRepository;
+    private final MerchantLedgerRepository merchantLedgerRepository;
 
     public SettlementServiceImpl(
             SettlementRepository settlementRepository,
             PaymentTransactionRepository paymentTransactionRepository,
-            StaffUserRepository staffUserRepository) {
+            StaffUserRepository staffUserRepository,
+            MerchantLedgerRepository merchantLedgerRepository) {
 
         this.settlementRepository = settlementRepository;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.staffUserRepository = staffUserRepository;
+        this.merchantLedgerRepository = merchantLedgerRepository;
     }
 
     @Override
@@ -93,6 +97,11 @@ public class SettlementServiceImpl implements SettlementService {
 
         Settlement savedSettlement =
                 settlementRepository.save(settlement);
+
+        merchantLedgerRepository.findByTransactionId(transactionId).ifPresent(ledger -> {
+            ledger.setSettlement(savedSettlement);
+            merchantLedgerRepository.save(ledger);
+        });
 
         SettlementResponse response = new SettlementResponse();
 

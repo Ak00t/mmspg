@@ -49,6 +49,7 @@ public class PaymentTransactionServiceImplTest {
     @Mock private MerchantBranchRepository branchRepository;
     @Mock private TerminalRepository terminalRepository;
     @Mock private MerchantLedgerRepository ledgerRepository;
+    @Mock private com.ojt_22.mmspg.repository.SettlementRepository settlementRepository;
     @Mock private WebhookDeliveryService webhookDeliveryService;
     @Mock private com.ojt_22.mmspg.repository.WebhookConfigRepository webhookConfigRepository;
     @Mock private CoreBankingClient coreBankingClient;

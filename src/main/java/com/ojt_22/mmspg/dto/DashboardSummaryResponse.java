@@ -11,4 +11,5 @@ public class DashboardSummaryResponse {
     private long activeGateways;
     private long internalStaff;
     private List<RecentMerchantRequestDto> recentMerchantRequests;
+    private List<PlatformLiveTransactionDto> recentTransactions;
 }

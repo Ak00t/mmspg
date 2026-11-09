@@ -22,8 +22,8 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
 	Page<AuditLog> findAllByOrderByCreatedAtDesc(Pageable pageable);
 
 	@Query("SELECT a FROM AuditLog a WHERE "
-			+ "(:menuName IS NULL OR :menuName = '' OR LOWER(a.menuName) LIKE LOWER(CONCAT('%', :menuName, '%'))) AND "
-			+ "(:action IS NULL OR :action = '' OR LOWER(a.action) LIKE LOWER(CONCAT('%', :action, '%'))) AND "
+			+ "(:menuName IS NULL OR :menuName = '' OR LOWER(a.menuName) LIKE CONCAT('%', LOWER(:menuName), '%')) AND "
+			+ "(:action IS NULL OR :action = '' OR LOWER(a.action) LIKE CONCAT('%', LOWER(:action), '%')) AND "
 			+ "(:status IS NULL OR a.status = :status) AND "
 			+ "(:startDate IS NULL OR a.createdAt >= :startDate) AND "
 			+ "(:endDate IS NULL OR a.createdAt <= :endDate) "

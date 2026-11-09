@@ -158,6 +158,7 @@ public class AdminStaffController {
     
 
     @PutMapping("/profile/password")
+    @Auditable(menuName = "Staff Management", action = "CHANGE_PASSWORD", targetType = "STAFF", targetId = "#authentication?.name")
     @PreAuthorize("isAuthenticated()")
     @Operation(summary = "Change Staff Password", description = "Updates password for currently logged-in staff user.")
     public ResponseEntity<?> changeStaffPassword(

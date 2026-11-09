@@ -53,6 +53,7 @@ public class AdminMccController {
     
    
     @DeleteMapping("/{id}")
+    @Auditable(menuName = "MCC Configuration", action = "DELETE", targetType = "MCC_CODE", targetId = "#id")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete MCC", description = "Deletes an existing MCC code.")
     public ResponseEntity<?> deleteMccCode(@PathVariable Long id) {
@@ -67,6 +68,7 @@ public class AdminMccController {
     
     
     @PutMapping("/{id}")
+    @Auditable(menuName = "MCC Configuration", action = "UPDATE", targetType = "MCC_CODE", targetId = "#id")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Update MCC", description = "Updates an existing MCC code.")
     public ResponseEntity<?> updateMccCode(

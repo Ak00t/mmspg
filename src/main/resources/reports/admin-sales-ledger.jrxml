@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="admin-sales-ledger" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="802" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20">
+  <parameter name="merchantBusinessName" class="java.lang.String"/>
+  <parameter name="merchantEmail" class="java.lang.String"/>
+  <parameter name="merchantPhone" class="java.lang.String"/>
+  <parameter name="reportPeriod" class="java.lang.String"/>
+  <parameter name="statusFilter" class="java.lang.String"/>
+  <parameter name="generatedAt" class="java.lang.String"/>
+  <field name="merchantCode" class="java.lang.String"/>
+  <field name="merchantBusinessName" class="java.lang.String"/>
+  <field name="ledgerId" class="java.lang.String"/>
+  <field name="transactionReference" class="java.lang.String"/>
+  <field name="orderId" class="java.lang.String"/>
+  <field name="entryType" class="java.lang.String"/>
+  <field name="balanceType" class="java.lang.String"/>
+  <field name="amount" class="java.math.BigDecimal"/>
+  <field name="description" class="java.lang.String"/>
+  <field name="transactionStatus" class="java.lang.String"/>
+  <field name="formattedCreatedAt" class="java.lang.String"/>
+  <field name="formattedSettlementDate" class="java.lang.String"/>
+  <field name="branchName" class="java.lang.String"/>
+  <field name="branchCode" class="java.lang.String"/>
+  <field name="terminalCode" class="java.lang.String"/>
+  <field name="terminalType" class="java.lang.String"/>
+  <title>
+    <band height="76">
+      <line><reportElement x="0" y="0" width="802" height="1" forecolor="#2563EB"/></line>
+      <staticText>
+        <reportElement x="0" y="6" width="450" height="22" forecolor="#0F172A"/>
+        <textElement verticalAlignment="Middle"><font size="16" isBold="true"/></textElement>
+        <text><![CDATA[Admin Sales Ledger Report]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="0" y="28" width="450" height="14" forecolor="#64748B"/>
+        <textElement verticalAlignment="Middle"><font size="9"/></textElement>
+        <text><![CDATA[MMS Payment Gateway - System Wide Ledger Statement]]></text>
+      </staticText>
+      <textField isBlankWhenNull="true">
+        <reportElement x="450" y="6" width="352" height="18" forecolor="#334155"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+        <textFieldExpression><![CDATA["Period: " + ($P{reportPeriod} != null ? $P{reportPeriod} : "All Time") + "  |  Status: " + ($P{statusFilter} != null ? $P{statusFilter} : "ALL")]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="450" y="24" width="352" height="16" forecolor="#64748B"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle"><font size="8"/></textElement>
+        <textFieldExpression><![CDATA["Generated: " + ($P{generatedAt} != null ? $P{generatedAt} : "")]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="0" y="46" width="400" height="24" mode="Opaque" backcolor="#F8FAFC" forecolor="#1E293B"/>
+        <box leftPadding="8">
+          <topPen lineWidth="0.5" lineColor="#CBD5E1"/>
+          <leftPen lineWidth="0.5" lineColor="#CBD5E1"/>
+          <bottomPen lineWidth="0.5" lineColor="#CBD5E1"/>
+        </box>
+        <textElement verticalAlignment="Middle"><font size="9" isBold="true"/></textElement>
+        <textFieldExpression><![CDATA["Scope: " + ($P{merchantBusinessName} != null ? $P{merchantBusinessName} : "All Merchants")]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="400" y="46" width="402" height="24" mode="Opaque" backcolor="#F8FAFC" forecolor="#475569"/>
+        <box rightPadding="8">
+          <topPen lineWidth="0.5" lineColor="#CBD5E1"/>
+          <bottomPen lineWidth="0.5" lineColor="#CBD5E1"/>
+          <rightPen lineWidth="0.5" lineColor="#CBD5E1"/>
+        </box>
+        <textElement textAlignment="Right" verticalAlignment="Middle"><font size="8"/></textElement>
+        <textFieldExpression><![CDATA[($P{merchantEmail} != null ? $P{merchantEmail} : "") + "   |   " + ($P{merchantPhone} != null ? $P{merchantPhone} : "")]]></textFieldExpression>
+      </textField>
+    </band>
+  </title>
+  <columnHeader>
+    <band height="24">
+      <staticText>
+        <reportElement x="0" y="0" width="70" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <box leftPadding="4"/>
+        <textElement verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+        <text><![CDATA[Merchant]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="70" y="0" width="95" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <box leftPadding="4"/>
+        <textElement verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+        <text><![CDATA[Branch (Origin)]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="165" y="0" width="70" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <box leftPadding="4"/>
+        <textElement verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+        <text><![CDATA[Terminal]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="235" y="0" width="105" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <box leftPadding="4"/>
+        <textElement verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+        <text><![CDATA[Transaction Ref]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="340" y="0" width="55" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <box leftPadding="4"/>
+        <textElement verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+        <text><![CDATA[Order ID]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="395" y="0" width="40" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+        <text><![CDATA[Type]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="435" y="0" width="80" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <box rightPadding="4"/>
+        <textElement textAlignment="Right" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+        <text><![CDATA[Amount]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="515" y="0" width="60" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+        <text><![CDATA[Status]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="575" y="0" width="115" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+        <text><![CDATA[Created At]]></text>
+      </staticText>
+      <staticText>
+        <reportElement x="690" y="0" width="112" height="24" mode="Opaque" backcolor="#1E293B" forecolor="#FFFFFF"/>
+        <textElement textAlignment="Center" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+        <text><![CDATA[Settlement Date]]></text>
+      </staticText>
+    </band>
+  </columnHeader>
+  <detail>
+    <band height="20">
+      <textField isBlankWhenNull="true">
+        <reportElement x="0" y="0" width="70" height="20" forecolor="#1E293B"/>
+        <box leftPadding="4"><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
+        <textElement verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+        <textFieldExpression><![CDATA[$F{merchantCode} != null ? $F{merchantCode} : "-"]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="70" y="0" width="95" height="20" forecolor="#1E293B"/>
+        <box leftPadding="4"><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
+        <textElement verticalAlignment="Middle"><font size="8"/></textElement>
+        <textFieldExpression><![CDATA[$F{branchName} != null ? $F{branchName} : "-"]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="165" y="0" width="70" height="20" forecolor="#1E293B"/>
+        <box leftPadding="4"><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
+        <textElement verticalAlignment="Middle"><font size="8"/></textElement>
+        <textFieldExpression><![CDATA[$F{terminalCode} != null ? $F{terminalCode} : "-"]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="235" y="0" width="105" height="20" forecolor="#1E293B"/>
+        <box leftPadding="4"><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
+        <textElement verticalAlignment="Middle"><font size="8"/></textElement>
+        <textFieldExpression><![CDATA[$F{transactionReference}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="340" y="0" width="55" height="20" forecolor="#1E293B"/>
+        <box leftPadding="4"><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
+        <textElement verticalAlignment="Middle"><font size="8"/></textElement>
+        <textFieldExpression><![CDATA[$F{orderId}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="395" y="0" width="40" height="20" forecolor="#1E293B"/>
+        <box><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
+        <textElement textAlignment="Center" verticalAlignment="Middle"><font size="8"/></textElement>
+        <textFieldExpression><![CDATA[$F{entryType}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true" pattern="#,##0.00">
+        <reportElement x="435" y="0" width="80" height="20" forecolor="#0F172A"/>
+        <box rightPadding="4"><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
+        <textElement textAlignment="Right" verticalAlignment="Middle"><font size="8" isBold="true"/></textElement>
+        <textFieldExpression><![CDATA[$F{amount}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="515" y="0" width="60" height="20" forecolor="#1E293B"/>
+        <box><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
+        <textElement textAlignment="Center" verticalAlignment="Middle"><font size="8"/></textElement>
+        <textFieldExpression><![CDATA[$F{transactionStatus}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="575" y="0" width="115" height="20" forecolor="#1E293B"/>
+        <box><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
+        <textElement textAlignment="Center" verticalAlignment="Middle"><font size="8"/></textElement>
+        <textFieldExpression><![CDATA[$F{formattedCreatedAt}]]></textFieldExpression>
+      </textField>
+      <textField isBlankWhenNull="true">
+        <reportElement x="690" y="0" width="112" height="20" forecolor="#1E293B"/>
+        <box><bottomPen lineWidth="0.5" lineColor="#E2E8F0"/></box>
+        <textElement textAlignment="Center" verticalAlignment="Middle"><font size="8"/></textElement>
+        <textFieldExpression><![CDATA[$F{formattedSettlementDate}]]></textFieldExpression>
+      </textField>
+    </band>
+  </detail>
+  <pageFooter>
+    <band height="20">
+      <line><reportElement x="0" y="0" width="802" height="1" forecolor="#E2E8F0"/></line>
+      <textField>
+        <reportElement x="0" y="4" width="400" height="14" forecolor="#94A3B8"/>
+        <textElement><font size="8"/></textElement>
+        <textFieldExpression><![CDATA["MMS Payment Gateway - Confidential Admin Report"]]></textFieldExpression>
+      </textField>
+      <textField>
+        <reportElement x="402" y="4" width="400" height="14" forecolor="#94A3B8"/>
+        <textElement textAlignment="Right"><font size="8"/></textElement>
+        <textFieldExpression><![CDATA["Page " + $V{PAGE_NUMBER}]]></textFieldExpression>
+      </textField>
+    </band>
+  </pageFooter>
+</jasperReport>

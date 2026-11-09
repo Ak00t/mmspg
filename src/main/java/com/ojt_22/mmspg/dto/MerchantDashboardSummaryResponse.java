@@ -14,5 +14,6 @@ public class MerchantDashboardSummaryResponse {
 	private BigDecimal availableSettlementBalance;
 	private Long pendingSettlementsCount;
 	private Map<String, Long> transactionsByStatus;
+	private java.util.List<BranchSalesSummaryDto> branchSales;
 
 }

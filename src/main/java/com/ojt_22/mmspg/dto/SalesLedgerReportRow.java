@@ -8,9 +8,10 @@ import lombok.Setter;
 
 @Getter @Setter
 public class SalesLedgerReportRow {
-    private String merchantBusinessName, merchantEmail, merchantPhone;
+    private String merchantCode, merchantBusinessName, merchantEmail, merchantPhone;
     private String ledgerId, transactionReference, orderId, entryType, balanceType, description;
     private String transactionStatus, settlementReference;
+    private String branchName, branchCode, terminalCode, terminalType;
     private BigDecimal amount;
     private LocalDateTime createdAt;
     private LocalDate settlementDate;

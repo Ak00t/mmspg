@@ -71,6 +71,7 @@ public class SettlementController {
     }
     
     @PostMapping("/run-daily")
+    @Auditable(menuName = "Settlement", action = "RUN_DAILY", targetType = "SETTLEMENT")
     public ResponseEntity<DailySettlementResponse> runDailySettlement() {
 
         DailySettlementResponse response =

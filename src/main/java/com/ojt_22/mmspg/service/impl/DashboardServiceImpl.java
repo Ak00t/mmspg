@@ -46,7 +46,21 @@ public class DashboardServiceImpl implements DashboardService {
 
         UUID merchantId = getAuthenticatedMerchant().getId();
 
-        return dashboardReportRepository.getSummary(merchantId, resolvedStartDate, resolvedEndDate);
+        MerchantDashboardSummaryResponse response = dashboardReportRepository.getSummary(merchantId, resolvedStartDate, resolvedEndDate);
+        LocalDateTime startDateTime = resolvedStartDate.atStartOfDay();
+        LocalDateTime endDateTime = resolvedEndDate.plusDays(1).atStartOfDay().minusNanos(1);
+
+        List<Object[]> branchResults = paymentTransactionRepository.getBranchSalesSummary(merchantId, startDateTime, endDateTime);
+        List<com.ojt_22.mmspg.dto.BranchSalesSummaryDto> branchSales = branchResults.stream().map(row -> com.ojt_22.mmspg.dto.BranchSalesSummaryDto.builder()
+                .branchId((UUID) row[0])
+                .branchName((String) row[1])
+                .branchCode((String) row[2])
+                .transactionCount(((Number) row[3]).longValue())
+                .totalVolume((java.math.BigDecimal) row[4])
+                .build()).toList();
+        response.setBranchSales(branchSales);
+
+        return response;
     }
 
     @Override
@@ -83,6 +97,10 @@ public class DashboardServiceImpl implements DashboardService {
                         .currency(t.getCurrency())
                         .status(t.getStatus() != null ? t.getStatus().name() : null)
                         .initiatedAt(t.getInitiatedAt() != null ? t.getInitiatedAt() : t.getCreatedAt())
+                        .branchName(t.getBranch() != null ? t.getBranch().getBranchName() : null)
+                        .branchCode(t.getBranch() != null ? t.getBranch().getBranchCode() : null)
+                        .terminalCode(t.getTerminal() != null ? t.getTerminal().getTerminalCode() : null)
+                        .terminalType(t.getTerminal() != null && t.getTerminal().getTerminalType() != null ? t.getTerminal().getTerminalType().name() : null)
                         .build())
                 .toList();
     }

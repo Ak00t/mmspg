@@ -38,9 +38,14 @@ public class MerchantLedgerApiControllerTest {
     @MockitoBean
     private MerchantLedgerRepository ledgerRepository;
 
+    @MockitoBean
+    private com.ojt_22.mmspg.security.AuthenticatedMerchantService authenticatedMerchantService;
+
     @Test
     public void testGetByBalanceType_Success() throws Exception {
-        when(ledgerRepository.findByBalanceType("PENDING"))
+        UUID merchantId = UUID.randomUUID();
+        when(authenticatedMerchantService.resolveMerchantId()).thenReturn(merchantId);
+        when(ledgerRepository.findByMerchantIdAndBalanceType(eq(merchantId), eq(com.ojt_22.mmspg.enums.MerchantLedgerEntryBalanceType.PENDING)))
                 .thenReturn(Collections.emptyList());
 
         mockMvc.perform(get("/api/v1/merchant-ledgers/by-balance-type")

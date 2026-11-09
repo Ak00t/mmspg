@@ -17,4 +17,8 @@ public class PaymentTransactionSummaryDto {
     private String currency;
     private String status;
     private LocalDateTime initiatedAt;
+    private String branchName;
+    private String branchCode;
+    private String terminalCode;
+    private String terminalType;
 }
